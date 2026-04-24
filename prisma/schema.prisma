@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id                String   @id @default(cuid())
+  nome              String
+  instanciaWhatsapp String   @unique
+  ativa             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+
+  vendedores   Vendedor[]
+  clientes     Cliente[]
+  leads        Lead[]
+}
+
+model Vendedor {
+  id           String   @id @default(cuid())
+  nome         String
+  telefone     String
+  empresaId    String
+  ordemChamada Int
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  empresa      Empresa       @relation(fields: [empresaId], references: [id])
+  vendas       Venda[]
+  notificacoes Notificacao[]
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nome      String?
+  telefone  String
+  empresaId String
+  tags      String[]
+  criadoEm  DateTime @default(now())
+
+  empresa      Empresa       @relation(fields: [empresaId], references: [id])
+  leads        Lead[]
+  conversas    Conversa[]
+  agendamentos Agendamento[]
+
+  @@unique([telefone, empresaId])
+}
+
+model Lead {
+  id           String     @id @default(cuid())
+  clienteId    String
+  empresaId    String
+  status       LeadStatus @default(LEAD)
+  score        Int        @default(0)
+  observacoes  String?
+  criadoEm     DateTime   @default(now())
+  atualizadoEm DateTime   @updatedAt
+
+  cliente Cliente  @relation(fields: [clienteId], references: [id])
+  empresa Empresa  @relation(fields: [empresaId], references: [id])
+  vendas  Venda[]
+}
+
+enum LeadStatus {
+  LEAD
+  AQUECIMENTO
+  PRONTO_PARA_COMPRAR
+  NEGOCIACAO
+  VENDA_REALIZADA
+  POS_VENDA
+  FOLLOW_UP
+  PERDIDO
+}
+
+model Conversa {
+  id              String   @id @default(cuid())
+  clienteId       String
+  ultimaMensagem  String?
+  ultimaAtividade DateTime @default(now())
+  criadoEm        DateTime @default(now())
+
+  cliente   Cliente    @relation(fields: [clienteId], references: [id])
+  mensagens Mensagem[]
+}
+
+model Mensagem {
+  id         String          @id @default(cuid())
+  conversaId String
+  conteudo   String
+  direcao    MensagemDirecao
+  criadoEm   DateTime        @default(now())
+
+  conversa Conversa @relation(fields: [conversaId], references: [id])
+}
+
+enum MensagemDirecao {
+  ENTRADA
+  SAIDA
+}
+
+model Venda {
+  id         String      @id @default(cuid())
+  leadId     String
+  vendedorId String
+  valor      Float?
+  descricao  String?
+  status     VendaStatus @default(REALIZADA)
+  criadoEm   DateTime    @default(now())
+
+  lead     Lead     @relation(fields: [leadId], references: [id])
+  vendedor Vendedor @relation(fields: [vendedorId], references: [id])
+}
+
+enum VendaStatus {
+  REALIZADA
+  POS_VENDA_PENDENTE
+  POS_VENDA_OK
+  CANCELADA
+}
+
+model Agendamento {
+  id           String            @id @default(cuid())
+  clienteId    String
+  tipo         AgendamentoTipo
+  dataAgendada DateTime
+  notas        String?
+  status       AgendamentoStatus @default(PENDENTE)
+  criadoEm     DateTime          @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+enum AgendamentoTipo {
+  FOLLOW_UP
+  POS_VENDA
+  REATIVACAO
+}
+
+enum AgendamentoStatus {
+  PENDENTE
+  CONCLUIDO
+  CANCELADO
+}
+
+model Notificacao {
+  id         String   @id @default(cuid())
+  vendedorId String
+  clienteId  String?
+  tipo       String
+  mensagem   String
+  enviada    Boolean  @default(false)
+  criadoEm   DateTime @default(now())
+
+  vendedor Vendedor @relation(fields: [vendedorId], references: [id])
+}
