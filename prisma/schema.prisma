@@ -18,6 +18,29 @@ model Empresa {
   vendedores   Vendedor[]
   clientes     Cliente[]
   leads        Lead[]
+  usuarios     Usuario[]
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  perfil    Perfil   @default(VENDEDOR)
+  empresaId String?
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  empresa Empresa? @relation(fields: [empresaId], references: [id])
+}
+
+enum Perfil {
+  CENTRAL
+  DONO
+  VENDEDOR
+  FINANCEIRO
+  COMPRAS
+  LOGISTICA
 }
 
 model Vendedor {
