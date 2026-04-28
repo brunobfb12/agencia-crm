@@ -44,15 +44,17 @@ enum Perfil {
 }
 
 model Vendedor {
-  id           String   @id @default(cuid())
-  nome         String
-  telefone     String
-  empresaId    String
-  ordemChamada Int
-  ativo        Boolean  @default(true)
-  criadoEm     DateTime @default(now())
+  id                  String    @id @default(cuid())
+  nome                String
+  telefone            String
+  empresaId           String
+  ordemChamada        Int
+  ativo               Boolean   @default(true)
+  criadoEm            DateTime  @default(now())
+  ultimaAtribuicaoEm  DateTime?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
+  leads        Lead[]
   vendas       Venda[]
   notificacoes Notificacao[]
 }
@@ -77,15 +79,17 @@ model Lead {
   id           String     @id @default(cuid())
   clienteId    String
   empresaId    String
+  vendedorId   String?
   status       LeadStatus @default(LEAD)
   score        Int        @default(0)
   observacoes  String?
   criadoEm     DateTime   @default(now())
   atualizadoEm DateTime   @updatedAt
 
-  cliente Cliente  @relation(fields: [clienteId], references: [id])
-  empresa Empresa  @relation(fields: [empresaId], references: [id])
-  vendas  Venda[]
+  cliente  Cliente   @relation(fields: [clienteId], references: [id])
+  empresa  Empresa   @relation(fields: [empresaId], references: [id])
+  vendedor Vendedor? @relation(fields: [vendedorId], references: [id])
+  vendas   Venda[]
 }
 
 enum LeadStatus {
