@@ -14,6 +14,7 @@ model Empresa {
   instanciaWhatsapp String   @unique
   ativa             Boolean  @default(true)
   criadoEm          DateTime @default(now())
+  informacoes       String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]

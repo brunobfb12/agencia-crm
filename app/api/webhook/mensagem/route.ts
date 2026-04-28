@@ -92,7 +92,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp },
+    empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp, informacoes: empresa.informacoes },
     cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },
     conversa: { id: conversa.id },
