@@ -13,6 +13,7 @@ export async function PATCH(
       ...(body.nome && { nome: body.nome }),
       ...(body.instanciaWhatsapp && { instanciaWhatsapp: body.instanciaWhatsapp }),
       ...(body.ativa !== undefined && { ativa: body.ativa }),
+      ...(body.informacoes !== undefined && { informacoes: body.informacoes }),
     },
   });
   return NextResponse.json(empresa);
