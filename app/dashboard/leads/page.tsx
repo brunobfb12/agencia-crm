@@ -98,7 +98,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <>
+    <div className="h-full overflow-y-auto">
       <div className="p-6">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Leads</h2>
@@ -267,6 +267,6 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

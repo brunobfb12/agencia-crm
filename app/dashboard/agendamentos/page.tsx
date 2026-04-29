@@ -51,7 +51,7 @@ export default function AgendamentosPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Agendamentos</h2>
         <p className="text-gray-500 text-sm mt-1">
@@ -125,4 +125,5 @@ export default function AgendamentosPage() {
       )}
     </div>
   );
+  </div>
 }

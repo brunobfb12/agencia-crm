@@ -63,7 +63,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-8">
+    <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900">Visão Geral</h2>
         <p className="text-gray-500 text-sm mt-1">Resumo de todas as empresas</p>
@@ -103,4 +103,5 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+  </div>
 }

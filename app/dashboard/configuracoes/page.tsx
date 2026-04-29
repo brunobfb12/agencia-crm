@@ -161,7 +161,7 @@ export default function ConfiguracoesPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Configurações</h2>
         {msg && (
@@ -425,4 +425,5 @@ export default function ConfiguracoesPage() {
       )}
     </div>
   );
+  </div>
 }

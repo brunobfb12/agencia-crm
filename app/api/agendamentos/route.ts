@@ -10,7 +10,6 @@ export async function GET(req: Request) {
   const agendamentos = await prisma.agendamento.findMany({
     where: {
       status: status as "PENDENTE" | "CONCLUIDO" | "CANCELADO",
-      dataAgendada: { gte: hoje },
     },
     orderBy: { dataAgendada: "asc" },
     include: {

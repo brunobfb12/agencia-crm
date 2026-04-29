@@ -67,7 +67,7 @@ export default function ClientesPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
@@ -210,4 +210,5 @@ export default function ClientesPage() {
       )}
     </div>
   );
+  </div>
 }

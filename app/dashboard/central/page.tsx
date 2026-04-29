@@ -106,7 +106,7 @@ export default function CentralPage() {
     state === "open" ? "bg-green-500" : state === "close" ? "bg-red-500" : "bg-gray-400";
 
   return (
-    <div className="p-8">
+    <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Painel Central</h2>
@@ -451,5 +451,7 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
         </div>
       )}
     </div>
+  </div>
+  </div>
   );
 }
