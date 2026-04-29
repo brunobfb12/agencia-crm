@@ -25,6 +25,26 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  const lead = await prisma.lead.findUnique({ where: { id }, select: { clienteId: true } });
+  if (!lead) return NextResponse.json({ ok: false }, { status: 404 });
+
+  // Apaga mensagens → conversas → lead → cliente (se não tiver outros leads)
+  const conversas = await prisma.conversa.findMany({
+    where: { clienteId: lead.clienteId },
+    select: { id: true },
+  });
+  const conversaIds = conversas.map((c) => c.id);
+
+  await prisma.mensagem.deleteMany({ where: { conversaId: { in: conversaIds } } });
+  await prisma.conversa.deleteMany({ where: { id: { in: conversaIds } } });
   await prisma.lead.delete({ where: { id } });
+
+  // Remove o cliente se não sobrou nenhum outro lead
+  const outrosLeads = await prisma.lead.count({ where: { clienteId: lead.clienteId } });
+  if (outrosLeads === 0) {
+    await prisma.cliente.delete({ where: { id: lead.clienteId } });
+  }
+
   return NextResponse.json({ ok: true });
 }
