@@ -1,18 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function splitCSVLine(line: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuotes = !inQuotes; }
+    else if (ch === "," && !inQuotes) { values.push(current); current = ""; }
+    else { current += ch; }
+  }
+  values.push(current);
+  return values;
+}
+
 function parseCSV(text: string): Record<string, string>[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, "").toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .replace(/\s+/g, "_"));
+  const headers = splitCSVLine(lines[0]).map((h) =>
+    h.trim().replace(/^"|"$/g, "").toLowerCase().replace(/\s+/g, "_")
+  );
   return lines.slice(1).map((line) => {
-    const values = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) ?? line.split(",");
+    const values = splitCSVLine(line);
     const row: Record<string, string> = {};
-    headers.forEach((h, i) => {
-      row[h] = (values[i] ?? "").trim().replace(/^"|"$/g, "");
-    });
+    headers.forEach((h, i) => { row[h] = (values[i] ?? "").trim().replace(/^"|"$/g, ""); });
     return row;
   }).filter((r) => Object.values(r).some((v) => v));
 }
