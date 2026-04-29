@@ -73,14 +73,17 @@ export async function POST(req: Request) {
     ].filter(Boolean).join(" | ") || null;
 
     try {
+      const clienteData = {
+        telefone,
+        empresaId,
+        ...(nome !== null && { nome }),
+        ...(email !== null && { email }),
+        ...(dataNascimento !== null && { dataNascimento }),
+      };
       const cliente = await prisma.cliente.upsert({
         where: { telefone_empresaId: { telefone, empresaId } },
-        create: { telefone, empresaId, nome, email, dataNascimento } as never,
-        update: {
-          ...(nome && { nome }),
-          ...(email && { email }),
-          ...(dataNascimento && { dataNascimento }),
-        } as never,
+        create: clienteData,
+        update: clienteData,
       });
 
       const leadExiste = await prisma.lead.findFirst({
@@ -89,7 +92,7 @@ export async function POST(req: Request) {
 
       if (!leadExiste) {
         await prisma.lead.create({
-          data: { clienteId: cliente.id, empresaId, observacoes: obs },
+          data: { clienteId: cliente.id, empresaId, ...(obs && { observacoes: obs }) },
         });
       } else if (obs && !leadExiste.observacoes) {
         await prisma.lead.update({ where: { id: leadExiste.id }, data: { observacoes: obs } });
