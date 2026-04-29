@@ -20,6 +20,7 @@ export async function POST(req: Request) {
   const results: string[] = [];
 
   const migrations = [
+    // --- colunas existentes ---
     `ALTER TABLE "Vendedor" ADD COLUMN IF NOT EXISTS "ultimaAtribuicaoEm" TIMESTAMP`,
     `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "vendedorId" TEXT`,
     `ALTER TABLE "Lead" ADD CONSTRAINT IF NOT EXISTS "Lead_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE SET NULL ON UPDATE CASCADE`,
@@ -37,6 +38,68 @@ export async function POST(req: Request) {
       "ativo" BOOLEAN NOT NULL DEFAULT true,
       "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW()
     )`,
+
+    // --- enums novos ---
+    `CREATE TYPE "MensagemDirecao" AS ENUM ('ENTRADA', 'SAIDA')`,
+    `CREATE TYPE "VendaStatus" AS ENUM ('REALIZADA', 'POS_VENDA_PENDENTE', 'POS_VENDA_OK', 'CANCELADA')`,
+    `CREATE TYPE "AgendamentoTipo" AS ENUM ('FOLLOW_UP', 'POS_VENDA', 'REATIVACAO')`,
+    `CREATE TYPE "AgendamentoStatus" AS ENUM ('PENDENTE', 'CONCLUIDO', 'CANCELADO')`,
+
+    // --- tabelas novas ---
+    `CREATE TABLE IF NOT EXISTS "Conversa" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "clienteId" TEXT NOT NULL,
+      "ultimaMensagem" TEXT,
+      "ultimaAtividade" TIMESTAMP NOT NULL DEFAULT NOW(),
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Conversa_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Mensagem" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "conversaId" TEXT NOT NULL,
+      "conteudo" TEXT NOT NULL,
+      "direcao" "MensagemDirecao" NOT NULL,
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Mensagem_conversaId_fkey" FOREIGN KEY ("conversaId") REFERENCES "Conversa"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Venda" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "leadId" TEXT NOT NULL,
+      "vendedorId" TEXT NOT NULL,
+      "valor" DOUBLE PRECISION,
+      "descricao" TEXT,
+      "status" "VendaStatus" NOT NULL DEFAULT 'REALIZADA',
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Venda_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+      CONSTRAINT "Venda_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Agendamento" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "clienteId" TEXT NOT NULL,
+      "tipo" "AgendamentoTipo" NOT NULL,
+      "dataAgendada" TIMESTAMP NOT NULL,
+      "notas" TEXT,
+      "status" "AgendamentoStatus" NOT NULL DEFAULT 'PENDENTE',
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Agendamento_clienteId_fkey" FOREIGN KEY ("clienteId") REFERENCES "Cliente"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS "Notificacao" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "vendedorId" TEXT NOT NULL,
+      "clienteId" TEXT,
+      "tipo" TEXT NOT NULL,
+      "mensagem" TEXT NOT NULL,
+      "enviada" BOOLEAN NOT NULL DEFAULT false,
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Notificacao_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    )`,
+
+    // --- índices de performance ---
+    `CREATE INDEX IF NOT EXISTS "Conversa_clienteId_idx" ON "Conversa"("clienteId")`,
+    `CREATE INDEX IF NOT EXISTS "Conversa_ultimaAtividade_idx" ON "Conversa"("ultimaAtividade" DESC)`,
+    `CREATE INDEX IF NOT EXISTS "Mensagem_conversaId_idx" ON "Mensagem"("conversaId")`,
+    `CREATE INDEX IF NOT EXISTS "Lead_clienteId_idx" ON "Lead"("clienteId")`,
+    `CREATE INDEX IF NOT EXISTS "Lead_empresaId_idx" ON "Lead"("empresaId")`,
   ];
 
   for (const sql of migrations) {
