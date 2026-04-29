@@ -124,6 +124,6 @@ export default function AgendamentosPage() {
         </div>
       )}
     </div>
-  );
   </div>
+  );
 }

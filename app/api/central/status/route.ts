@@ -40,7 +40,7 @@ export async function GET() {
     prisma.ferramenta.findMany({ orderBy: { criadoEm: "asc" } }),
   ]);
 
-  const alertas = ferramentas.filter((f) => {
+  const alertas = ferramentas.filter((f: { vencimento: Date | null }) => {
     if (!f.vencimento) return false;
     const dias = Math.ceil((f.vencimento.getTime() - Date.now()) / 86400000);
     return dias <= 7;

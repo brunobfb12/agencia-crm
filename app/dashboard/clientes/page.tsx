@@ -33,7 +33,7 @@ export default function ClientesPage() {
   const [importEmpresa, setImportEmpresa] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importando, setImportando] = useState(false);
-  const [importResult, setImportResult] = useState<{ importados: number; ignorados: number; erros: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ ok: boolean; importados: number; ignorados: number; erros: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -209,6 +209,6 @@ export default function ClientesPage() {
         </div>
       )}
     </div>
-  );
   </div>
+  );
 }
