@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
-  const { secret } = await req.json();
+  const body = await req.json();
+  const { secret, sql: customSql } = body;
   if (secret !== process.env.MIGRATION_SECRET) {
     return NextResponse.json({ ok: false }, { status: 401 });
+  }
+
+  if (customSql) {
+    try {
+      await prisma.$executeRawUnsafe(customSql);
+      return NextResponse.json({ ok: true, result: "OK" });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, result: e.message });
+    }
   }
 
   const results: string[] = [];
