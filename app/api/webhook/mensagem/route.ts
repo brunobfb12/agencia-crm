@@ -90,6 +90,28 @@ export async function POST(req: Request) {
     }
   }
 
+  // @lid resolution: iPhones with WhatsApp Business send an @lid JID (e.g. 58136828342503)
+  // instead of a real phone number. These numerics never start with "55" for Brazilian numbers.
+  // Try to find the client's real phone by matching name in the same empresa.
+  let telefonePrincipal = telefone;
+  const isLid = !telefone.startsWith("55");
+  if (isLid && nomeContato) {
+    const nomeLimpo = nomeContato.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
+    if (nomeLimpo) {
+      const clienteReal = await prisma.cliente.findFirst({
+        where: {
+          empresaId: empresa.id,
+          nome: { contains: nomeLimpo, mode: "insensitive" },
+          telefone: { startsWith: "55" },
+          NOT: { id: cliente.id },
+        },
+        orderBy: { criadoEm: "asc" },
+        select: { telefone: true },
+      });
+      if (clienteReal) telefonePrincipal = clienteReal.telefone;
+    }
+  }
+
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
@@ -99,5 +121,6 @@ export async function POST(req: Request) {
     conversa: { id: conversa.id },
     historico,
     vendedor,
+    telefonePrincipal,
   });
 }
