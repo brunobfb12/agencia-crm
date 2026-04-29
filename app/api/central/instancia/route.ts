@@ -27,21 +27,22 @@ export async function POST(req: Request) {
     body: JSON.stringify({ instanceName: instanciaNome, qrcode: true }),
   });
 
+  // Always configure webhook (new or existing instance)
+  await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+    body: JSON.stringify({
+      enabled: true,
+      url: WEBHOOK_URL,
+      events: ["MESSAGES_UPSERT"],
+      webhook_by_events: false,
+      webhook_base64: false,
+    }),
+  });
+
   if (createRes.ok) {
     const createData = await createRes.json();
     qrcode = createData?.qrcode?.base64 ?? null;
-    // Set webhook only for newly created instances
-    await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-      body: JSON.stringify({
-        enabled: true,
-        url: WEBHOOK_URL,
-        events: ["MESSAGES_UPSERT"],
-        webhook_by_events: false,
-        webhook_base64: false,
-      }),
-    });
   } else {
     // Instance already exists — get current QR code
     const qrRes = await fetch(`${EVO_URL}/instance/qrcode/${instanciaNome}?image=true`, {
