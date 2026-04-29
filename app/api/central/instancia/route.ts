@@ -43,14 +43,16 @@ export async function POST(req: Request) {
   if (createRes.ok) {
     const createData = await createRes.json();
     qrcode = createData?.qrcode?.base64 ?? null;
-  } else {
-    // Instance already exists — get current QR code
-    const qrRes = await fetch(`${EVO_URL}/instance/qrcode/${instanciaNome}?image=true`, {
+  }
+
+  // Always get fresh QR via connect endpoint (works for new and existing)
+  if (!qrcode) {
+    const qrRes = await fetch(`${EVO_URL}/instance/connect/${instanciaNome}`, {
       headers: { apikey: EVO_KEY },
     });
     if (qrRes.ok) {
       const qrData = await qrRes.json();
-      qrcode = qrData?.base64 ?? qrData?.qrcode?.base64 ?? null;
+      qrcode = qrData?.base64 ?? null;
     }
   }
 
@@ -62,11 +64,11 @@ export async function GET(req: Request) {
   const instancia = searchParams.get("instancia");
   if (!instancia) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const res = await fetch(`${EVO_URL}/instance/qrcode/${instancia}?image=true`, {
+  const res = await fetch(`${EVO_URL}/instance/connect/${instancia}`, {
     headers: { apikey: EVO_KEY },
   });
   const data = await res.json();
-  return NextResponse.json({ qrcode: data?.base64 ?? data?.qrcode?.base64 ?? null });
+  return NextResponse.json({ qrcode: data?.base64 ?? null });
 }
 
 export async function DELETE(req: Request) {
