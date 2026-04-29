@@ -64,9 +64,27 @@ export async function GET(req: Request) {
   const instancia = searchParams.get("instancia");
   if (!instancia) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const res = await fetch(`${EVO_URL}/instance/connect/${instancia}`, {
+  // Try to connect; if instance doesn't exist on v2, create it first
+  let res = await fetch(`${EVO_URL}/instance/connect/${instancia}`, {
     headers: { apikey: EVO_KEY },
   });
+
+  if (res.status === 404) {
+    await fetch(`${EVO_URL}/instance/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({ instanceName: instancia, integration: "WHATSAPP-BAILEYS", qrcode: true }),
+    });
+    await fetch(`${EVO_URL}/webhook/set/${instancia}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({ enabled: true, url: WEBHOOK_URL, events: ["MESSAGES_UPSERT"], webhook_by_events: false, webhook_base64: false }),
+    });
+    res = await fetch(`${EVO_URL}/instance/connect/${instancia}`, {
+      headers: { apikey: EVO_KEY },
+    });
+  }
+
   const data = await res.json();
   return NextResponse.json({ qrcode: data?.base64 ?? null });
 }
