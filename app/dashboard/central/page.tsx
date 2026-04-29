@@ -311,25 +311,28 @@ export default function CentralPage() {
       )}
 
       {aba === "whatsapp" && (
-        <div className="grid grid-cols-2 gap-4">
-          {loading ? (
-            <div className="col-span-2 text-center py-8 text-gray-400">Verificando instâncias...</div>
-          ) : (
-            data?.whatsapp.map((w) => (
-              <div key={w.instancia} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
-                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-gray-900 truncate">{w.instancia}</div>
-                  <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
-                    {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+        <div className="space-y-6">
+          <NovaInstancia onCriada={carregar} />
+          <div className="grid grid-cols-2 gap-4">
+            {loading ? (
+              <div className="col-span-2 text-center py-8 text-gray-400">Verificando instâncias...</div>
+            ) : (
+              data?.whatsapp.map((w) => (
+                <div key={w.instancia} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-gray-900 truncate">{w.instancia}</div>
+                    <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
+                      {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+                    </div>
                   </div>
+                  {w.state !== "open" && (
+                    <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-medium">Reconectar</span>
+                  )}
                 </div>
-                {w.state !== "open" && (
-                  <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-medium">Reconectar</span>
-                )}
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       )}
 
@@ -358,6 +361,92 @@ export default function CentralPage() {
               console.anthropic.com
             </a>{" "}
             → Usage.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NovaInstancia({ onCriada }: { onCriada: () => void }) {
+  const [form, setForm] = useState({ instanciaNome: "", empresaNome: "" });
+  const [criando, setCriando] = useState(false);
+  const [qrcode, setQrcode] = useState<string | null>(null);
+  const [instanciaCriada, setInstanciaCriada] = useState<string | null>(null);
+  const [erro, setErro] = useState("");
+
+  const criar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCriando(true);
+    setErro("");
+    setQrcode(null);
+    const res = await fetch("/api/central/instancia", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = await res.json();
+    setCriando(false);
+    if (!data.ok) { setErro(data.erro ?? "Erro ao criar instância"); return; }
+    setQrcode(data.qrcode);
+    setInstanciaCriada(data.instancia);
+    setForm({ instanciaNome: "", empresaNome: "" });
+    onCriada();
+  };
+
+  const atualizarQr = async () => {
+    if (!instanciaCriada) return;
+    const res = await fetch(`/api/central/instancia?instancia=${instanciaCriada}`);
+    const data = await res.json();
+    setQrcode(data.qrcode);
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <h3 className="font-semibold text-gray-900 mb-4">Criar Nova Instância WhatsApp</h3>
+      <form onSubmit={criar} className="flex gap-3 mb-4">
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Nome da Empresa *</label>
+          <input
+            required
+            value={form.empresaNome}
+            onChange={(e) => setForm((p) => ({ ...p, empresaNome: e.target.value }))}
+            placeholder="Ex: Loja da Maria"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-600 mb-1">Nome da Instância * (sem espaços)</label>
+          <input
+            required
+            value={form.instanciaNome}
+            onChange={(e) => setForm((p) => ({ ...p, instanciaNome: e.target.value.replace(/\s/g, "_") }))}
+            placeholder="Ex: loja_maria"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            type="submit"
+            disabled={criando}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            {criando ? "Criando..." : "Criar"}
+          </button>
+        </div>
+      </form>
+      {erro && <p className="text-sm text-red-600 mb-3">{erro}</p>}
+      {qrcode && (
+        <div className="flex gap-4 items-start">
+          <div className="bg-white border border-gray-200 rounded-lg p-2">
+            <img src={qrcode} alt="QR Code WhatsApp" className="w-48 h-48" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-900 mb-1">QR Code gerado para <strong>{instanciaCriada}</strong></p>
+            <p className="text-xs text-gray-500 mb-3">Abra o WhatsApp no celular → Aparelhos conectados → Conectar aparelho → Escaneie o QR Code</p>
+            <button onClick={atualizarQr} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg">
+              Atualizar QR Code
+            </button>
           </div>
         </div>
       )}

@@ -61,12 +61,14 @@ model Vendedor {
 }
 
 model Cliente {
-  id        String   @id @default(cuid())
-  nome      String?
-  telefone  String
-  empresaId String
-  tags      String[]
-  criadoEm  DateTime @default(now())
+  id             String    @id @default(cuid())
+  nome           String?
+  telefone       String
+  email          String?
+  dataNascimento DateTime?
+  empresaId      String
+  tags           String[]
+  criadoEm      DateTime  @default(now())
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]

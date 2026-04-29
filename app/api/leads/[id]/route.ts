@@ -13,6 +13,7 @@ export async function PATCH(
       ...(body.status && { status: body.status }),
       ...(body.score !== undefined && { score: body.score }),
       ...(body.observacoes !== undefined && { observacoes: body.observacoes }),
+      ...(body.vendedorId !== undefined && { vendedorId: body.vendedorId }),
     },
     include: { cliente: true },
   });

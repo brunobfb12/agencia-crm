@@ -24,6 +24,8 @@ export async function POST(req: Request) {
     `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "vendedorId" TEXT`,
     `ALTER TABLE "Lead" ADD CONSTRAINT IF NOT EXISTS "Lead_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE SET NULL ON UPDATE CASCADE`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "informacoes" TEXT`,
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "email" TEXT`,
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "dataNascimento" TIMESTAMP`,
     `CREATE TABLE IF NOT EXISTS "Ferramenta" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "nome" TEXT NOT NULL,
