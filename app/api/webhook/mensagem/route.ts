@@ -92,6 +92,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    modoHumano: conversa.modoHumano,
     empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp, informacoes: empresa.informacoes },
     cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },

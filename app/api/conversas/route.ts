@@ -25,6 +25,7 @@ export async function GET(req: Request) {
       ultimaMensagem: true,
       ultimaAtividade: true,
       criadoEm: true,
+      modoHumano: true,
       cliente: {
         select: {
           id: true,

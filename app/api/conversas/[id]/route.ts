@@ -42,3 +42,16 @@ export async function GET(
   if (!conversa) return NextResponse.json({ erro: "não encontrada" }, { status: 404 });
   return NextResponse.json(conversa);
 }
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { modoHumano } = await req.json();
+  const conversa = await prisma.conversa.update({
+    where: { id },
+    data: { modoHumano },
+  });
+  return NextResponse.json({ ok: true, modoHumano: conversa.modoHumano });
+}

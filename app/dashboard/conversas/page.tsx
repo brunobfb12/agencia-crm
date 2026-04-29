@@ -19,6 +19,7 @@ interface Lead {
 
 interface ConversaDetalhe {
   id: string;
+  modoHumano: boolean;
   mensagens: Mensagem[];
   cliente: {
     id: string;
@@ -34,6 +35,7 @@ interface ConversaItem {
   id: string;
   ultimaMensagem: string | null;
   ultimaAtividade: string;
+  modoHumano: boolean;
   _count: { mensagens: number };
   cliente: {
     id: string;
@@ -174,6 +176,18 @@ export default function ConversasPage() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
   };
 
+  const toggleModoHumano = async () => {
+    if (!ativa) return;
+    const novoModo = !ativa.modoHumano;
+    await fetch(`/api/conversas/${ativa.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ modoHumano: novoModo }),
+    });
+    setAtiva((prev) => prev ? { ...prev, modoHumano: novoModo } : prev);
+    carregarLista();
+  };
+
   const lead = ativa?.cliente.leads[0] ?? null;
 
   return (
@@ -235,6 +249,11 @@ export default function ConversasPage() {
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-xs text-gray-400">{c.cliente.empresa.nome}</span>
+                    {c.modoHumano && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700">
+                        Humano
+                      </span>
+                    )}
                     {statusLead && (
                       <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColors[statusLead] ?? "bg-gray-100 text-gray-600"}`}>
                         {statusLabels[statusLead] ?? statusLead}
@@ -293,8 +312,25 @@ export default function ConversasPage() {
                     {lead.vendedor.nome}
                   </span>
                 )}
+                <button
+                  onClick={toggleModoHumano}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                    ativa.modoHumano
+                      ? "bg-orange-100 text-orange-700 hover:bg-orange-200"
+                      : "bg-green-100 text-green-700 hover:bg-green-200"
+                  }`}
+                >
+                  {ativa.modoHumano ? "Devolver para IA" : "Assumir Conversa"}
+                </button>
               </div>
             </div>
+
+            {/* Banner modo humano */}
+            {ativa.modoHumano && (
+              <div className="bg-orange-50 border-b border-orange-200 px-5 py-2 flex items-center gap-2 flex-shrink-0">
+                <span className="text-orange-600 text-xs font-medium">Você está atendendo manualmente — IA pausada para esta conversa</span>
+              </div>
+            )}
 
             {/* Mensagens */}
             <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-4">

@@ -94,6 +94,9 @@ export async function POST(req: Request) {
       CONSTRAINT "Notificacao_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE RESTRICT ON UPDATE CASCADE
     )`,
 
+    // --- modo humano ---
+    `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "modoHumano" BOOLEAN NOT NULL DEFAULT false`,
+
     // --- índices de performance ---
     `CREATE INDEX IF NOT EXISTS "Conversa_clienteId_idx" ON "Conversa"("clienteId")`,
     `CREATE INDEX IF NOT EXISTS "Conversa_ultimaAtividade_idx" ON "Conversa"("ultimaAtividade" DESC)`,

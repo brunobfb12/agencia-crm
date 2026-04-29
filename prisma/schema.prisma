@@ -112,6 +112,7 @@ model Conversa {
   ultimaMensagem  String?
   ultimaAtividade DateTime @default(now())
   criadoEm        DateTime @default(now())
+  modoHumano      Boolean  @default(false)
 
   cliente   Cliente    @relation(fields: [clienteId], references: [id])
   mensagens Mensagem[]
