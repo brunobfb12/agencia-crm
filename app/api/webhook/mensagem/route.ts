@@ -16,7 +16,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, motivo: "empresa nao encontrada" });
   }
 
-  const cliente = await prisma.cliente.upsert({
+  // @lid resolution: iPhones with WhatsApp Business send a numeric @lid JID
+  // (e.g. 58136828342503) instead of a real Brazilian phone (always starts with "55").
+  // When @lid is detected, look for an existing client with the same name in this empresa.
+  // If found, reuse that client so iPhone and WhatsApp Web share the same conversation.
+  const isLid = !telefone.startsWith("55");
+  let clientePrincipal: { id: string; nome: string | null; telefone: string } | null = null;
+  let telefonePrincipal = telefone;
+
+  if (isLid && nomeContato) {
+    const nomeLimpo = nomeContato.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
+    if (nomeLimpo) {
+      const encontrado = await prisma.cliente.findFirst({
+        where: {
+          empresaId: empresa.id,
+          nome: { contains: nomeLimpo, mode: "insensitive" },
+          telefone: { startsWith: "55" },
+        },
+        orderBy: { criadoEm: "asc" },
+        select: { id: true, nome: true, telefone: true },
+      });
+      if (encontrado) {
+        clientePrincipal = encontrado;
+        telefonePrincipal = encontrado.telefone;
+      }
+    }
+  }
+
+  // Use merged client if found, otherwise upsert by telefone
+  const cliente = clientePrincipal ?? await prisma.cliente.upsert({
     where: { telefone_empresaId: { telefone, empresaId: empresa.id } },
     create: { telefone, empresaId: empresa.id, nome: nomeContato || null },
     update: nomeContato ? { nome: nomeContato } : {},
@@ -64,10 +92,8 @@ export async function POST(req: Request) {
   let vendedor = null;
 
   if (lead.vendedor?.ativo) {
-    // Cliente já tem vendedor ativo → fidelização
     vendedor = lead.vendedor;
   } else {
-    // Round-robin: vendedor ativo com ultimaAtribuicaoEm mais antiga (ou null = prioridade)
     const proximo = await prisma.vendedor.findFirst({
       where: { empresaId: empresa.id, ativo: true },
       orderBy: [
@@ -87,28 +113,6 @@ export async function POST(req: Request) {
         where: { id: lead.id },
         data: { vendedorId: proximo.id },
       });
-    }
-  }
-
-  // @lid resolution: iPhones with WhatsApp Business send an @lid JID (e.g. 58136828342503)
-  // instead of a real phone number. These numerics never start with "55" for Brazilian numbers.
-  // Try to find the client's real phone by matching name in the same empresa.
-  let telefonePrincipal = telefone;
-  const isLid = !telefone.startsWith("55");
-  if (isLid && nomeContato) {
-    const nomeLimpo = nomeContato.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
-    if (nomeLimpo) {
-      const clienteReal = await prisma.cliente.findFirst({
-        where: {
-          empresaId: empresa.id,
-          nome: { contains: nomeLimpo, mode: "insensitive" },
-          telefone: { startsWith: "55" },
-          NOT: { id: cliente.id },
-        },
-        orderBy: { criadoEm: "asc" },
-        select: { telefone: true },
-      });
-      if (clienteReal) telefonePrincipal = clienteReal.telefone;
     }
   }
 
