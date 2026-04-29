@@ -185,3 +185,15 @@ model Notificacao {
 
   vendedor Vendedor @relation(fields: [vendedorId], references: [id])
 }
+
+model Ferramenta {
+  id          String    @id @default(cuid())
+  nome        String
+  tipo        String
+  valor       Float?
+  vencimento  DateTime?
+  link        String?
+  observacoes String?
+  ativo       Boolean   @default(true)
+  criadoEm   DateTime  @default(now())
+}

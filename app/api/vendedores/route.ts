@@ -5,9 +5,10 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const empresaId = searchParams.get("empresaId");
 
+  const todos = searchParams.get("todos") === "true";
   const vendedores = await prisma.vendedor.findMany({
     where: {
-      ativo: true,
+      ...(todos ? {} : { ativo: true }),
       ...(empresaId && { empresaId }),
     },
     orderBy: { ordemChamada: "asc" },

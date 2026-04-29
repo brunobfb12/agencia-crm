@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-const navItems = [
+const navItemsBase = [
   { href: "/dashboard", label: "Visão Geral", icon: "📊" },
   { href: "/dashboard/leads", label: "Leads", icon: "🎯" },
   { href: "/dashboard/clientes", label: "Clientes", icon: "👥" },
   { href: "/dashboard/agendamentos", label: "Agendamentos", icon: "📅" },
   { href: "/dashboard/configuracoes", label: "Configurações", icon: "⚙️" },
+];
+const navItemsCentral = [
+  { href: "/dashboard/central", label: "Painel Central", icon: "🛠️" },
 ];
 
 export default function Nav({ nome, perfil }: { nome: string; perfil: string }) {
@@ -29,7 +32,7 @@ export default function Nav({ nome, perfil }: { nome: string; perfil: string }) 
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
+        {[...navItemsBase, ...(perfil === "CENTRAL" ? navItemsCentral : [])].map((item) => {
           const isActive =
             item.href === "/dashboard"
               ? pathname === "/dashboard"

@@ -14,6 +14,17 @@ export async function POST(req: Request) {
     `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "vendedorId" TEXT`,
     `ALTER TABLE "Lead" ADD CONSTRAINT IF NOT EXISTS "Lead_vendedorId_fkey" FOREIGN KEY ("vendedorId") REFERENCES "Vendedor"(id) ON DELETE SET NULL ON UPDATE CASCADE`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "informacoes" TEXT`,
+    `CREATE TABLE IF NOT EXISTS "Ferramenta" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "nome" TEXT NOT NULL,
+      "tipo" TEXT NOT NULL,
+      "valor" DOUBLE PRECISION,
+      "vencimento" TIMESTAMP,
+      "link" TEXT,
+      "observacoes" TEXT,
+      "ativo" BOOLEAN NOT NULL DEFAULT true,
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW()
+    )`,
   ];
 
   for (const sql of migrations) {
