@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const EVO_URL = "http://201.76.43.149:8081";
+const EVO_URL = "http://201.76.43.149:8080";
 const EVO_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 const WEBHOOK_URL = "https://n8n-n8n.6jgzku.easypanel.host/webhook/whatsapp";
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const createRes = await fetch(`${EVO_URL}/instance/create`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-    body: JSON.stringify({ instanceName: instanciaNome, qrcode: true }),
+    body: JSON.stringify({ instanceName: instanciaNome, integration: "WHATSAPP-BAILEYS", qrcode: true }),
   });
 
   await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
@@ -72,7 +72,7 @@ export async function DELETE(req: Request) {
   const instancia = searchParams.get("instancia");
   if (!instancia) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const res = await fetch(`${EVO_URL}/instance/logout/${instancia}`, {
+  const res = await fetch(`${EVO_URL}/instance/delete/${instancia}`, {
     method: "DELETE",
     headers: { apikey: EVO_KEY },
   });
