@@ -67,3 +67,16 @@ export async function GET(req: Request) {
   const data = await res.json();
   return NextResponse.json({ qrcode: data?.base64 ?? data?.qrcode?.base64 ?? null });
 }
+
+export async function DELETE(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const instancia = searchParams.get("instancia");
+  if (!instancia) return NextResponse.json({ ok: false }, { status: 400 });
+
+  const res = await fetch(`${EVO_URL}/instance/logout/${instancia}`, {
+    method: "DELETE",
+    headers: { apikey: EVO_KEY },
+  });
+
+  return NextResponse.json({ ok: res.ok });
+}

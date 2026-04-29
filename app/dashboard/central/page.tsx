@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-interface WhatsAppStatus { instancia: string; state: string }
+interface WhatsAppStatus { instancia: string; state: string; nomeEmpresa: string }
 interface Ferramenta {
   id: string; nome: string; tipo: string; valor: number | null;
   vencimento: string | null; link: string | null; observacoes: string | null; ativo: boolean;
@@ -51,6 +51,13 @@ export default function CentralPage() {
     const d = await res.json();
     setQrInstancia((p) => ({ ...p, [instancia]: d.qrcode ?? null }));
     setLoadingQr((p) => ({ ...p, [instancia]: false }));
+  };
+
+  const desconectar = async (instancia: string) => {
+    if (!confirm(`Desconectar a instância "${instancia}"? O WhatsApp precisará ser escaneado novamente.`)) return;
+    await fetch(`/api/central/instancia?instancia=${instancia}`, { method: "DELETE" });
+    showMsg(`${instancia} desconectado`);
+    carregar();
   };
 
   const carregar = () => {
@@ -332,20 +339,31 @@ export default function CentralPage() {
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-gray-900 truncate">{w.instancia}</div>
+                      <div className="font-medium text-sm text-gray-900 truncate">{w.nomeEmpresa}</div>
+                      <div className="text-xs text-gray-400 truncate">{w.instancia}</div>
                       <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
                         {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
                       </div>
                     </div>
-                    {w.state !== "open" && (
-                      <button
-                        onClick={() => reconectar(w.instancia)}
-                        disabled={loadingQr[w.instancia]}
-                        className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2 py-1 rounded font-medium disabled:opacity-50"
-                      >
-                        {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
-                      </button>
-                    )}
+                    <div className="flex flex-col gap-1.5 items-end">
+                      {w.state !== "open" && (
+                        <button
+                          onClick={() => reconectar(w.instancia)}
+                          disabled={loadingQr[w.instancia]}
+                          className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2 py-1 rounded font-medium disabled:opacity-50"
+                        >
+                          {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
+                        </button>
+                      )}
+                      {w.state === "open" && (
+                        <button
+                          onClick={() => desconectar(w.instancia)}
+                          className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-medium"
+                        >
+                          Desconectar
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {qrInstancia[w.instancia] && (
                     <div className="mt-3 pt-3 border-t border-gray-100 flex gap-3 items-start">
@@ -408,6 +426,7 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   const [qrcode, setQrcode] = useState<string | null>(null);
   const [instanciaCriada, setInstanciaCriada] = useState<string | null>(null);
   const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
 
   const criar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -424,6 +443,7 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
     if (!data.ok) { setErro(data.erro ?? "Erro ao criar instância"); return; }
     setQrcode(data.qrcode);
     setInstanciaCriada(data.instancia);
+    setSucesso(`Empresa "${data.empresa?.nome}" salva no CRM!`);
     setForm({ instanciaNome: "", empresaNome: "" });
     onCriada();
   };
@@ -470,6 +490,7 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
         </div>
       </form>
       {erro && <p className="text-sm text-red-600 mb-3">{erro}</p>}
+      {sucesso && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">{sucesso}</p>}
       {qrcode && (
         <div className="flex gap-4 items-start">
           <div className="bg-white border border-gray-200 rounded-lg p-2">

@@ -4,12 +4,6 @@ import { prisma } from "@/lib/prisma";
 const EVOLUTION_URL = "http://201.76.43.149:8081";
 const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
-const INSTANCIAS = [
-  "ph_intima", "di_charmy", "opus_automotivo", "parede_tintas_1",
-  "hoken", "parede_tintas_2", "relancer_cursos", "studio_thaisypolicena",
-  "relancer_odontologia", "empresarios_crente", "WPP2",
-];
-
 async function checkInstancia(instancia: string) {
   try {
     const res = await fetch(`${EVOLUTION_URL}/instance/connectionState/${instancia}`, {
@@ -27,16 +21,32 @@ export async function GET() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const [whatsappStatus, mensagensHoje, leadsHoje, mensagensMes, ferramentas] = await Promise.all([
-    Promise.all(INSTANCIAS.map(checkInstancia)),
-    prisma.mensagem.count({ where: { criadoEm: { gte: hoje }, direcao: "SAIDA" } }),
-    prisma.lead.count({ where: { criadoEm: { gte: hoje } } }),
-    prisma.mensagem.count({
-      where: {
-        criadoEm: { gte: new Date(hoje.getFullYear(), hoje.getMonth(), 1) },
-        direcao: "SAIDA",
-      },
-    }),
+  // Fetch instances from DB — dynamic, includes any company registered via the form
+  const empresas = await prisma.empresa.findMany({
+    where: { ativa: true },
+    select: { instanciaWhatsapp: true, nome: true },
+    orderBy: { nome: "asc" },
+  });
+
+  const instancias = empresas.map((e: { instanciaWhatsapp: string; nome: string }) => e.instanciaWhatsapp);
+
+  // Safe counts — tables may not exist if migration hasn't run yet
+  let mensagensHoje = 0, leadsHoje = 0, mensagensMes = 0;
+  try {
+    [mensagensHoje, leadsHoje, mensagensMes] = await Promise.all([
+      prisma.mensagem.count({ where: { criadoEm: { gte: hoje }, direcao: "SAIDA" } }),
+      prisma.lead.count({ where: { criadoEm: { gte: hoje } } }),
+      prisma.mensagem.count({
+        where: {
+          criadoEm: { gte: new Date(hoje.getFullYear(), hoje.getMonth(), 1) },
+          direcao: "SAIDA",
+        },
+      }),
+    ]);
+  } catch { /* migration not yet applied */ }
+
+  const [whatsappStatus, ferramentas] = await Promise.all([
+    Promise.all(instancias.map(checkInstancia)),
     prisma.ferramenta.findMany({ orderBy: { criadoEm: "asc" } }),
   ]);
 
@@ -46,8 +56,14 @@ export async function GET() {
     return dias <= 7;
   });
 
+  // Enrich with empresa name
+  const whatsapp = whatsappStatus.map((w: { instancia: string; state: string }) => {
+    const empresa = empresas.find((e: { instanciaWhatsapp: string; nome: string }) => e.instanciaWhatsapp === w.instancia);
+    return { ...w, nomeEmpresa: empresa?.nome ?? w.instancia };
+  });
+
   return NextResponse.json({
-    whatsapp: whatsappStatus,
+    whatsapp,
     atividade: { mensagensHoje, leadsHoje, mensagensMes },
     ferramentas,
     alertas,
