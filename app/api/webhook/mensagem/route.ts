@@ -33,7 +33,7 @@ export async function POST(req: Request) {
           nome: { contains: nomeLimpo, mode: "insensitive" },
           telefone: { startsWith: "55" },
         },
-        orderBy: { criadoEm: "asc" },
+        orderBy: { criadoEm: "desc" },
         select: { id: true, nome: true, telefone: true },
       });
       if (encontrado) {
