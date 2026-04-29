@@ -40,6 +40,7 @@ export default function LeadsPage() {
   const [editLead, setEditLead] = useState<Lead | null>(null);
   const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "" });
   const [salvando, setSalvando] = useState(false);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -64,8 +65,19 @@ export default function LeadsPage() {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status: novoStatus } : l)));
   };
 
+  const excluirLead = async () => {
+    if (!editLead) return;
+    setSalvando(true);
+    await fetch(`/api/leads/${editLead.id}`, { method: "DELETE" });
+    setLeads((prev) => prev.filter((l) => l.id !== editLead.id));
+    setEditLead(null);
+    setConfirmandoExclusao(false);
+    setSalvando(false);
+  };
+
   const abrirEdit = (lead: Lead) => {
     setEditLead(lead);
+    setConfirmandoExclusao(false);
     setEditForm({
       status: lead.status,
       observacoes: lead.observacoes ?? "",
@@ -249,20 +261,49 @@ export default function LeadsPage() {
               </div>
             </div>
 
-            <div className="p-5 border-t border-gray-100 flex gap-2 justify-end">
-              <button
-                onClick={() => setEditLead(null)}
-                className="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={salvarEdit}
-                disabled={salvando}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {salvando ? "Salvando..." : "Salvar"}
-              </button>
+            <div className="p-5 border-t border-gray-100 flex gap-2 justify-between items-center">
+              <div>
+                {!confirmandoExclusao ? (
+                  <button
+                    onClick={() => setConfirmandoExclusao(true)}
+                    className="text-red-500 text-sm hover:text-red-700 hover:underline"
+                  >
+                    Excluir lead
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-600 font-medium">Confirmar exclusão?</span>
+                    <button
+                      onClick={excluirLead}
+                      disabled={salvando}
+                      className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Sim, excluir
+                    </button>
+                    <button
+                      onClick={() => setConfirmandoExclusao(false)}
+                      className="text-gray-500 text-sm hover:text-gray-700"
+                    >
+                      Não
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setEditLead(null); setConfirmandoExclusao(false); }}
+                  className="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={salvarEdit}
+                  disabled={salvando}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {salvando ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
