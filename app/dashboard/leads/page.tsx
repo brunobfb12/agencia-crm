@@ -156,9 +156,14 @@ export default function LeadsPage() {
                       }`}
                     >
                       <div className="flex justify-between items-start gap-1">
-                        <p className="font-medium text-sm text-gray-900 leading-tight flex-1 min-w-0 truncate">
-                          {lead.cliente.nome ?? lead.cliente.telefone}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 leading-tight truncate">
+                            {lead.cliente.nome ?? lead.cliente.telefone}
+                          </p>
+                          {lead.cliente.nome && (
+                            <p className="text-xs text-gray-400 truncate">{lead.cliente.telefone}</p>
+                          )}
+                        </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); abrirEdit(lead); }}
                           className="text-gray-300 hover:text-blue-500 flex-shrink-0 text-base leading-none transition-colors"
