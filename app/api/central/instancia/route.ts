@@ -12,41 +12,46 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, erro: "instanciaNome e empresaNome obrigatorios" }, { status: 400 });
   }
 
-  // Create instance in Evolution API
-  const createRes = await fetch(`${EVO_URL}/instance/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-    body: JSON.stringify({ instanceName: instanciaNome, qrcode: true }),
-  });
-
-  if (!createRes.ok) {
-    const err = await createRes.text();
-    return NextResponse.json({ ok: false, erro: `Evolution API: ${err}` }, { status: 500 });
-  }
-
-  const createData = await createRes.json();
-
-  // Set webhook
-  await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-    body: JSON.stringify({
-      enabled: true,
-      url: WEBHOOK_URL,
-      events: ["MESSAGES_UPSERT"],
-      webhook_by_events: false,
-      webhook_base64: false,
-    }),
-  });
-
-  // Create Empresa in CRM (upsert by instancia)
+  // Always upsert Empresa regardless of Evolution API result
   const empresa = await prisma.empresa.upsert({
     where: { instanciaWhatsapp: instanciaNome },
     create: { nome: empresaNome, instanciaWhatsapp: instanciaNome },
     update: { nome: empresaNome },
   });
 
-  const qrcode = createData?.qrcode?.base64 ?? null;
+  // Try to create instance in Evolution API
+  let qrcode: string | null = null;
+  const createRes = await fetch(`${EVO_URL}/instance/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+    body: JSON.stringify({ instanceName: instanciaNome, qrcode: true }),
+  });
+
+  if (createRes.ok) {
+    const createData = await createRes.json();
+    qrcode = createData?.qrcode?.base64 ?? null;
+    // Set webhook only for newly created instances
+    await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({
+        enabled: true,
+        url: WEBHOOK_URL,
+        events: ["MESSAGES_UPSERT"],
+        webhook_by_events: false,
+        webhook_base64: false,
+      }),
+    });
+  } else {
+    // Instance already exists — get current QR code
+    const qrRes = await fetch(`${EVO_URL}/instance/qrcode/${instanciaNome}?image=true`, {
+      headers: { apikey: EVO_KEY },
+    });
+    if (qrRes.ok) {
+      const qrData = await qrRes.json();
+      qrcode = qrData?.base64 ?? qrData?.qrcode?.base64 ?? null;
+    }
+  }
 
   return NextResponse.json({ ok: true, empresa, qrcode, instancia: instanciaNome });
 }

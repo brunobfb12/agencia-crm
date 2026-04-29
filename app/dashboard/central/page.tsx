@@ -42,6 +42,16 @@ export default function CentralPage() {
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
+  const [qrInstancia, setQrInstancia] = useState<Record<string, string | null>>({});
+  const [loadingQr, setLoadingQr] = useState<Record<string, boolean>>({});
+
+  const reconectar = async (instancia: string) => {
+    setLoadingQr((p) => ({ ...p, [instancia]: true }));
+    const res = await fetch(`/api/central/instancia?instancia=${instancia}`);
+    const d = await res.json();
+    setQrInstancia((p) => ({ ...p, [instancia]: d.qrcode ?? null }));
+    setLoadingQr((p) => ({ ...p, [instancia]: false }));
+  };
 
   const carregar = () => {
     setLoading(true);
@@ -318,16 +328,40 @@ export default function CentralPage() {
               <div className="col-span-2 text-center py-8 text-gray-400">Verificando instâncias...</div>
             ) : (
               data?.whatsapp.map((w) => (
-                <div key={w.instancia} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
-                  <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-gray-900 truncate">{w.instancia}</div>
-                    <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
-                      {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+                <div key={w.instancia} className="bg-white border border-gray-200 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-gray-900 truncate">{w.instancia}</div>
+                      <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
+                        {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+                      </div>
                     </div>
+                    {w.state !== "open" && (
+                      <button
+                        onClick={() => reconectar(w.instancia)}
+                        disabled={loadingQr[w.instancia]}
+                        className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2 py-1 rounded font-medium disabled:opacity-50"
+                      >
+                        {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
+                      </button>
+                    )}
                   </div>
-                  {w.state !== "open" && (
-                    <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded font-medium">Reconectar</span>
+                  {qrInstancia[w.instancia] && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex gap-3 items-start">
+                      <img
+                        src={qrInstancia[w.instancia]!}
+                        alt="QR Code"
+                        className="w-36 h-36 border border-gray-200 rounded-lg p-1 bg-white"
+                      />
+                      <div className="flex-1 text-xs text-gray-500 space-y-1.5">
+                        <p className="font-medium text-gray-700">Como conectar:</p>
+                        <p>1. Abra o WhatsApp no celular</p>
+                        <p>2. Toque em ⋮ → Aparelhos conectados</p>
+                        <p>3. Conectar aparelho → Escaneie o QR</p>
+                        <p className="text-orange-500 font-medium">QR expira em ~20s — atualize se necessário</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))
@@ -364,7 +398,7 @@ export default function CentralPage() {
           </div>
         </div>
       )}
-    </div>
+    </div></div>
   );
 }
 
@@ -451,7 +485,5 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
         </div>
       )}
     </div>
-  </div>
-  </div>
   );
 }
