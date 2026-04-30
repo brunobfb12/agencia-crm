@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const me = await getUsuarioLogado();
   const { searchParams } = new URL(req.url);
-  const empresaId = searchParams.get("empresaId") ?? undefined;
+
+  const empresaId = me?.perfil !== "CENTRAL" && me?.empresaId
+    ? me.empresaId
+    : (searchParams.get("empresaId") ?? undefined);
 
   const [
     totalClientes,

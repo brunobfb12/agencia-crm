@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { LeadStatus } from "@prisma/client";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const me = await getUsuarioLogado();
   const { searchParams } = new URL(req.url);
-  const empresaId = searchParams.get("empresaId");
   const status = searchParams.get("status") as LeadStatus | null;
+
+  const empresaId = me?.perfil !== "CENTRAL" && me?.empresaId
+    ? me.empresaId
+    : (searchParams.get("empresaId") ?? undefined);
 
   const leads = await prisma.lead.findMany({
     where: {
