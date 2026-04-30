@@ -9,7 +9,10 @@ export async function PATCH(
   const body = await req.json();
   const agendamento = await prisma.agendamento.update({
     where: { id },
-    data: { status: body.status },
+    data: {
+      ...(body.status && { status: body.status }),
+      ...(body.googleEventId !== undefined && { googleEventId: body.googleEventId }),
+    },
   });
   return NextResponse.json(agendamento);
 }

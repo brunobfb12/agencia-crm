@@ -6,20 +6,29 @@ export async function GET(req: Request) {
   const me = await getUsuarioLogado();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? "PENDENTE";
+  const dataHoje = searchParams.get("dataHoje") === "true";
 
   const empresaId = me?.perfil !== "CENTRAL" && me?.empresaId
     ? me.empresaId
     : (searchParams.get("empresaId") ?? undefined);
 
+  let dataInicio: Date | undefined;
+  let dataFim: Date | undefined;
+  if (dataHoje) {
+    dataInicio = new Date(); dataInicio.setHours(0, 0, 0, 0);
+    dataFim = new Date(); dataFim.setHours(23, 59, 59, 999);
+  }
+
   const agendamentos = await prisma.agendamento.findMany({
     where: {
       status: status as "PENDENTE" | "CONCLUIDO" | "CANCELADO",
       ...(empresaId && { cliente: { empresaId } }),
+      ...(dataHoje && { dataAgendada: { gte: dataInicio, lte: dataFim } }),
     },
     orderBy: { dataAgendada: "asc" },
     include: {
       cliente: {
-        include: { empresa: { select: { nome: true, instanciaWhatsapp: true } } },
+        include: { empresa: { select: { nome: true, instanciaWhatsapp: true, googleCalendarId: true, googleCredentialId: true } } },
       },
     },
   });
