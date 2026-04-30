@@ -4,7 +4,7 @@ RUN apk add --no-cache openssl libc6-compat
 FROM base AS builder
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npx prisma generate
 RUN npm run build
