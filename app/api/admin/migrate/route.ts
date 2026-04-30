@@ -97,6 +97,22 @@ export async function POST(req: Request) {
     // --- modo humano ---
     `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "modoHumano" BOOLEAN NOT NULL DEFAULT false`,
 
+    // --- perfil EMPRESA ---
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'EMPRESA'`,
+
+    // --- tabela Usuario ---
+    `CREATE TABLE IF NOT EXISTS "Usuario" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "nome" TEXT NOT NULL,
+      "email" TEXT NOT NULL UNIQUE,
+      "senha" TEXT NOT NULL,
+      "perfil" "Perfil" NOT NULL DEFAULT 'EMPRESA',
+      "empresaId" TEXT,
+      "ativo" BOOLEAN NOT NULL DEFAULT true,
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Usuario_empresaId_fkey" FOREIGN KEY ("empresaId") REFERENCES "Empresa"(id) ON DELETE SET NULL ON UPDATE CASCADE
+    )`,
+
     // --- índices de performance ---
     `CREATE INDEX IF NOT EXISTS "Conversa_clienteId_idx" ON "Conversa"("clienteId")`,
     `CREATE INDEX IF NOT EXISTS "Conversa_ultimaAtividade_idx" ON "Conversa"("ultimaAtividade" DESC)`,
