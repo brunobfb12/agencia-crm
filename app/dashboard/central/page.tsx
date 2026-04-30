@@ -33,10 +33,18 @@ function VencimentoBadge({ vencimento }: { vencimento: string | null }) {
   return <span className="text-xs text-gray-500">{data}</span>;
 }
 
+interface Empresa { id: string; nome: string; instanciaWhatsapp: string }
+interface Usuario { id: string; nome: string; email: string; ativo: boolean; empresaId: string | null; empresa: { nome: string } | null }
+
 export default function CentralPage() {
   const [data, setData] = useState<StatusData | null>(null);
-  const [aba, setAba] = useState<"ferramentas" | "whatsapp" | "atividade">("ferramentas");
+  const [aba, setAba] = useState<"ferramentas" | "whatsapp" | "atividade" | "usuarios">("ferramentas");
   const [loading, setLoading] = useState(true);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [userForm, setUserForm] = useState({ nome: "", email: "", senha: "", empresaId: "" });
+  const [salvandoUser, setSalvandoUser] = useState(false);
+  const [msgUser, setMsgUser] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
@@ -67,7 +75,49 @@ export default function CentralPage() {
       .then((d) => { setData(d); setLoading(false); });
   };
 
-  useEffect(() => { carregar(); }, []);
+  const carregarUsuarios = () => {
+    Promise.all([
+      fetch("/api/usuarios").then(r => r.json()),
+      fetch("/api/empresas").then(r => r.json()),
+    ]).then(([u, e]) => { setUsuarios(u); setEmpresas(e); });
+  };
+
+  useEffect(() => { carregar(); carregarUsuarios(); }, []);
+
+  const criarUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSalvandoUser(true);
+    const res = await fetch("/api/usuarios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userForm),
+    });
+    setSalvandoUser(false);
+    if (res.ok) {
+      setUserForm({ nome: "", email: "", senha: "", empresaId: "" });
+      setMsgUser("Usuário criado com sucesso!");
+      carregarUsuarios();
+      setTimeout(() => setMsgUser(""), 3000);
+    } else {
+      const d = await res.json();
+      setMsgUser(d.error || "Erro ao criar usuário");
+    }
+  };
+
+  const excluirUsuario = async (id: string, nome: string) => {
+    if (!confirm(`Excluir usuário "${nome}"?`)) return;
+    await fetch(`/api/usuarios/${id}`, { method: "DELETE" });
+    carregarUsuarios();
+  };
+
+  const toggleAtivo = async (id: string, ativo: boolean) => {
+    await fetch(`/api/usuarios/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ativo: !ativo }),
+    });
+    carregarUsuarios();
+  };
 
   function showMsg(texto: string) {
     setMsg(texto);
@@ -160,11 +210,11 @@ export default function CentralPage() {
       )}
 
       <div className="flex gap-2 mb-6">
-        {(["ferramentas", "whatsapp", "atividade"] as const).map((tab) => (
+        {(["ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
           <button key={tab} onClick={() => setAba(tab)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${aba === tab ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
           >
-            {tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : "Atividade"}
+            {tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : tab === "atividade" ? "Atividade" : "Usuários"}
           </button>
         ))}
       </div>
@@ -413,6 +463,94 @@ export default function CentralPage() {
               console.anthropic.com
             </a>{" "}
             → Usage.
+          </div>
+        </div>
+      )}
+      {aba === "usuarios" && (
+        <div className="space-y-6">
+          {msgUser && (
+            <div className={`text-sm rounded-lg px-4 py-3 ${msgUser.includes("sucesso") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+              {msgUser}
+            </div>
+          )}
+
+          {/* Criar usuário */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <h3 className="font-semibold text-gray-900 mb-4">Criar acesso para empresa</h3>
+            <form onSubmit={criarUsuario} className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Nome</label>
+                <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Maria Silva" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="maria@empresa.com" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Senha inicial</label>
+                <input type="password" value={userForm.senha} onChange={e => setUserForm(p => ({...p, senha: e.target.value}))} required minLength={6}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="mínimo 6 caracteres" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Empresa</label>
+                <select value={userForm.empresaId} onChange={e => setUserForm(p => ({...p, empresaId: e.target.value}))} required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Selecionar empresa...</option>
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2 flex justify-end">
+                <button type="submit" disabled={salvandoUser}
+                  className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                  {salvandoUser ? "Criando..." : "Criar usuário"}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Lista usuários */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">Acessos ativos ({usuarios.length})</h3>
+            </div>
+            {usuarios.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 text-sm">Nenhum usuário de empresa criado ainda</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                  <tr>
+                    <th className="text-left px-4 py-3">Nome</th>
+                    <th className="text-left px-4 py-3">Email</th>
+                    <th className="text-left px-4 py-3">Empresa</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {usuarios.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">{u.nome}</td>
+                      <td className="px-4 py-3 text-gray-500">{u.email}</td>
+                      <td className="px-4 py-3 text-gray-500">{u.empresa?.nome ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => toggleAtivo(u.id, u.ativo)}
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${u.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                          {u.ativo ? "Ativo" : "Inativo"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => excluirUsuario(u.id, u.nome)} className="text-red-400 hover:text-red-600 text-xs">Excluir</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}

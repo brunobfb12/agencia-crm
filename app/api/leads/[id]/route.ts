@@ -34,7 +34,7 @@ export async function DELETE(
     where: { clienteId: lead.clienteId },
     select: { id: true },
   });
-  const conversaIds = conversas.map((c) => c.id);
+  const conversaIds = conversas.map((c: { id: string }) => c.id);
 
   await prisma.mensagem.deleteMany({ where: { conversaId: { in: conversaIds } } });
   await prisma.conversa.deleteMany({ where: { id: { in: conversaIds } } });
