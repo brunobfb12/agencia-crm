@@ -72,7 +72,7 @@ export async function DELETE(req: Request) {
   const instancia = searchParams.get("instancia");
   if (!instancia) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const res = await fetch(`${EVO_URL}/instance/delete/${instancia}`, {
+  const res = await fetch(`${EVO_URL}/instance/logout/${instancia}`, {
     method: "DELETE",
     headers: { apikey: EVO_KEY },
   });
