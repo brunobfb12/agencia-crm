@@ -10,6 +10,7 @@ interface Empresa {
   informacoes: string | null;
   googleCalendarId: string | null;
   googleCredentialId: string | null;
+  calendlyUrl: string | null;
   _count: { clientes: number; leads: number };
 }
 
