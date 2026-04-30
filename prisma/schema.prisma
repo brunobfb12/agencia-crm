@@ -37,6 +37,7 @@ model Usuario {
 
 enum Perfil {
   CENTRAL
+  EMPRESA
   DONO
   VENDEDOR
   FINANCEIRO
