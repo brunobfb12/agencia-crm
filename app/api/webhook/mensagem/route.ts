@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
-    empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp, informacoes: empresa.informacoes },
+    empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp, informacoes: empresa.informacoes, calendlyUrl: empresa.calendlyUrl ?? null },
     cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },
     conversa: { id: conversa.id },
