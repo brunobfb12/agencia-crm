@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   });
 
   let lead = await prisma.lead.findFirst({
-    where: { clienteId: cliente.id, empresaId: empresa.id, status: { not: "PERDIDO" } },
+    where: { clienteId: cliente.id, empresaId: empresa.id, status: { notIn: ["PERDIDO", "SEM_INTERESSE"] } },
     orderBy: { criadoEm: "desc" },
     include: { vendedor: { select: { id: true, nome: true, telefone: true, ativo: true } } },
   });
@@ -116,6 +116,12 @@ export async function POST(req: Request) {
     }
   }
 
+  const midias = await prisma.midia.findMany({
+    where: { empresaId: empresa.id, ativo: true },
+    select: { id: true, etiqueta: true, url: true, descricaoUso: true, tipo: true },
+    orderBy: { criadoEm: "desc" },
+  });
+
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
@@ -126,5 +132,6 @@ export async function POST(req: Request) {
     historico,
     vendedor,
     telefonePrincipal,
+    midias,
   });
 }

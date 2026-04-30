@@ -23,6 +23,20 @@ model Empresa {
   clientes     Cliente[]
   leads        Lead[]
   usuarios     Usuario[]
+  midias       Midia[]
+}
+
+model Midia {
+  id           String   @id @default(cuid())
+  empresaId    String
+  etiqueta     String
+  url          String
+  descricaoUso String
+  tipo         String   @default("imagem")
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+
+  empresa Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
 }
 
 model Usuario {
@@ -108,6 +122,8 @@ enum LeadStatus {
   POS_VENDA
   FOLLOW_UP
   PERDIDO
+  SEM_INTERESSE
+  SEM_RESPOSTA
 }
 
 model Conversa {

@@ -27,9 +27,14 @@ const colunas = [
   { status: "VENDA_REALIZADA", label: "Venda Realizada", cor: "border-green-400" },
   { status: "POS_VENDA", label: "Pós-Venda", cor: "border-purple-400" },
   { status: "FOLLOW_UP", label: "Follow-up", cor: "border-cyan-400" },
+  { status: "SEM_RESPOSTA", label: "Sem Resposta", cor: "border-amber-400" },
 ];
 
-const todasOpcoes = [...colunas, { status: "PERDIDO", label: "Perdido", cor: "border-red-400" }];
+const todasOpcoes = [
+  ...colunas,
+  { status: "PERDIDO", label: "Perdido", cor: "border-red-400" },
+  { status: "SEM_INTERESSE", label: "Sem Interesse", cor: "border-rose-400" },
+];
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);

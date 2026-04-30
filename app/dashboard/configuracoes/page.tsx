@@ -25,6 +25,17 @@ interface Vendedor {
   _count: { vendas: number };
 }
 
+interface Midia {
+  id: string;
+  empresaId: string;
+  etiqueta: string;
+  url: string;
+  descricaoUso: string;
+  tipo: string;
+  ativo: boolean;
+  criadoEm: string;
+}
+
 const SECOES = ["PRODUTOS", "PRECOS", "PAGAMENTO", "ENTREGA", "DIFERENCIAIS", "HORARIO"] as const;
 const LABELS: Record<string, string> = {
   PRODUTOS: "Produtos / Serviços",
@@ -55,7 +66,7 @@ function composeInfo(campos: Record<string, string>): string {
 export default function ConfiguracoesPage() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [aba, setAba] = useState<"empresas" | "vendedores">("empresas");
+  const [aba, setAba] = useState<"empresas" | "vendedores" | "midias">("empresas");
 
   const [novaEmpresa, setNovaEmpresa] = useState({ nome: "", instanciaWhatsapp: "" });
   const [novoVendedor, setNovoVendedor] = useState({ nome: "", telefone: "", empresaId: "" });
@@ -67,13 +78,34 @@ export default function ConfiguracoesPage() {
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
 
+  // Mídias
+  const [midias, setMidias] = useState<Midia[]>([]);
+  const [midiaEmpresaId, setMidiaEmpresaId] = useState("");
+  const [novaMidia, setNovaMidia] = useState({ etiqueta: "", url: "", descricaoUso: "", tipo: "imagem" });
+  const [carregandoMidias, setCarregandoMidias] = useState(false);
+
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    fetch("/api/empresas").then((r) => r.json()).then(setEmpresas);
+    fetch("/api/empresas").then((r) => r.json()).then((data) => {
+      setEmpresas(data);
+      if (data.length === 1) setMidiaEmpresaId(data[0].id);
+    });
     fetch("/api/vendedores?todos=true").then((r) => r.json()).then(setVendedores);
   }, []);
+
+  useEffect(() => {
+    if (aba === "midias" && midiaEmpresaId) carregarMidias(midiaEmpresaId);
+  }, [aba, midiaEmpresaId]);
+
+  async function carregarMidias(empId: string) {
+    setCarregandoMidias(true);
+    const res = await fetch(`/api/midias?empresaId=${empId}`);
+    const data = await res.json();
+    setMidias(Array.isArray(data) ? data : []);
+    setCarregandoMidias(false);
+  }
 
   function showMsg(texto: string) {
     setMsg(texto);
@@ -175,6 +207,39 @@ export default function ConfiguracoesPage() {
     showMsg("Vendedor excluído.");
   };
 
+  const criarMidia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!midiaEmpresaId) return;
+    setSalvando(true);
+    const res = await fetch("/api/midias", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...novaMidia, empresaId: midiaEmpresaId }),
+    });
+    const created = await res.json();
+    setMidias((prev) => [created, ...prev]);
+    setNovaMidia({ etiqueta: "", url: "", descricaoUso: "", tipo: "imagem" });
+    setSalvando(false);
+    showMsg("Mídia adicionada!");
+  };
+
+  const toggleMidia = async (m: Midia) => {
+    await fetch(`/api/midias/${m.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ativo: !m.ativo }),
+    });
+    setMidias((prev) => prev.map((x) => x.id === m.id ? { ...x, ativo: !m.ativo } : x));
+    showMsg(m.ativo ? "Mídia desativada" : "Mídia ativada");
+  };
+
+  const excluirMidia = async (id: string) => {
+    if (!confirm("Excluir esta mídia?")) return;
+    await fetch(`/api/midias/${id}`, { method: "DELETE" });
+    setMidias((prev) => prev.filter((m) => m.id !== id));
+    showMsg("Mídia excluída.");
+  };
+
   return (
     <div className="h-full overflow-y-auto"><div className="p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -185,15 +250,15 @@ export default function ConfiguracoesPage() {
       </div>
 
       <div className="flex gap-2 mb-6">
-        {(["empresas", "vendedores"] as const).map((tab) => (
+        {(["empresas", "vendedores", "midias"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setAba(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               aba === tab ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
             }`}
           >
-            {tab === "empresas" ? "Empresas" : "Vendedores"}
+            {tab === "empresas" ? "Empresas" : tab === "vendedores" ? "Vendedores" : "Mídias da IA"}
           </button>
         ))}
       </div>
@@ -358,6 +423,143 @@ export default function ConfiguracoesPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {aba === "midias" && (
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+            <strong>Mídias da IA</strong> — arquivos que a IA pode enviar automaticamente durante o atendimento (fotos de produtos, catálogos, cardápios, etc.). Cada mídia tem uma <em>etiqueta</em> e uma <em>descrição de uso</em> que instrui a IA quando enviar.
+          </div>
+
+          {empresas.length > 1 && (
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700">Empresa:</label>
+              <select
+                value={midiaEmpresaId}
+                onChange={(e) => setMidiaEmpresaId(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Selecione uma empresa</option>
+                {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+              </select>
+            </div>
+          )}
+
+          {midiaEmpresaId && (
+            <>
+              <form onSubmit={criarMidia} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Adicionar nova mídia</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Etiqueta</label>
+                    <input
+                      required
+                      placeholder="ex: Catálogo Verão 2026"
+                      value={novaMidia.etiqueta}
+                      onChange={(e) => setNovaMidia((p) => ({ ...p, etiqueta: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Tipo</label>
+                    <select
+                      value={novaMidia.tipo}
+                      onChange={(e) => setNovaMidia((p) => ({ ...p, tipo: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="imagem">Imagem</option>
+                      <option value="documento">Documento (PDF)</option>
+                      <option value="video">Vídeo</option>
+                      <option value="audio">Áudio</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">URL do arquivo</label>
+                  <input
+                    required
+                    type="url"
+                    placeholder="https://exemplo.com/catalogo.pdf"
+                    value={novaMidia.url}
+                    onChange={(e) => setNovaMidia((p) => ({ ...p, url: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Use um link público (Google Drive com acesso geral, Dropbox, S3, etc.)</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Quando a IA deve enviar</label>
+                  <input
+                    required
+                    placeholder="ex: quando o cliente pedir o catálogo ou perguntar sobre produtos"
+                    value={novaMidia.descricaoUso}
+                    onChange={(e) => setNovaMidia((p) => ({ ...p, descricaoUso: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={salvando}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {salvando ? "Adicionando..." : "Adicionar Mídia"}
+                </button>
+              </form>
+
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                {carregandoMidias ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Carregando...</div>
+                ) : midias.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 text-sm">Nenhuma mídia cadastrada para esta empresa.</div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Etiqueta</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Tipo</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Quando usar</th>
+                        <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {midias.map((m) => (
+                        <tr key={m.id} className={`hover:bg-gray-50 ${!m.ativo ? "opacity-50" : ""}`}>
+                          <td className="px-4 py-3 font-medium">
+                            <div>{m.etiqueta}</div>
+                            <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline truncate block max-w-xs">{m.url}</a>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 capitalize">{m.tipo}</td>
+                          <td className="px-4 py-3 text-gray-600 text-xs max-w-xs">{m.descricaoUso}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${m.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                              {m.ativo ? "Ativa" : "Inativa"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => toggleMidia(m)}
+                                className={`text-xs px-2 py-1 rounded font-medium ${m.ativo ? "bg-yellow-50 text-yellow-600 hover:bg-yellow-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
+                              >
+                                {m.ativo ? "Desativar" : "Ativar"}
+                              </button>
+                              <button
+                                onClick={() => excluirMidia(m.id)}
+                                className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-medium"
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

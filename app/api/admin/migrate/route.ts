@@ -127,6 +127,24 @@ export async function POST(req: Request) {
       CONSTRAINT "Usuario_empresaId_fkey" FOREIGN KEY ("empresaId") REFERENCES "Empresa"(id) ON DELETE SET NULL ON UPDATE CASCADE
     )`,
 
+    // --- novos status de lead ---
+    `ALTER TYPE "LeadStatus" ADD VALUE IF NOT EXISTS 'SEM_INTERESSE'`,
+    `ALTER TYPE "LeadStatus" ADD VALUE IF NOT EXISTS 'SEM_RESPOSTA'`,
+
+    // --- tabela Midia ---
+    `CREATE TABLE IF NOT EXISTS "Midia" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "empresaId" TEXT NOT NULL,
+      "etiqueta" TEXT NOT NULL,
+      "url" TEXT NOT NULL,
+      "descricaoUso" TEXT NOT NULL,
+      "tipo" TEXT NOT NULL DEFAULT 'imagem',
+      "ativo" BOOLEAN NOT NULL DEFAULT true,
+      "criadoEm" TIMESTAMP NOT NULL DEFAULT NOW(),
+      CONSTRAINT "Midia_empresaId_fkey" FOREIGN KEY ("empresaId") REFERENCES "Empresa"(id) ON DELETE CASCADE ON UPDATE CASCADE
+    )`,
+    `CREATE INDEX IF NOT EXISTS "Midia_empresaId_idx" ON "Midia"("empresaId")`,
+
     // --- índices de performance ---
     `CREATE INDEX IF NOT EXISTS "Conversa_clienteId_idx" ON "Conversa"("clienteId")`,
     `CREATE INDEX IF NOT EXISTS "Conversa_ultimaAtividade_idx" ON "Conversa"("ultimaAtividade" DESC)`,

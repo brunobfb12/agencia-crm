@@ -60,6 +60,8 @@ const statusLabels: Record<string, string> = {
   POS_VENDA: "Pós-Venda",
   FOLLOW_UP: "Follow-up",
   PERDIDO: "Perdido",
+  SEM_INTERESSE: "Sem Interesse",
+  SEM_RESPOSTA: "Sem Resposta",
 };
 
 const statusColors: Record<string, string> = {
@@ -71,6 +73,8 @@ const statusColors: Record<string, string> = {
   POS_VENDA: "bg-purple-100 text-purple-700",
   FOLLOW_UP: "bg-cyan-100 text-cyan-700",
   PERDIDO: "bg-red-100 text-red-600",
+  SEM_INTERESSE: "bg-rose-100 text-rose-600",
+  SEM_RESPOSTA: "bg-amber-100 text-amber-700",
 };
 
 function timeAgo(iso: string): string {
