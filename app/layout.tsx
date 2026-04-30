@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Agência CRM",
+  title: "FácilCRM",
   description: "CRM multi-empresa com automação WhatsApp",
 };
 
@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="h-full">
-      <body className={`${inter.className} h-full bg-gray-50`}>{children}</body>
+      <body className={`${inter.className} h-full`}>{children}</body>
     </html>
   );
 }

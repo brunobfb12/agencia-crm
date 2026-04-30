@@ -4,29 +4,73 @@ import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-const icons: Record<string, React.ReactElement> = {
-  overview: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>,
-  leads:    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>,
-  chat:     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 3H3a1 1 0 00-1 1v14a1 1 0 001 1h5l3 3 3-3h7a1 1 0 001-1V4a1 1 0 00-1-1z"/></svg>,
-  clients:  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
-  schedule: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>,
-  settings: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
-  central:  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>,
-};
+/* ── Icons ────────────────────────────────────────────────────────── */
+const IconOverview = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" />
+    <rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" />
+  </svg>
+);
+const IconLeads = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 21V8l9-5 9 5v13M9 21v-6h6v6" />
+  </svg>
+);
+const IconChat = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8h9M7.5 12h6M3 6.5A2.5 2.5 0 015.5 4h13A2.5 2.5 0 0121 6.5v9a2.5 2.5 0 01-2.5 2.5H13l-4 3v-3H5.5A2.5 2.5 0 013 15.5v-9z" />
+  </svg>
+);
+const IconClients = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3M8 11a3 3 0 100-6 3 3 0 000 6zm-5 8a5 5 0 0110 0M18 14a4 4 0 014 4" />
+  </svg>
+);
+const IconSchedule = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+  </svg>
+);
+const IconSettings = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+  </svg>
+);
+const IconCentral = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
+  </svg>
+);
+const IconLogout = () => (
+  <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+);
 
+/* ── Nav items ────────────────────────────────────────────────────── */
 const navItemsBase = [
-  { href: "/dashboard", label: "Visão Geral", icon: "overview" },
-  { href: "/dashboard/leads", label: "Leads", icon: "leads" },
-  { href: "/dashboard/conversas", label: "Conversas", icon: "chat" },
-  { href: "/dashboard/clientes", label: "Clientes", icon: "clients" },
-  { href: "/dashboard/agendamentos", label: "Agendamentos", icon: "schedule" },
-  { href: "/dashboard/configuracoes", label: "Configurações", icon: "settings" },
+  { href: "/dashboard",               label: "Visão Geral",   Icon: IconOverview },
+  { href: "/dashboard/leads",         label: "Leads",         Icon: IconLeads    },
+  { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat     },
+  { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients  },
+  { href: "/dashboard/agendamentos",  label: "Agendamentos",  Icon: IconSchedule },
+  { href: "/dashboard/configuracoes", label: "Configurações", Icon: IconSettings },
 ];
 const navItemsCentral = [
-  { href: "/dashboard/central", label: "Painel Central", icon: "central" },
+  { href: "/dashboard/central", label: "Painel Central", Icon: IconCentral },
 ];
 
-export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: string; empresa?: string }) {
+/* ── Component ────────────────────────────────────────────────────── */
+export default function Nav({
+  nome,
+  perfil,
+  empresa,
+}: {
+  nome: string;
+  perfil: string;
+  empresa?: string;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -36,68 +80,142 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
     router.refresh();
   }
 
-  const items = [...navItemsBase, ...(perfil === "CENTRAL" ? navItemsCentral : [])];
+  const items = [
+    ...navItemsBase,
+    ...(perfil === "CENTRAL" ? navItemsCentral : []),
+  ];
+
+  const initial = nome.charAt(0).toUpperCase();
+  const subLabel =
+    perfil === "CENTRAL" ? "Admin · 10 empresas" : (empresa ?? perfil);
 
   return (
-    <aside className="w-60 bg-gray-950 text-white flex flex-col flex-shrink-0 border-r border-gray-800">
-      {/* Logo */}
-      <div className="p-5 border-b border-gray-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+    <aside
+      className="sidebar-bg w-[232px] flex flex-col flex-shrink-0 overflow-hidden"
+      style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
+    >
+      {/* ── Logo ──────────────────────────────────────────────── */}
+      <div className="px-5 pt-6 pb-5">
+        <div className="flex items-center gap-3">
+          {/* Icon mark */}
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #6366f1 0%, #818cf8 60%, #38bdf8 100%)",
+              boxShadow: "0 4px 14px rgba(99,102,241,.5)",
+            }}
+          >
+            <svg className="w-[18px] h-[18px] text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
               <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
             </svg>
           </div>
+          {/* Name */}
           <div>
-            <div className="text-sm font-bold text-white leading-none">FácilCRM</div>
-            <div className="text-xs text-gray-500 mt-0.5 leading-none">
-              {perfil === "CENTRAL" ? "Agência · 10 empresas" : (empresa ?? perfil)}
+            <div className="text-[15px] font-bold gradient-text leading-tight">
+              FácilCRM
+            </div>
+            <div
+              className="text-[10.5px] mt-0.5 leading-none font-medium"
+              style={{ color: "rgba(148,163,184,.55)" }}
+            >
+              {subLabel}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {items.map((item) => {
-          const isActive = item.href === "/dashboard"
-            ? pathname === "/dashboard"
-            : pathname.startsWith(item.href);
+      <div className="divider mx-4" />
+
+      {/* ── Nav ───────────────────────────────────────────────── */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        {/* Section label */}
+        <p
+          className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest"
+          style={{ color: "rgba(148,163,184,.35)" }}
+        >
+          Menu
+        </p>
+
+        {items.map(({ href, label, Icon }) => {
+          const isActive =
+            href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(href);
+
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              key={href}
+              href={href}
+              className={`nav-item flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] font-medium ${
                 isActive
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                  ? "active text-indigo-300"
+                  : "text-slate-400"
               }`}
             >
-              <span className={isActive ? "text-white" : "text-gray-500"}>{icons[item.icon]}</span>
-              {item.label}
+              <span
+                className="flex-shrink-0 transition-colors"
+                style={{ color: isActive ? "#a5b4fc" : "rgba(148,163,184,.6)" }}
+              >
+                <Icon />
+              </span>
+              {label}
+              {isActive && (
+                <span
+                  className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: "#818cf8", boxShadow: "0 0 6px #818cf8" }}
+                />
+              )}
             </Link>
           );
         })}
+
+        {perfil === "CENTRAL" && <div className="divider my-2" />}
       </nav>
 
-      {/* User */}
-      <div className="p-4 border-t border-gray-800">
+      {/* ── User ──────────────────────────────────────────────── */}
+      <div className="divider mx-4" />
+      <div className="px-4 py-4">
         <div className="flex items-center gap-2.5 mb-3">
-          <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-bold text-gray-300 flex-shrink-0">
-            {nome.charAt(0).toUpperCase()}
+          {/* Avatar */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #6366f1, #38bdf8)",
+              color: "white",
+              boxShadow: "0 0 0 2px rgba(99,102,241,.3)",
+            }}
+          >
+            {initial}
           </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium text-gray-200 truncate">{nome}</div>
-            <div className="text-xs text-gray-500 capitalize">{perfil === "CENTRAL" ? "Admin" : "Empresa"}</div>
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-[12.5px] font-semibold truncate"
+              style={{ color: "#e2e8f0" }}
+            >
+              {nome}
+            </div>
+            <div className="text-[10.5px] capitalize" style={{ color: "rgba(148,163,184,.5)" }}>
+              {perfil === "CENTRAL" ? "Administrador" : "Empresa"}
+            </div>
           </div>
         </div>
+
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-red-400 transition-colors px-1 py-1 rounded"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] text-[12px] font-medium transition-all"
+          style={{ color: "rgba(148,163,184,.5)" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,.08)";
+            (e.currentTarget as HTMLElement).style.color = "#f87171";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+            (e.currentTarget as HTMLElement).style.color = "rgba(148,163,184,.5)";
+          }}
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-          Sair
+          <IconLogout />
+          Sair da conta
         </button>
       </div>
     </aside>
