@@ -75,11 +75,13 @@ export default function CentralPage() {
       .then((d) => { setData(d); setLoading(false); });
   };
 
-  const carregarUsuarios = () => {
-    Promise.all([
-      fetch("/api/usuarios").then(r => r.json()),
-      fetch("/api/empresas").then(r => r.json()),
-    ]).then(([u, e]) => { setUsuarios(u); setEmpresas(e); });
+  const carregarUsuarios = async () => {
+    const [uRes, eRes] = await Promise.all([
+      fetch("/api/usuarios"),
+      fetch("/api/empresas"),
+    ]);
+    if (uRes.ok) setUsuarios(await uRes.json());
+    if (eRes.ok) setEmpresas(await eRes.json());
   };
 
   useEffect(() => { carregar(); carregarUsuarios(); }, []);
