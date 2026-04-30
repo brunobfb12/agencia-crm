@@ -33,9 +33,10 @@ export async function POST(req: Request) {
       clienteId: body.clienteId,
       tipo: body.tipo,
       dataAgendada: new Date(body.dataAgendada),
-      notas: body.notas,
+      hora: body.hora ?? null,
+      notas: body.notas ?? null,
     },
-    include: { cliente: true },
+    include: { cliente: { include: { empresa: { select: { nome: true, instanciaWhatsapp: true, googleCalendarId: true } } } } },
   });
   return NextResponse.json(agendamento, { status: 201 });
 }

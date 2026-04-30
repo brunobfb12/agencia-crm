@@ -8,6 +8,8 @@ interface Empresa {
   instanciaWhatsapp: string;
   ativa: boolean;
   informacoes: string | null;
+  googleCalendarId: string | null;
+  googleCredentialId: string | null;
   _count: { clientes: number; leads: number };
 }
 
@@ -59,6 +61,7 @@ export default function ConfiguracoesPage() {
 
   const [editEmpresa, setEditEmpresa] = useState<string | null>(null);
   const [infoCampos, setInfoCampos] = useState<Record<string, string>>({});
+  const [calendarFields, setCalendarFields] = useState({ googleCalendarId: "", googleCredentialId: "" });
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
@@ -108,6 +111,7 @@ export default function ConfiguracoesPage() {
   function abrirEditEmpresa(emp: Empresa) {
     setEditEmpresa(emp.id);
     setInfoCampos(parseInfo(emp.informacoes));
+    setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "" });
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -116,9 +120,17 @@ export default function ConfiguracoesPage() {
     await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes }),
+      body: JSON.stringify({
+        informacoes,
+        googleCalendarId: calendarFields.googleCalendarId || null,
+        googleCredentialId: calendarFields.googleCredentialId || null,
+      }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes } : e));
+    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? {
+      ...e, informacoes,
+      googleCalendarId: calendarFields.googleCalendarId || null,
+      googleCredentialId: calendarFields.googleCredentialId || null,
+    } : e));
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
@@ -256,7 +268,34 @@ export default function ConfiguracoesPage() {
                               </div>
                             ))}
                           </div>
-                          <div className="mt-4 flex gap-2">
+                          <div className="mt-4 border-t border-blue-200 pt-4">
+                            <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                              <span>📆</span> Google Calendar (opcional — para agendamento de consultas)
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">ID do Calendário Google</label>
+                                <input
+                                  value={calendarFields.googleCalendarId}
+                                  onChange={e => setCalendarFields(p => ({ ...p, googleCalendarId: e.target.value }))}
+                                  placeholder="ex: abc123@group.calendar.google.com"
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">ID da Credencial N8N</label>
+                                <input
+                                  value={calendarFields.googleCredentialId}
+                                  onChange={e => setCalendarFields(p => ({ ...p, googleCredentialId: e.target.value }))}
+                                  placeholder="ex: 5 (número da credencial no N8N)"
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-400 mb-4">Configure a credencial Google Calendar no N8N e cole o ID aqui. Agendamentos do tipo Consulta serão sincronizados automaticamente.</p>
+                          </div>
+
+                          <div className="flex gap-2">
                             <button
                               onClick={() => salvarInfoEmpresa(emp.id)}
                               disabled={salvando}

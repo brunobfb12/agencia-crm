@@ -15,6 +15,8 @@ model Empresa {
   ativa             Boolean  @default(true)
   criadoEm          DateTime @default(now())
   informacoes       String?
+  googleCalendarId  String?
+  googleCredentialId String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]
@@ -159,8 +161,10 @@ model Agendamento {
   clienteId    String
   tipo         AgendamentoTipo
   dataAgendada DateTime
+  hora         String?
   notas        String?
   status       AgendamentoStatus @default(PENDENTE)
+  googleEventId String?
   criadoEm     DateTime          @default(now())
 
   cliente Cliente @relation(fields: [clienteId], references: [id])
@@ -170,6 +174,9 @@ enum AgendamentoTipo {
   FOLLOW_UP
   POS_VENDA
   REATIVACAO
+  CONSULTA
+  ANIVERSARIO
+  TAREFA
 }
 
 enum AgendamentoStatus {

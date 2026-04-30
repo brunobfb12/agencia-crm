@@ -100,6 +100,19 @@ export async function POST(req: Request) {
     // --- perfil EMPRESA ---
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'EMPRESA'`,
 
+    // --- agendamento tipos novos ---
+    `ALTER TYPE "AgendamentoTipo" ADD VALUE IF NOT EXISTS 'CONSULTA'`,
+    `ALTER TYPE "AgendamentoTipo" ADD VALUE IF NOT EXISTS 'ANIVERSARIO'`,
+    `ALTER TYPE "AgendamentoTipo" ADD VALUE IF NOT EXISTS 'TAREFA'`,
+
+    // --- agendamento campos novos ---
+    `ALTER TABLE "Agendamento" ADD COLUMN IF NOT EXISTS "hora" TEXT`,
+    `ALTER TABLE "Agendamento" ADD COLUMN IF NOT EXISTS "googleEventId" TEXT`,
+
+    // --- empresa google calendar ---
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCalendarId" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCredentialId" TEXT`,
+
     // --- tabela Usuario ---
     `CREATE TABLE IF NOT EXISTS "Usuario" (
       "id" TEXT NOT NULL PRIMARY KEY,

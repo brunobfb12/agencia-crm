@@ -14,6 +14,8 @@ export async function PATCH(
       ...(body.instanciaWhatsapp && { instanciaWhatsapp: body.instanciaWhatsapp }),
       ...(body.ativa !== undefined && { ativa: body.ativa }),
       ...(body.informacoes !== undefined && { informacoes: body.informacoes }),
+      ...(body.googleCalendarId !== undefined && { googleCalendarId: body.googleCalendarId || null }),
+      ...(body.googleCredentialId !== undefined && { googleCredentialId: body.googleCredentialId || null }),
     },
   });
   return NextResponse.json(empresa);
