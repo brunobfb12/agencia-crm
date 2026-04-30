@@ -143,9 +143,24 @@ export default function ClientesPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
             <div className="p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-900">Importar Clientes via CSV</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                Colunas reconhecidas: <strong>nome, telefone, email, data_nascimento, ultima_compra, valor, observacoes</strong>
-              </p>
+              <div className="mt-3 bg-gray-50 rounded-lg p-3 text-xs space-y-1.5">
+                <p className="font-semibold text-gray-700 mb-2">Colunas aceitas (use os nomes abaixo como cabeçalho):</p>
+                {[
+                  { col: "telefone", obrig: true,  uso: "Identifica o cliente — obrigatório. Ex: 5511999998888" },
+                  { col: "nome",     obrig: false, uso: "Nome exibido no CRM e usado pela IA no atendimento" },
+                  { col: "email",    obrig: false, uso: "Armazenado no cadastro para contato futuro" },
+                  { col: "data_nascimento", obrig: false, uso: "Gera parabéns automático no dia do aniversário" },
+                  { col: "ultima_compra",   obrig: false, uso: "Vai para observações do lead (histórico)" },
+                  { col: "valor",           obrig: false, uso: "Valor da última compra — entra nas observações do lead" },
+                  { col: "observacoes",     obrig: false, uso: "Nota livre sobre o cliente — fica no lead" },
+                ].map(({ col, obrig, uso }) => (
+                  <div key={col} className="flex gap-2">
+                    <span className={`shrink-0 font-mono font-medium ${obrig ? "text-blue-700" : "text-gray-600"}`}>{col}{obrig && " *"}</span>
+                    <span className="text-gray-400">— {uso}</span>
+                  </div>
+                ))}
+                <p className="text-gray-400 pt-1 border-t border-gray-200">* obrigatório &nbsp;|&nbsp; Separador: vírgula &nbsp;|&nbsp; Formato data: DD/MM/AAAA</p>
+              </div>
             </div>
             <div className="p-5 space-y-4">
               <div>
