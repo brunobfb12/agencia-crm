@@ -470,8 +470,11 @@ export default function CentralPage() {
       )}
       {aba === "usuarios" && (
         <div className="space-y-6">
+          {/* Migração do banco */}
+          <MigracaoBtn />
+
           {msgUser && (
-            <div className={`text-sm rounded-lg px-4 py-3 ${msgUser.includes("sucesso") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+            <div className={`text-sm rounded-lg px-4 py-3 font-medium ${msgUser.includes("sucesso") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
               {msgUser}
             </div>
           )}
@@ -557,6 +560,31 @@ export default function CentralPage() {
         </div>
       )}
     </div></div>
+  );
+}
+
+function MigracaoBtn() {
+  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "erro">("idle");
+  const rodar = async () => {
+    setStatus("loading");
+    const res = await fetch("/api/admin/migrate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: "crm2026migra" }),
+    });
+    setStatus(res.ok ? "ok" : "erro");
+  };
+  return (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-4">
+      <div className="flex-1">
+        <div className="text-sm font-semibold text-yellow-800">Atualizar banco de dados</div>
+        <div className="text-xs text-yellow-700 mt-0.5">Rode uma vez após cada deploy com mudanças no schema.</div>
+      </div>
+      <button onClick={rodar} disabled={status === "loading"}
+        className="text-sm bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-yellow-700 disabled:opacity-50">
+        {status === "loading" ? "Rodando..." : status === "ok" ? "Concluído ✓" : status === "erro" ? "Erro — tente novamente" : "Executar migração"}
+      </button>
+    </div>
   );
 }
 

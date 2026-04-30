@@ -26,9 +26,13 @@ export async function POST(req: Request) {
   }
 
   const hash = await bcrypt.hash(senha, 12);
-  const usuario = await prisma.usuario.create({
-    data: { nome, email, senha: hash, perfil: "EMPRESA", empresaId },
-    select: { id: true, nome: true, email: true, empresaId: true },
-  });
-  return NextResponse.json(usuario, { status: 201 });
+  try {
+    const usuario = await prisma.usuario.create({
+      data: { nome, email, senha: hash, perfil: "EMPRESA", empresaId },
+      select: { id: true, nome: true, email: true, empresaId: true },
+    });
+    return NextResponse.json(usuario, { status: 201 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message ?? "Erro ao criar usuário" }, { status: 500 });
+  }
 }
