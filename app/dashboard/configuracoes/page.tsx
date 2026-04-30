@@ -284,6 +284,24 @@ export default function ConfiguracoesPage() {
                               />
                               <p className="text-xs text-gray-400 mt-1">A IA envia este link quando o cliente pedir para agendar.</p>
                             </div>
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-gray-600 mb-1">URL do Webhook (cole no Cal.com / Calendly)</label>
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  readOnly
+                                  value={`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`}
+                                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 select-all"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => navigator.clipboard.writeText(`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`)}
+                                  className="shrink-0 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-xs hover:bg-gray-100"
+                                >
+                                  Copiar
+                                </button>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">No Cal.com: Event Types → Edit → Advanced → Webhooks → Add webhook.</p>
+                            </div>
                           </div>
 
                           <div className="mt-2 border-t border-blue-200 pt-4">
