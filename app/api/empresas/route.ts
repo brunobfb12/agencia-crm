@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUsuarioLogado } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   const me = await getUsuarioLogado();
+  const { searchParams } = new URL(req.url);
+  const instancia = searchParams.get("instancia");
 
-  const where = me?.perfil !== "CENTRAL" && me?.empresaId
-    ? { id: me.empresaId }
-    : {};
+  const where = instancia
+    ? { instanciaWhatsapp: instancia }
+    : me?.perfil !== "CENTRAL" && me?.empresaId
+      ? { id: me.empresaId }
+      : {};
 
   const empresas = await prisma.empresa.findMany({
     where,

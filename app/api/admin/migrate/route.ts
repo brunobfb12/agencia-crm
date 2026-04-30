@@ -109,9 +109,10 @@ export async function POST(req: Request) {
     `ALTER TABLE "Agendamento" ADD COLUMN IF NOT EXISTS "hora" TEXT`,
     `ALTER TABLE "Agendamento" ADD COLUMN IF NOT EXISTS "googleEventId" TEXT`,
 
-    // --- empresa google calendar ---
+    // --- empresa google calendar + calendly ---
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCalendarId" TEXT`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCredentialId" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "calendlyUrl" TEXT`,
 
     // --- tabela Usuario ---
     `CREATE TABLE IF NOT EXISTS "Usuario" (

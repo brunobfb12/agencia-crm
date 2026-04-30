@@ -15,8 +15,9 @@ model Empresa {
   ativa             Boolean  @default(true)
   criadoEm          DateTime @default(now())
   informacoes       String?
-  googleCalendarId  String?
+  googleCalendarId   String?
   googleCredentialId String?
+  calendlyUrl        String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]

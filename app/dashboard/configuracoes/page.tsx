@@ -61,7 +61,7 @@ export default function ConfiguracoesPage() {
 
   const [editEmpresa, setEditEmpresa] = useState<string | null>(null);
   const [infoCampos, setInfoCampos] = useState<Record<string, string>>({});
-  const [calendarFields, setCalendarFields] = useState({ googleCalendarId: "", googleCredentialId: "" });
+  const [calendarFields, setCalendarFields] = useState({ googleCalendarId: "", googleCredentialId: "", calendlyUrl: "" });
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
@@ -111,7 +111,7 @@ export default function ConfiguracoesPage() {
   function abrirEditEmpresa(emp: Empresa) {
     setEditEmpresa(emp.id);
     setInfoCampos(parseInfo(emp.informacoes));
-    setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "" });
+    setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "", calendlyUrl: emp.calendlyUrl ?? "" });
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -124,12 +124,14 @@ export default function ConfiguracoesPage() {
         informacoes,
         googleCalendarId: calendarFields.googleCalendarId || null,
         googleCredentialId: calendarFields.googleCredentialId || null,
+        calendlyUrl: calendarFields.calendlyUrl || null,
       }),
     });
     setEmpresas((prev) => prev.map((e) => e.id === empresaId ? {
       ...e, informacoes,
       googleCalendarId: calendarFields.googleCalendarId || null,
       googleCredentialId: calendarFields.googleCredentialId || null,
+      calendlyUrl: calendarFields.calendlyUrl || null,
     } : e));
     setEditEmpresa(null);
     setSalvando(false);
@@ -269,6 +271,22 @@ export default function ConfiguracoesPage() {
                             ))}
                           </div>
                           <div className="mt-4 border-t border-blue-200 pt-4">
+                            <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                              <span>📅</span> Calendly (opcional — agendamento online pelo cliente)
+                            </p>
+                            <div className="mb-4">
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Link do Calendly</label>
+                              <input
+                                value={calendarFields.calendlyUrl}
+                                onChange={e => setCalendarFields(p => ({ ...p, calendlyUrl: e.target.value }))}
+                                placeholder="https://calendly.com/studio-thaisy/consulta"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <p className="text-xs text-gray-400 mt-1">A IA envia este link quando o cliente pedir para agendar.</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 border-t border-blue-200 pt-4">
                             <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
                               <span>📆</span> Google Calendar (opcional — para agendamento de consultas)
                             </p>

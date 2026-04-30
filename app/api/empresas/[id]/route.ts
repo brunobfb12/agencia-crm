@@ -16,6 +16,7 @@ export async function PATCH(
       ...(body.informacoes !== undefined && { informacoes: body.informacoes }),
       ...(body.googleCalendarId !== undefined && { googleCalendarId: body.googleCalendarId || null }),
       ...(body.googleCredentialId !== undefined && { googleCredentialId: body.googleCredentialId || null }),
+      ...(body.calendlyUrl !== undefined && { calendlyUrl: body.calendlyUrl || null }),
     },
   });
   return NextResponse.json(empresa);
