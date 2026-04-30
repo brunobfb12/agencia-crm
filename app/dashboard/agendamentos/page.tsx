@@ -45,6 +45,8 @@ function isSemana(iso: string) {
   return diff >= 0 && diff <= 7;
 }
 
+interface Empresa { id: string; nome: string }
+
 export default function AgendamentosPage() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,10 +57,24 @@ export default function AgendamentosPage() {
   const [form, setForm] = useState({ clienteId: "", clienteNome: "", tipo: "FOLLOW_UP", data: "", hora: "", notas: "" });
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
+  const [isCentral, setIsCentral] = useState(false);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
 
-  const carregar = (status = "PENDENTE") => {
+  useEffect(() => {
+    fetch("/api/auth/me").then(r => r.json()).then(me => {
+      if (me?.perfil === "CENTRAL") {
+        setIsCentral(true);
+        fetch("/api/empresas").then(r => r.json()).then(setEmpresas);
+      }
+    });
+  }, []);
+
+  const carregar = (status = "PENDENTE", empresaId = filtroEmpresa) => {
     setLoading(true);
-    fetch(`/api/agendamentos?status=${status}`)
+    const params = new URLSearchParams({ status });
+    if (empresaId) params.set("empresaId", empresaId);
+    fetch(`/api/agendamentos?${params}`)
       .then(r => r.json())
       .then(d => { setAgendamentos(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -69,16 +85,18 @@ export default function AgendamentosPage() {
   useEffect(() => {
     if (aba === "concluidos") carregar("CONCLUIDO");
     else carregar("PENDENTE");
-  }, [aba]);
+  }, [aba, filtroEmpresa]);
 
   useEffect(() => {
     if (!buscaCliente.trim()) { setClientes([]); return; }
     const t = setTimeout(() => {
-      fetch(`/api/clientes?busca=${encodeURIComponent(buscaCliente)}`)
+      const params = new URLSearchParams({ busca: buscaCliente });
+      if (filtroEmpresa) params.set("empresaId", filtroEmpresa);
+      fetch(`/api/clientes?${params}`)
         .then(r => r.json()).then(setClientes);
     }, 300);
     return () => clearTimeout(t);
-  }, [buscaCliente]);
+  }, [buscaCliente, filtroEmpresa]);
 
   const concluir = async (id: string) => {
     await fetch(`/api/agendamentos/${id}`, {
@@ -144,6 +162,16 @@ export default function AgendamentosPage() {
           </div>
           <div className="flex items-center gap-3">
             {msg && <span className="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">{msg}</span>}
+            {isCentral && (
+              <select
+                value={filtroEmpresa}
+                onChange={e => setFiltroEmpresa(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todas as empresas</option>
+                {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+              </select>
+            )}
             <button
               onClick={() => setMostrarForm(v => !v)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
