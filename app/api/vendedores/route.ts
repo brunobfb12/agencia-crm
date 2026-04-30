@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const me = await getUsuarioLogado();
   const { searchParams } = new URL(req.url);
-  const empresaId = searchParams.get("empresaId");
+
+  const empresaId = me?.perfil !== "CENTRAL" && me?.empresaId
+    ? me.empresaId
+    : (searchParams.get("empresaId") ?? undefined);
 
   const todos = searchParams.get("todos") === "true";
   const vendedores = await prisma.vendedor.findMany({

@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  const me = await getUsuarioLogado();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") ?? "PENDENTE";
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
+
+  const empresaId = me?.perfil !== "CENTRAL" && me?.empresaId
+    ? me.empresaId
+    : (searchParams.get("empresaId") ?? undefined);
 
   const agendamentos = await prisma.agendamento.findMany({
     where: {
       status: status as "PENDENTE" | "CONCLUIDO" | "CANCELADO",
+      ...(empresaId && { cliente: { empresaId } }),
     },
     orderBy: { dataAgendada: "asc" },
     include: {
