@@ -40,10 +40,10 @@ export async function POST(req: Request) {
     )`,
 
     // --- enums novos ---
-    `CREATE TYPE "MensagemDirecao" AS ENUM ('ENTRADA', 'SAIDA')`,
-    `CREATE TYPE "VendaStatus" AS ENUM ('REALIZADA', 'POS_VENDA_PENDENTE', 'POS_VENDA_OK', 'CANCELADA')`,
-    `CREATE TYPE "AgendamentoTipo" AS ENUM ('FOLLOW_UP', 'POS_VENDA', 'REATIVACAO')`,
-    `CREATE TYPE "AgendamentoStatus" AS ENUM ('PENDENTE', 'CONCLUIDO', 'CANCELADO')`,
+    `DO $$ BEGIN CREATE TYPE "MensagemDirecao" AS ENUM ('ENTRADA', 'SAIDA'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+    `DO $$ BEGIN CREATE TYPE "VendaStatus" AS ENUM ('REALIZADA', 'POS_VENDA_PENDENTE', 'POS_VENDA_OK', 'CANCELADA'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+    `DO $$ BEGIN CREATE TYPE "AgendamentoTipo" AS ENUM ('FOLLOW_UP', 'POS_VENDA', 'REATIVACAO'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+    `DO $$ BEGIN CREATE TYPE "AgendamentoStatus" AS ENUM ('PENDENTE', 'CONCLUIDO', 'CANCELADO'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
 
     // --- tabelas novas ---
     `CREATE TABLE IF NOT EXISTS "Conversa" (
