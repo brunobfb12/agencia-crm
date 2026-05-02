@@ -145,6 +145,9 @@ export async function POST(req: Request) {
     )`,
     `CREATE INDEX IF NOT EXISTS "Midia_empresaId_idx" ON "Midia"("empresaId")`,
 
+    // --- perguntas de qualificação ---
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "perguntasQualificacao" TEXT`,
+
     // --- índices de performance ---
     `CREATE INDEX IF NOT EXISTS "Conversa_clienteId_idx" ON "Conversa"("clienteId")`,
     `CREATE INDEX IF NOT EXISTS "Conversa_ultimaAtividade_idx" ON "Conversa"("ultimaAtividade" DESC)`,

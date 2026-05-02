@@ -11,6 +11,7 @@ interface Empresa {
   googleCalendarId: string | null;
   googleCredentialId: string | null;
   calendlyUrl: string | null;
+  perguntasQualificacao: string | null;
   _count: { clientes: number; leads: number };
 }
 
@@ -76,6 +77,7 @@ export default function ConfiguracoesPage() {
   const [editEmpresa, setEditEmpresa] = useState<string | null>(null);
   const [infoCampos, setInfoCampos] = useState<Record<string, string>>({});
   const [calendarFields, setCalendarFields] = useState({ googleCalendarId: "", googleCredentialId: "", calendlyUrl: "" });
+  const [perguntasQualificacao, setPerguntasQualificacao] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
@@ -135,17 +137,19 @@ export default function ConfiguracoesPage() {
     setEditEmpresa(emp.id);
     setInfoCampos(parseInfo(emp.informacoes));
     setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "", calendlyUrl: emp.calendlyUrl ?? "" });
+    setPerguntasQualificacao(emp.perguntasQualificacao ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
     setSalvando(true);
     const informacoes = composeInfo(infoCampos);
+    const pq = perguntasQualificacao.trim() || null;
     await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, googleCalendarId: calendarFields.googleCalendarId || null, googleCredentialId: calendarFields.googleCredentialId || null, calendlyUrl: calendarFields.calendlyUrl || null }),
+      body: JSON.stringify({ informacoes, googleCalendarId: calendarFields.googleCalendarId || null, googleCredentialId: calendarFields.googleCredentialId || null, calendlyUrl: calendarFields.calendlyUrl || null, perguntasQualificacao: pq }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, googleCalendarId: calendarFields.googleCalendarId || null, googleCredentialId: calendarFields.googleCredentialId || null, calendlyUrl: calendarFields.calendlyUrl || null } : e));
+    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, googleCalendarId: calendarFields.googleCalendarId || null, googleCredentialId: calendarFields.googleCredentialId || null, calendlyUrl: calendarFields.calendlyUrl || null, perguntasQualificacao: pq } : e));
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
@@ -359,6 +363,19 @@ export default function ConfiguracoesPage() {
                                     placeholder="ex: 5" className={INPUT} />
                                 </div>
                               </div>
+                            </div>
+
+                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
+                                ROTEIRO DE QUALIFICAÇÃO DA IA
+                              </label>
+                              <p className="text-[11px] mb-2" style={{ color: "rgba(148,163,184,.35)" }}>
+                                Perguntas que a IA deve fazer para qualificar leads (uma por linha)
+                              </p>
+                              <textarea rows={5} value={perguntasQualificacao}
+                                onChange={(e) => setPerguntasQualificacao(e.target.value)}
+                                placeholder={"Ex:\nQual é o seu orçamento?\nVocê já conhece nossos produtos?\nQual é o prazo para a compra?"}
+                                className={`${INPUT} resize-none`} />
                             </div>
 
                             <div className="flex gap-2">
