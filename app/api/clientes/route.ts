@@ -13,26 +13,34 @@ export async function GET(req: Request) {
     : (searchParams.get("empresaId") ?? null);
 
   if (aniversarioHoje) {
-    type AnivRow = { id: string; nome: string | null; telefone: string; empresaId: string; empresaNome: string; instanciaWhatsapp: string };
+    type AnivRow = { id: string; nome: string | null; telefone: string; empresaId: string; empresaNome: string; instanciaWhatsapp: string; vendedorTelefone: string | null; vendedorNome: string | null };
     let rows: AnivRow[];
     if (empresaId) {
       rows = await prisma.$queryRaw<AnivRow[]>`
-        SELECT c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp"
+        SELECT DISTINCT ON (c.id) c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp",
+               v.telefone as "vendedorTelefone", v.nome as "vendedorNome"
         FROM "Cliente" c
         JOIN "Empresa" e ON e.id = c."empresaId"
+        LEFT JOIN "Lead" l ON l."clienteId" = c.id AND l."vendedorId" IS NOT NULL
+        LEFT JOIN "Vendedor" v ON v.id = l."vendedorId" AND v.ativo = true
         WHERE c."dataNascimento" IS NOT NULL
           AND EXTRACT(MONTH FROM c."dataNascimento") = EXTRACT(MONTH FROM NOW())
           AND EXTRACT(DAY FROM c."dataNascimento") = EXTRACT(DAY FROM NOW())
           AND c."empresaId" = ${empresaId}
+        ORDER BY c.id, l."atualizadoEm" DESC
       `;
     } else {
       rows = await prisma.$queryRaw<AnivRow[]>`
-        SELECT c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp"
+        SELECT DISTINCT ON (c.id) c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp",
+               v.telefone as "vendedorTelefone", v.nome as "vendedorNome"
         FROM "Cliente" c
         JOIN "Empresa" e ON e.id = c."empresaId"
+        LEFT JOIN "Lead" l ON l."clienteId" = c.id AND l."vendedorId" IS NOT NULL
+        LEFT JOIN "Vendedor" v ON v.id = l."vendedorId" AND v.ativo = true
         WHERE c."dataNascimento" IS NOT NULL
           AND EXTRACT(MONTH FROM c."dataNascimento") = EXTRACT(MONTH FROM NOW())
           AND EXTRACT(DAY FROM c."dataNascimento") = EXTRACT(DAY FROM NOW())
+        ORDER BY c.id, l."atualizadoEm" DESC
       `;
     }
     return NextResponse.json(rows);
