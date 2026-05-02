@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { LeadStatus } from "@prisma/client";
+import type { LeadStatus } from "@prisma/client";
 import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {

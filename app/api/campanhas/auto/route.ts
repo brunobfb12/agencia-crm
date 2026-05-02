@@ -44,15 +44,15 @@ export async function POST(req: NextRequest) {
 
     if (!leads.length) continue;
 
-    // Group by empresa
-    const porEmpresa: Record<string, typeof leads> = {};
+    type LeadRow = (typeof leads)[number];
+    const porEmpresa: Record<string, LeadRow[]> = {};
     for (const l of leads) {
       const eid = l.empresa.id;
       if (!porEmpresa[eid]) porEmpresa[eid] = [];
       porEmpresa[eid].push(l);
     }
 
-    for (const [empId, empLeads] of Object.entries(porEmpresa)) {
+    for (const [empId, empLeads] of Object.entries(porEmpresa) as [string, LeadRow[]][]) {
       const c = await prisma.campanha.create({
         data: {
           empresaId: empId,

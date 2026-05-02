@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  const result = campanhas.map((c) => ({
+  type CampanhaRow = (typeof campanhas)[number];
+  const result = campanhas.map((c: CampanhaRow) => ({
     id: c.id,
     empresaId: c.empresaId,
     nomeEmpresa: c.empresa.nome,
@@ -39,9 +40,9 @@ export async function GET(req: NextRequest) {
     status: c.status,
     criadoEm: c.criadoEm,
     total: c._count.itens,
-    enviados: c.itens.filter((i) => i.status === "ENVIADO").length,
-    pendentes: c.itens.filter((i) => i.status === "PENDENTE").length,
-    erros: c.itens.filter((i) => i.status === "ERRO").length,
+    enviados: c.itens.filter((i: { status: string }) => i.status === "ENVIADO").length,
+    pendentes: c.itens.filter((i: { status: string }) => i.status === "PENDENTE").length,
+    erros: c.itens.filter((i: { status: string }) => i.status === "ERRO").length,
   }));
 
   return NextResponse.json(result);
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
       mensagem,
       tipo: "MANUAL",
       itens: {
-        create: leads.map((l) => ({
+        create: leads.map((l: (typeof leads)[number]) => ({
           leadId: l.id,
           telefone: l.cliente.telefone,
           nomeCliente: l.cliente.nome,

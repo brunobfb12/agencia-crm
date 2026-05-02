@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(req: Request) {
@@ -14,18 +13,28 @@ export async function GET(req: Request) {
     : (searchParams.get("empresaId") ?? null);
 
   if (aniversarioHoje) {
-    const filtroEmpresa = empresaId
-      ? Prisma.sql`AND c."empresaId" = ${empresaId}`
-      : Prisma.sql``;
-    const rows = await prisma.$queryRaw<{ id: string; nome: string | null; telefone: string; empresaId: string; empresaNome: string; instanciaWhatsapp: string }[]>`
-      SELECT c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp"
-      FROM "Cliente" c
-      JOIN "Empresa" e ON e.id = c."empresaId"
-      WHERE c."dataNascimento" IS NOT NULL
-        AND EXTRACT(MONTH FROM c."dataNascimento") = EXTRACT(MONTH FROM NOW())
-        AND EXTRACT(DAY FROM c."dataNascimento") = EXTRACT(DAY FROM NOW())
-        ${filtroEmpresa}
-    `;
+    type AnivRow = { id: string; nome: string | null; telefone: string; empresaId: string; empresaNome: string; instanciaWhatsapp: string };
+    let rows: AnivRow[];
+    if (empresaId) {
+      rows = await prisma.$queryRaw<AnivRow[]>`
+        SELECT c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp"
+        FROM "Cliente" c
+        JOIN "Empresa" e ON e.id = c."empresaId"
+        WHERE c."dataNascimento" IS NOT NULL
+          AND EXTRACT(MONTH FROM c."dataNascimento") = EXTRACT(MONTH FROM NOW())
+          AND EXTRACT(DAY FROM c."dataNascimento") = EXTRACT(DAY FROM NOW())
+          AND c."empresaId" = ${empresaId}
+      `;
+    } else {
+      rows = await prisma.$queryRaw<AnivRow[]>`
+        SELECT c.id, c.nome, c.telefone, c."empresaId", e.nome as "empresaNome", e."instanciaWhatsapp"
+        FROM "Cliente" c
+        JOIN "Empresa" e ON e.id = c."empresaId"
+        WHERE c."dataNascimento" IS NOT NULL
+          AND EXTRACT(MONTH FROM c."dataNascimento") = EXTRACT(MONTH FROM NOW())
+          AND EXTRACT(DAY FROM c."dataNascimento") = EXTRACT(DAY FROM NOW())
+      `;
+    }
     return NextResponse.json(rows);
   }
 
