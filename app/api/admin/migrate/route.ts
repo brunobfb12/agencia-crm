@@ -151,6 +151,46 @@ export async function POST(req: Request) {
     `CREATE INDEX IF NOT EXISTS "Mensagem_conversaId_idx" ON "Mensagem"("conversaId")`,
     `CREATE INDEX IF NOT EXISTS "Lead_clienteId_idx" ON "Lead"("clienteId")`,
     `CREATE INDEX IF NOT EXISTS "Lead_empresaId_idx" ON "Lead"("empresaId")`,
+
+    // --- campanhas ---
+    `CREATE TABLE IF NOT EXISTS "Campanha" (
+  "id" TEXT NOT NULL,
+  "empresaId" TEXT NOT NULL,
+  "mensagem" TEXT NOT NULL,
+  "tipo" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'ATIVA',
+  "criadoEm" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Campanha_pkey" PRIMARY KEY ("id")
+)`,
+    `CREATE TABLE IF NOT EXISTS "CampanhaItem" (
+  "id" TEXT NOT NULL,
+  "campanhaId" TEXT NOT NULL,
+  "leadId" TEXT NOT NULL,
+  "telefone" TEXT NOT NULL,
+  "nomeCliente" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'PENDENTE',
+  "enviadoEm" TIMESTAMP(3),
+  "erro" TEXT,
+  CONSTRAINT "CampanhaItem_pkey" PRIMARY KEY ("id")
+)`,
+    `DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'Campanha_empresaId_fkey') THEN
+    ALTER TABLE "Campanha" ADD CONSTRAINT "Campanha_empresaId_fkey" FOREIGN KEY ("empresaId") REFERENCES "Empresa"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$`,
+    `DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'CampanhaItem_campanhaId_fkey') THEN
+    ALTER TABLE "CampanhaItem" ADD CONSTRAINT "CampanhaItem_campanhaId_fkey" FOREIGN KEY ("campanhaId") REFERENCES "Campanha"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$`,
+    `DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'CampanhaItem_leadId_fkey') THEN
+    ALTER TABLE "CampanhaItem" ADD CONSTRAINT "CampanhaItem_leadId_fkey" FOREIGN KEY ("leadId") REFERENCES "Lead"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$`,
+    `CREATE INDEX IF NOT EXISTS "Campanha_empresaId_idx" ON "Campanha"("empresaId")`,
+    `CREATE INDEX IF NOT EXISTS "CampanhaItem_campanhaId_idx" ON "CampanhaItem"("campanhaId")`,
+    `CREATE INDEX IF NOT EXISTS "CampanhaItem_status_idx" ON "CampanhaItem"("status")`,
   ];
 
   for (const sql of migrations) {

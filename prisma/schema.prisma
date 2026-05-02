@@ -24,6 +24,7 @@ model Empresa {
   leads        Lead[]
   usuarios     Usuario[]
   midias       Midia[]
+  campanhas    Campanha[]
 }
 
 model Midia {
@@ -107,10 +108,11 @@ model Lead {
   criadoEm     DateTime   @default(now())
   atualizadoEm DateTime   @updatedAt
 
-  cliente  Cliente   @relation(fields: [clienteId], references: [id])
-  empresa  Empresa   @relation(fields: [empresaId], references: [id])
-  vendedor Vendedor? @relation(fields: [vendedorId], references: [id])
-  vendas   Venda[]
+  cliente       Cliente        @relation(fields: [clienteId], references: [id])
+  empresa       Empresa        @relation(fields: [empresaId], references: [id])
+  vendedor      Vendedor?      @relation(fields: [vendedorId], references: [id])
+  vendas        Venda[]
+  campanhaItens CampanhaItem[]
 }
 
 enum LeadStatus {
@@ -224,4 +226,28 @@ model Ferramenta {
   observacoes String?
   ativo       Boolean   @default(true)
   criadoEm   DateTime  @default(now())
+}
+
+model Campanha {
+  id        String         @id @default(cuid())
+  empresaId String
+  mensagem  String
+  tipo      String         // "MANUAL" | "AUTO_SEM_RESPOSTA" | "AUTO_AQUECIMENTO" | "AUTO_POS_VENDA"
+  status    String         @default("ATIVA") // "ATIVA" | "PAUSADA" | "CONCLUIDA"
+  criadoEm DateTime       @default(now())
+  empresa   Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  itens     CampanhaItem[]
+}
+
+model CampanhaItem {
+  id          String    @id @default(cuid())
+  campanhaId  String
+  leadId      String
+  telefone    String
+  nomeCliente String?
+  status      String    @default("PENDENTE") // "PENDENTE" | "ENVIADO" | "ERRO"
+  enviadoEm   DateTime?
+  erro        String?
+  campanha    Campanha  @relation(fields: [campanhaId], references: [id], onDelete: Cascade)
+  lead        Lead      @relation(fields: [leadId], references: [id])
 }

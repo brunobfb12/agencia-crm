@@ -46,35 +46,19 @@ interface ConversaItem {
   };
 }
 
-interface Empresa {
-  id: string;
-  nome: string;
-}
+interface Empresa { id: string; nome: string }
 
-const statusLabels: Record<string, string> = {
-  LEAD: "Lead",
-  AQUECIMENTO: "Aquecimento",
-  PRONTO_PARA_COMPRAR: "Pronto p/ Comprar",
-  NEGOCIACAO: "Negociação",
-  VENDA_REALIZADA: "Venda",
-  POS_VENDA: "Pós-Venda",
-  FOLLOW_UP: "Follow-up",
-  PERDIDO: "Perdido",
-  SEM_INTERESSE: "Sem Interesse",
-  SEM_RESPOSTA: "Sem Resposta",
-};
-
-const statusColors: Record<string, string> = {
-  LEAD: "bg-gray-100 text-gray-600",
-  AQUECIMENTO: "bg-orange-100 text-orange-700",
-  PRONTO_PARA_COMPRAR: "bg-yellow-100 text-yellow-700",
-  NEGOCIACAO: "bg-blue-100 text-blue-700",
-  VENDA_REALIZADA: "bg-green-100 text-green-700",
-  POS_VENDA: "bg-purple-100 text-purple-700",
-  FOLLOW_UP: "bg-cyan-100 text-cyan-700",
-  PERDIDO: "bg-red-100 text-red-600",
-  SEM_INTERESSE: "bg-rose-100 text-rose-600",
-  SEM_RESPOSTA: "bg-amber-100 text-amber-700",
+const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+  LEAD:                { bg: "rgba(148,163,184,.1)",  color: "#94a3b8", label: "Lead" },
+  AQUECIMENTO:         { bg: "rgba(251,146,60,.1)",   color: "#fb923c", label: "Aquecimento" },
+  PRONTO_PARA_COMPRAR: { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Pronto p/ Comprar" },
+  NEGOCIACAO:          { bg: "rgba(96,165,250,.1)",   color: "#60a5fa", label: "Negociação" },
+  VENDA_REALIZADA:     { bg: "rgba(52,211,153,.1)",   color: "#34d399", label: "Venda" },
+  POS_VENDA:           { bg: "rgba(192,132,252,.1)",  color: "#c084fc", label: "Pós-Venda" },
+  FOLLOW_UP:           { bg: "rgba(34,211,238,.1)",   color: "#22d3ee", label: "Follow-up" },
+  PERDIDO:             { bg: "rgba(248,113,113,.1)",  color: "#f87171", label: "Perdido" },
+  SEM_INTERESSE:       { bg: "rgba(251,113,133,.1)",  color: "#fb7185", label: "Sem Interesse" },
+  SEM_RESPOSTA:        { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Sem Resposta" },
 };
 
 function timeAgo(iso: string): string {
@@ -124,7 +108,6 @@ export default function ConversasPage() {
 
   useEffect(() => { carregarLista(); }, [carregarLista]);
 
-  // Auto-refresh a cada 15 segundos
   useEffect(() => {
     const t = setInterval(carregarLista, 15000);
     return () => clearInterval(t);
@@ -140,7 +123,6 @@ export default function ConversasPage() {
     }, 100);
   };
 
-  // Recarrega chat ativo a cada 10 segundos
   useEffect(() => {
     if (!ativa) return;
     const t = setInterval(async () => {
@@ -151,9 +133,7 @@ export default function ConversasPage() {
   }, [ativa?.id]);
 
   useEffect(() => {
-    if (ativa) {
-      chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
-    }
+    if (ativa) chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
   }, [ativa?.mensagens.length]);
 
   const enviar = async () => {
@@ -168,9 +148,7 @@ export default function ConversasPage() {
       setTexto("");
       const data = await fetch(`/api/conversas/${ativa.id}`).then((r) => r.json());
       setAtiva(data);
-      setTimeout(() => {
-        chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" });
-      }, 100);
+      setTimeout(() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }), 100);
     }
     setEnviando(false);
     inputRef.current?.focus();
@@ -195,72 +173,89 @@ export default function ConversasPage() {
   const lead = ativa?.cliente.leads[0] ?? null;
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Lista de conversas */}
-      <div className="w-80 flex-shrink-0 border-r border-gray-200 flex flex-col bg-white">
-        {/* Cabeçalho lista */}
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900 mb-3">Conversas</h2>
+    <div className="flex h-full overflow-hidden" style={{ background: "#08080e" }}>
+
+      {/* ── Sidebar lista ─────────────────────────────────── */}
+      <div
+        className="w-80 flex-shrink-0 flex flex-col"
+        style={{
+          background: "#0a0916",
+          borderRight: "1px solid rgba(255,255,255,.06)",
+        }}
+      >
+        {/* Header */}
+        <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,.05)" }}>
+          <h2 className="text-[15px] font-bold mb-3" style={{ color: "#f1f5f9" }}>Conversas</h2>
           <input
             type="text"
-            placeholder="Buscar por nome ou telefone..."
+            placeholder="Buscar..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+            className="w-full input-dark px-3 py-2 text-[12.5px] mb-2"
           />
           <select
             value={filtroEmpresa}
             onChange={(e) => setFiltroEmpresa(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full input-dark px-3 py-2 text-[12.5px]"
           >
             <option value="">Todas as empresas</option>
             {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
           </select>
         </div>
 
-        {/* Lista */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-center text-gray-400 text-sm">Carregando...</div>
+            <div className="p-4 space-y-2">
+              {[1,2,3,4].map(i => <div key={i} className="shimmer h-16 rounded-xl" />)}
+            </div>
           ) : conversas.length === 0 ? (
-            <div className="p-6 text-center text-gray-400 text-sm">
-              Nenhuma conversa ainda.
-              <br />
-              <span className="text-xs">Conecte os WhatsApps para começar.</span>
+            <div className="p-6 text-center" style={{ color: "rgba(148,163,184,.35)" }}>
+              <div className="text-3xl mb-2">💬</div>
+              <p className="text-[12px]">Nenhuma conversa ainda.</p>
+              <p className="text-[11px] mt-1">Conecte os WhatsApps para começar.</p>
             </div>
           ) : (
             conversas.map((c) => {
               const isAtiva = ativa?.id === c.id;
               const statusLead = c.cliente.leads[0]?.status;
+              const badge = statusLead ? STATUS_BADGE[statusLead] : null;
               return (
                 <button
                   key={c.id}
                   onClick={() => abrirConversa(c.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                    isAtiva ? "bg-blue-50 border-l-2 border-l-blue-500" : ""
-                  }`}
+                  className="w-full text-left px-4 py-3 transition-all"
+                  style={{
+                    borderBottom: "1px solid rgba(255,255,255,.04)",
+                    borderLeft: isAtiva ? "2px solid #818cf8" : "2px solid transparent",
+                    background: isAtiva ? "rgba(99,102,241,.1)" : "transparent",
+                  }}
+                  onMouseEnter={e => { if (!isAtiva) e.currentTarget.style.background = "rgba(255,255,255,.03)"; }}
+                  onMouseLeave={e => { if (!isAtiva) e.currentTarget.style.background = "transparent"; }}
                 >
                   <div className="flex items-start justify-between gap-2 mb-0.5">
-                    <span className="font-medium text-sm text-gray-900 truncate">
+                    <span className="font-semibold text-[13px] truncate" style={{ color: isAtiva ? "#c7d2fe" : "#e2e8f0" }}>
                       {c.cliente.nome ?? c.cliente.telefone}
                     </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-[11px] flex-shrink-0" style={{ color: "rgba(148,163,184,.4)" }}>
                       {timeAgo(c.ultimaAtividade)}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 truncate mb-1.5">
+                  <div className="text-[12px] truncate mb-1.5" style={{ color: "rgba(148,163,184,.45)" }}>
                     {c.ultimaMensagem ?? "Sem mensagens"}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs text-gray-400">{c.cliente.empresa.nome}</span>
+                    <span className="text-[11px]" style={{ color: "rgba(148,163,184,.35)" }}>{c.cliente.empresa.nome}</span>
                     {c.modoHumano && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                        style={{ background: "rgba(251,146,60,.1)", color: "#fb923c" }}>
                         Humano
                       </span>
                     )}
-                    {statusLead && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColors[statusLead] ?? "bg-gray-100 text-gray-600"}`}>
-                        {statusLabels[statusLead] ?? statusLead}
+                    {badge && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                        style={{ background: badge.bg, color: badge.color }}>
+                        {badge.label}
                       </span>
                     )}
                   </div>
@@ -271,58 +266,71 @@ export default function ConversasPage() {
         </div>
       </div>
 
-      {/* Área do chat */}
-      <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
+      {/* ── Chat area ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0" style={{ background: "#08080e" }}>
         {!ativa && !loadingChat ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400">
-            <div className="text-center">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center" style={{ color: "rgba(148,163,184,.3)" }}>
               <div className="text-5xl mb-3">💬</div>
-              <p className="text-sm font-medium">Selecione uma conversa</p>
-              <p className="text-xs mt-1">para ver o histórico com o cliente</p>
+              <p className="text-[14px] font-medium">Selecione uma conversa</p>
+              <p className="text-[12px] mt-1">para ver o histórico com o cliente</p>
             </div>
           </div>
         ) : loadingChat ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-            Carregando conversa...
+          <div className="flex-1 flex items-center justify-center">
+            <div className="shimmer w-32 h-4 rounded-xl" />
           </div>
         ) : ativa ? (
           <>
-            {/* Header do chat */}
-            <div className="bg-white border-b border-gray-200 px-5 py-3 flex items-center justify-between flex-shrink-0">
+            {/* Chat header */}
+            <div
+              className="px-5 py-3.5 flex items-center justify-between flex-shrink-0"
+              style={{
+                background: "rgba(255,255,255,.03)",
+                borderBottom: "1px solid rgba(255,255,255,.06)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #6366f1, #38bdf8)", color: "white" }}
+                >
                   {(ativa.cliente.nome ?? ativa.cliente.telefone)[0].toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">
+                  <p className="font-semibold text-[14px]" style={{ color: "#f1f5f9" }}>
                     {ativa.cliente.nome ?? ativa.cliente.telefone}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-[11px]" style={{ color: "rgba(148,163,184,.5)" }}>
                     {ativa.cliente.telefone} · {ativa.cliente.empresa.nome}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 {ativa.cliente.email && (
-                  <span className="text-xs text-gray-400">{ativa.cliente.email}</span>
+                  <span className="text-[11px]" style={{ color: "rgba(148,163,184,.4)" }}>{ativa.cliente.email}</span>
                 )}
-                {lead && (
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[lead.status] ?? "bg-gray-100 text-gray-600"}`}>
-                    {statusLabels[lead.status] ?? lead.status}
-                  </span>
-                )}
+                {lead && (() => {
+                  const b = STATUS_BADGE[lead.status];
+                  return b ? (
+                    <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold"
+                      style={{ background: b.bg, color: b.color }}>{b.label}</span>
+                  ) : null;
+                })()}
                 {lead?.vendedor && (
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  <span className="text-[11px] px-2.5 py-1 rounded-full"
+                    style={{ background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.7)" }}>
                     {lead.vendedor.nome}
                   </span>
                 )}
                 <button
                   onClick={toggleModoHumano}
-                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                    ativa.modoHumano
-                      ? "bg-orange-100 text-orange-700 hover:bg-orange-200"
-                      : "bg-green-100 text-green-700 hover:bg-green-200"
-                  }`}
+                  className="text-[12px] px-3 py-1.5 rounded-lg font-semibold transition-all"
+                  style={ativa.modoHumano
+                    ? { background: "rgba(251,146,60,.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,.2)" }
+                    : { background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }
+                  }
                 >
                   {ativa.modoHumano ? "Devolver para IA" : "Assumir Conversa"}
                 </button>
@@ -331,43 +339,50 @@ export default function ConversasPage() {
 
             {/* Banner modo humano */}
             {ativa.modoHumano && (
-              <div className="bg-orange-50 border-b border-orange-200 px-5 py-2 flex items-center gap-2 flex-shrink-0">
-                <span className="text-orange-600 text-xs font-medium">Você está atendendo manualmente — IA pausada para esta conversa</span>
+              <div
+                className="px-5 py-2 flex items-center gap-2 flex-shrink-0 text-[12px] font-medium"
+                style={{ background: "rgba(251,146,60,.06)", borderBottom: "1px solid rgba(251,146,60,.15)", color: "#fb923c" }}
+              >
+                <span>⚡</span>
+                Você está atendendo manualmente — IA pausada para esta conversa
               </div>
             )}
 
-            {/* Mensagens */}
-            <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Messages */}
+            <div ref={chatRef} className="flex-1 overflow-y-auto p-5 space-y-4">
               {groupByDate(ativa.mensagens).map(({ date, items }) => (
                 <div key={date}>
-                  <div className="flex items-center gap-3 my-3">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-xs text-gray-400 font-medium">{date}</span>
-                    <div className="flex-1 h-px bg-gray-200" />
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,.06)" }} />
+                    <span className="text-[11px] font-medium px-3 py-1 rounded-full"
+                      style={{ background: "rgba(255,255,255,.04)", color: "rgba(148,163,184,.45)", border: "1px solid rgba(255,255,255,.06)" }}>
+                      {date}
+                    </span>
+                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,.06)" }} />
                   </div>
                   <div className="space-y-2">
                     {items.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`flex ${m.direcao === "SAIDA" ? "justify-end" : "justify-start"}`}
-                      >
+                      <div key={m.id} className={`flex ${m.direcao === "SAIDA" ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-xs lg:max-w-md xl:max-w-lg rounded-2xl px-4 py-2.5 text-sm ${
-                            m.direcao === "SAIDA"
-                              ? "bg-blue-600 text-white rounded-br-sm"
-                              : "bg-white text-gray-900 border border-gray-200 rounded-bl-sm shadow-sm"
-                          }`}
+                          className="max-w-xs lg:max-w-md xl:max-w-lg rounded-2xl px-4 py-2.5 text-[13px]"
+                          style={m.direcao === "SAIDA"
+                            ? {
+                                background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                                color: "white",
+                                borderBottomRightRadius: "4px",
+                                boxShadow: "0 4px 14px rgba(99,102,241,.3)",
+                              }
+                            : {
+                                background: "rgba(255,255,255,.07)",
+                                color: "#e2e8f0",
+                                border: "1px solid rgba(255,255,255,.1)",
+                                borderBottomLeftRadius: "4px",
+                              }
+                          }
                         >
                           <p className="whitespace-pre-wrap break-words leading-relaxed">{m.conteudo}</p>
-                          <p
-                            className={`text-xs mt-1.5 ${
-                              m.direcao === "SAIDA" ? "text-blue-200" : "text-gray-400"
-                            }`}
-                          >
-                            {new Date(m.criadoEm).toLocaleTimeString("pt-BR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          <p className="text-[11px] mt-1.5" style={{ color: m.direcao === "SAIDA" ? "rgba(255,255,255,.5)" : "rgba(148,163,184,.4)" }}>
+                            {new Date(m.criadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                       </div>
@@ -376,14 +391,17 @@ export default function ConversasPage() {
                 </div>
               ))}
               {ativa.mensagens.length === 0 && (
-                <div className="text-center text-gray-400 text-sm py-12">
+                <div className="text-center py-12 text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>
                   Nenhuma mensagem nesta conversa ainda.
                 </div>
               )}
             </div>
 
-            {/* Input de envio */}
-            <div className="bg-white border-t border-gray-200 p-3 flex-shrink-0">
+            {/* Input */}
+            <div
+              className="p-3 flex-shrink-0"
+              style={{ background: "rgba(255,255,255,.02)", borderTop: "1px solid rgba(255,255,255,.06)" }}
+            >
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef}
@@ -392,19 +410,19 @@ export default function ConversasPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="Escreva uma mensagem... (Enter para enviar)"
                   rows={1}
-                  className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
-                  style={{ minHeight: "42px" }}
+                  className="flex-1 input-dark px-4 py-2.5 text-[13px] resize-none"
+                  style={{ minHeight: "42px", maxHeight: "128px" }}
                 />
                 <button
                   onClick={enviar}
                   disabled={!texto.trim() || enviando}
-                  className="flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  className="flex-shrink-0 btn-primary px-4 py-2.5 text-[13px] disabled:opacity-40"
                 >
                   {enviando ? "..." : "Enviar"}
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1.5 px-1">
-                Shift+Enter para nova linha · Esta mensagem será enviada pelo WhatsApp da {ativa.cliente.empresa.nome}
+              <p className="text-[11px] mt-1.5 px-1" style={{ color: "rgba(148,163,184,.3)" }}>
+                Shift+Enter para nova linha · enviado pelo WhatsApp da {ativa.cliente.empresa.nome}
               </p>
             </div>
           </>

@@ -15,7 +15,6 @@ interface StatusData {
 }
 
 const TIPOS = ["IA", "Dominio", "VPS", "Painel", "Automacao", "WhatsApp", "Outro"];
-
 const EMPTY_FORM = { nome: "", tipo: "IA", valor: "", vencimento: "", link: "", observacoes: "" };
 
 function diasRestantes(venc: string | null) {
@@ -24,17 +23,29 @@ function diasRestantes(venc: string | null) {
 }
 
 function VencimentoBadge({ vencimento }: { vencimento: string | null }) {
-  if (!vencimento) return <span className="text-gray-400 text-xs">—</span>;
+  if (!vencimento) return <span style={{ color: "rgba(148,163,184,.35)", fontSize: "12px" }}>—</span>;
   const dias = diasRestantes(vencimento);
   const data = new Date(vencimento).toLocaleDateString("pt-BR");
   if (dias === null) return null;
-  if (dias < 0) return <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Vencido ({data})</span>;
-  if (dias <= 7) return <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">Vence em {dias}d ({data})</span>;
-  return <span className="text-xs text-gray-500">{data}</span>;
+  if (dias < 0) return (
+    <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+      style={{ background: "rgba(248,113,113,.1)", color: "#f87171" }}>
+      Vencido ({data})
+    </span>
+  );
+  if (dias <= 7) return (
+    <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+      style={{ background: "rgba(251,146,60,.1)", color: "#fb923c" }}>
+      Vence em {dias}d ({data})
+    </span>
+  );
+  return <span className="text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{data}</span>;
 }
 
 interface Empresa { id: string; nome: string; instanciaWhatsapp: string }
 interface Usuario { id: string; nome: string; email: string; ativo: boolean; empresaId: string | null; empresa: { nome: string } | null }
+
+const INPUT = "w-full input-dark px-3 py-2.5 text-[13px]";
 
 export default function CentralPage() {
   const [data, setData] = useState<StatusData | null>(null);
@@ -62,7 +73,7 @@ export default function CentralPage() {
   };
 
   const desconectar = async (instancia: string) => {
-    if (!confirm(`Desconectar a instância "${instancia}"? O WhatsApp precisará ser escaneado novamente.`)) return;
+    if (!confirm(`Desconectar "${instancia}"? O WhatsApp precisará ser escaneado novamente.`)) return;
     await fetch(`/api/central/instancia?instancia=${instancia}`, { method: "DELETE" });
     showMsg(`${instancia} desconectado`);
     carregar();
@@ -70,16 +81,11 @@ export default function CentralPage() {
 
   const carregar = () => {
     setLoading(true);
-    fetch("/api/central/status")
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+    fetch("/api/central/status").then((r) => r.json()).then((d) => { setData(d); setLoading(false); });
   };
 
   const carregarUsuarios = async () => {
-    const [uRes, eRes] = await Promise.all([
-      fetch("/api/usuarios"),
-      fetch("/api/empresas"),
-    ]);
+    const [uRes, eRes] = await Promise.all([fetch("/api/usuarios"), fetch("/api/empresas")]);
     if (uRes.ok) setUsuarios(await uRes.json());
     if (eRes.ok) setEmpresas(await eRes.json());
   };
@@ -89,11 +95,7 @@ export default function CentralPage() {
   const criarUsuario = async (e: React.FormEvent) => {
     e.preventDefault();
     setSalvandoUser(true);
-    const res = await fetch("/api/usuarios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userForm),
-    });
+    const res = await fetch("/api/usuarios", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(userForm) });
     setSalvandoUser(false);
     if (res.ok) {
       setUserForm({ nome: "", email: "", senha: "", empresaId: "" });
@@ -113,453 +115,439 @@ export default function CentralPage() {
   };
 
   const toggleAtivo = async (id: string, ativo: boolean) => {
-    await fetch(`/api/usuarios/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ativo: !ativo }),
-    });
+    await fetch(`/api/usuarios/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ativo: !ativo }) });
     carregarUsuarios();
   };
 
-  function showMsg(texto: string) {
-    setMsg(texto);
-    setTimeout(() => setMsg(""), 3000);
-  }
+  function showMsg(texto: string) { setMsg(texto); setTimeout(() => setMsg(""), 3000); }
 
   const criarFerramenta = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSalvando(true);
-    await fetch("/api/ferramentas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setForm(EMPTY_FORM);
-    carregar();
-    setSalvando(false);
-    showMsg("Ferramenta adicionada!");
+    e.preventDefault(); setSalvando(true);
+    await fetch("/api/ferramentas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    setForm(EMPTY_FORM); carregar(); setSalvando(false); showMsg("Ferramenta adicionada!");
   };
 
   const salvarEdicao = async (id: string) => {
     setSalvando(true);
-    await fetch(`/api/ferramentas/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    });
-    setEditId(null);
-    carregar();
-    setSalvando(false);
-    showMsg("Atualizado!");
+    await fetch(`/api/ferramentas/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm) });
+    setEditId(null); carregar(); setSalvando(false); showMsg("Atualizado!");
   };
 
   const excluir = async (id: string, nome: string) => {
     if (!confirm(`Excluir "${nome}"?`)) return;
     await fetch(`/api/ferramentas/${id}`, { method: "DELETE" });
-    carregar();
-    showMsg("Excluído.");
+    carregar(); showMsg("Excluído.");
   };
 
   function abrirEdicao(f: Ferramenta) {
     setEditId(f.id);
-    setEditForm({
-      nome: f.nome, tipo: f.tipo,
-      valor: f.valor?.toString() ?? "",
-      vencimento: f.vencimento ? f.vencimento.split("T")[0] : "",
-      link: f.link ?? "",
-      observacoes: f.observacoes ?? "",
-    });
+    setEditForm({ nome: f.nome, tipo: f.tipo, valor: f.valor?.toString() ?? "", vencimento: f.vencimento ? f.vencimento.split("T")[0] : "", link: f.link ?? "", observacoes: f.observacoes ?? "" });
   }
 
-  const stateColor = (state: string) =>
-    state === "open" ? "bg-green-500" : state === "close" ? "bg-red-500" : "bg-gray-400";
+  const tabStyle = (id: string) => aba === id
+    ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(99,102,241,.3)" }
+    : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" };
+
+  const cardStyle = {
+    background: "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
+    border: "1px solid rgba(255,255,255,.08)",
+    borderRadius: "16px",
+  };
+
+  const editRowStyle = {
+    background: "rgba(99,102,241,.05)",
+    borderBottom: "1px solid rgba(99,102,241,.12)",
+  };
+
+  const TH = ({ children }: { children: React.ReactNode }) => (
+    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.45)" }}>
+      {children}
+    </th>
+  );
 
   return (
-    <div className="h-full overflow-y-auto"><div className="p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Painel Central</h2>
-          <p className="text-sm text-gray-500 mt-1">Controle de ferramentas, WhatsApp e atividade</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {msg && <span className="text-sm bg-green-100 text-green-700 px-3 py-1 rounded-full">{msg}</span>}
-          {data?.alertas.length ? (
-            <span className="text-sm bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-medium">
-              ⚠ {data.alertas.length} vencimento{data.alertas.length > 1 ? "s" : ""} próximo{data.alertas.length > 1 ? "s" : ""}
-            </span>
-          ) : null}
-          <button onClick={carregar} className="text-sm bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50">
-            Atualizar
-          </button>
-        </div>
-      </div>
+    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+      <div className="p-8 max-w-5xl mx-auto">
 
-      {data && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="text-2xl font-bold text-blue-600">{data.atividade.mensagensHoje}</div>
-            <div className="text-xs text-gray-500 mt-1">Respostas Claude hoje</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="text-2xl font-bold text-green-600">{data.atividade.leadsHoje}</div>
-            <div className="text-xs text-gray-500 mt-1">Leads criados hoje</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="text-2xl font-bold text-purple-600">{data.atividade.mensagensMes}</div>
-            <div className="text-xs text-gray-500 mt-1">Respostas Claude este mês</div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-2 mb-6">
-        {(["ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
-          <button key={tab} onClick={() => setAba(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${aba === tab ? "bg-blue-600 text-white" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-          >
-            {tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : tab === "atividade" ? "Atividade" : "Usuários"}
-          </button>
-        ))}
-      </div>
-
-      {aba === "ferramentas" && (
-        <div className="space-y-4">
-          <form onSubmit={criarFerramenta} className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Nome *</label>
-                <input required value={form.nome} onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
-                  placeholder="Ex: Claude API"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Tipo *</label>
-                <select required value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Valor mensal (R$)</label>
-                <input type="number" step="0.01" value={form.valor} onChange={(e) => setForm((p) => ({ ...p, valor: e.target.value }))}
-                  placeholder="0,00"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Vencimento</label>
-                <input type="date" value={form.vencimento} onChange={(e) => setForm((p) => ({ ...p, vencimento: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Link / URL</label>
-                <input value={form.link} onChange={(e) => setForm((p) => ({ ...p, link: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Observações</label>
-                <input value={form.observacoes} onChange={(e) => setForm((p) => ({ ...p, observacoes: e.target.value }))}
-                  placeholder="Plano, créditos, token..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
+        {/* Header */}
+        <div className="mb-8 animate-fade-up">
+          <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 rounded-full mb-3"
+            style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.18)" }}>
+            Painel Central
+          </span>
+          <div className="flex items-end justify-between">
+            <div>
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>Central</h1>
+              <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.5)" }}>Ferramentas, WhatsApp, atividade e usuários</p>
             </div>
-            <button type="submit" disabled={salvando}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-              Adicionar Ferramenta
-            </button>
-          </form>
+            <div className="flex items-center gap-3">
+              {msg && (
+                <span className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
+                  style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                  {msg}
+                </span>
+              )}
+              {data?.alertas.length ? (
+                <span className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
+                  style={{ background: "rgba(251,146,60,.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,.2)" }}>
+                  ⚠ {data.alertas.length} vencimento{data.alertas.length > 1 ? "s" : ""} próximo{data.alertas.length > 1 ? "s" : ""}
+                </span>
+              ) : null}
+              <button onClick={carregar}
+                className="text-[13px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}>
+                Atualizar
+              </button>
+            </div>
+          </div>
+        </div>
 
-          {loading ? (
-            <div className="text-center py-8 text-gray-400">Carregando...</div>
-          ) : (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Ferramenta</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Tipo</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Valor/mês</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Vencimento</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Obs.</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {data?.ferramentas.map((f) => (
-                    <>
-                      <tr key={f.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">
-                          {f.link ? (
-                            <a href={f.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{f.nome}</a>
-                          ) : f.nome}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f.tipo}</span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {f.valor != null ? `R$ ${f.valor.toFixed(2)}` : "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <VencimentoBadge vencimento={f.vencimento} />
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{f.observacoes ?? "—"}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
-                              className="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded font-medium">
-                              {editId === f.id ? "Fechar" : "Editar"}
-                            </button>
-                            <button onClick={() => excluir(f.id, f.nome)}
-                              className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-medium">
-                              Excluir
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {editId === f.id && (
-                        <tr key={`${f.id}-edit`}>
-                          <td colSpan={6} className="px-4 py-4 bg-blue-50">
-                            <div className="grid grid-cols-3 gap-3 mb-3">
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Nome</label>
-                                <input value={editForm.nome} onChange={(e) => setEditForm((p) => ({ ...p, nome: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Tipo</label>
-                                <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                  {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Valor (R$)</label>
-                                <input type="number" step="0.01" value={editForm.valor}
-                                  onChange={(e) => setEditForm((p) => ({ ...p, valor: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Vencimento</label>
-                                <input type="date" value={editForm.vencimento}
-                                  onChange={(e) => setEditForm((p) => ({ ...p, vencimento: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Link</label>
-                                <input value={editForm.link} onChange={(e) => setEditForm((p) => ({ ...p, link: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">Observações</label>
-                                <input value={editForm.observacoes} onChange={(e) => setEditForm((p) => ({ ...p, observacoes: e.target.value }))}
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => salvarEdicao(f.id)} disabled={salvando}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                                Salvar
+        {/* Metric cards */}
+        {data && (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[
+              { value: data.atividade.mensagensHoje, label: "Respostas Claude hoje", color: "#60a5fa", bg: "rgba(96,165,250,.12)", border: "rgba(96,165,250,.2)" },
+              { value: data.atividade.leadsHoje, label: "Leads criados hoje", color: "#34d399", bg: "rgba(52,211,153,.12)", border: "rgba(52,211,153,.2)" },
+              { value: data.atividade.mensagensMes, label: "Respostas este mês", color: "#c084fc", bg: "rgba(192,132,252,.12)", border: "rgba(192,132,252,.2)" },
+            ].map((m, i) => (
+              <div key={i} className="bento-card p-5 animate-fade-up" style={{ background: m.bg, borderColor: m.border, animationDelay: `${i * 55}ms` }}>
+                <div className="text-[30px] font-bold tracking-tight leading-none mb-1" style={{ color: m.color }}>{m.value}</div>
+                <div className="text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          {(["ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
+            <button key={tab} onClick={() => setAba(tab)}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+              style={tabStyle(tab)}>
+              {tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : tab === "atividade" ? "Atividade" : "Usuários"}
+            </button>
+          ))}
+        </div>
+
+        {/* ── FERRAMENTAS ── */}
+        {aba === "ferramentas" && (
+          <div className="space-y-4 animate-fade-up">
+            <form onSubmit={criarFerramenta} className="p-4 rounded-2xl" style={cardStyle}>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {[
+                  { key: "nome", label: "NOME *", placeholder: "Ex: Claude API", required: true, type: "text" },
+                  { key: "link", label: "LINK / URL", placeholder: "https://...", type: "text" },
+                  { key: "observacoes", label: "OBSERVAÇÕES", placeholder: "Plano, créditos...", type: "text" },
+                  { key: "valor", label: "VALOR MENSAL (R$)", placeholder: "0,00", type: "number" },
+                  { key: "vencimento", label: "VENCIMENTO", placeholder: "", type: "date" },
+                ].map(f => (
+                  f.key === "tipo" ? null :
+                  <div key={f.key}>
+                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>{f.label}</label>
+                    <input required={f.required} type={f.type} step={f.key === "valor" ? "0.01" : undefined}
+                      placeholder={f.placeholder}
+                      value={(form as Record<string, string>)[f.key]}
+                      onChange={(e) => setForm((p) => ({ ...p, [f.key]: e.target.value }))}
+                      className={INPUT} />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>TIPO *</label>
+                  <select required value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
+                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" disabled={salvando} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50">
+                Adicionar Ferramenta
+              </button>
+            </form>
+
+            {loading ? (
+              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}</div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                      <TH>Ferramenta</TH><TH>Tipo</TH><TH>Valor/mês</TH><TH>Vencimento</TH><TH>Obs.</TH><TH></TH>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.ferramentas.map((f) => (
+                      <>
+                        <tr key={f.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>
+                            {f.link
+                              ? <a href={f.link} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "#60a5fa" }}>{f.nome}</a>
+                              : f.nome}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                              style={{ background: "rgba(255,255,255,.07)", color: "rgba(148,163,184,.7)" }}>{f.tipo}</span>
+                          </td>
+                          <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.7)" }}>
+                            {f.valor != null ? `R$ ${f.valor.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="px-4 py-3"><VencimentoBadge vencimento={f.vencimento} /></td>
+                          <td className="px-4 py-3 text-[12px] max-w-xs truncate" style={{ color: "rgba(148,163,184,.5)" }}>{f.observacoes ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
+                                className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                                {editId === f.id ? "Fechar" : "Editar"}
                               </button>
-                              <button onClick={() => setEditId(null)}
-                                className="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-                                Cancelar
+                              <button onClick={() => excluir(f.id, f.nome)}
+                                className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                                Excluir
                               </button>
                             </div>
                           </td>
                         </tr>
-                      )}
-                    </>
-                  ))}
-                  {!data?.ferramentas.length && (
-                    <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">Nenhuma ferramenta cadastrada.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                        {editId === f.id && (
+                          <tr key={`${f.id}-edit`}>
+                            <td colSpan={6} className="px-4 py-4" style={editRowStyle}>
+                              <div className="grid grid-cols-3 gap-3 mb-3">
+                                {[
+                                  { key: "nome", label: "NOME", type: "text" },
+                                  { key: "link", label: "LINK", type: "text" },
+                                  { key: "observacoes", label: "OBSERVAÇÕES", type: "text" },
+                                  { key: "valor", label: "VALOR (R$)", type: "number" },
+                                  { key: "vencimento", label: "VENCIMENTO", type: "date" },
+                                ].map(fi => (
+                                  <div key={fi.key}>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>{fi.label}</label>
+                                    <input type={fi.type} step={fi.key === "valor" ? "0.01" : undefined}
+                                      value={(editForm as Record<string, string>)[fi.key]}
+                                      onChange={(e) => setEditForm((p) => ({ ...p, [fi.key]: e.target.value }))}
+                                      className={INPUT} />
+                                  </div>
+                                ))}
+                                <div>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>TIPO</label>
+                                  <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
+                                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => salvarEdicao(f.id)} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
+                                <button onClick={() => setEditId(null)}
+                                  className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                                  style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" }}>
+                                  Cancelar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                    {!data?.ferramentas.length && (
+                      <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhuma ferramenta cadastrada.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-      {aba === "whatsapp" && (
-        <div className="space-y-6">
-          <NovaInstancia onCriada={carregar} />
-          <div className="grid grid-cols-2 gap-4">
-            {loading ? (
-              <div className="col-span-2 text-center py-8 text-gray-400">Verificando instâncias...</div>
-            ) : (
-              data?.whatsapp.map((w) => (
-                <div key={w.instancia} className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${stateColor(w.state)}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-gray-900 truncate">{w.nomeEmpresa}</div>
-                      <div className="text-xs text-gray-400 truncate">{w.instancia}</div>
-                      <div className={`text-xs mt-0.5 ${w.state === "open" ? "text-green-600" : "text-red-500"}`}>
-                        {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5 items-end">
-                      {w.state !== "open" && (
-                        <button
-                          onClick={() => reconectar(w.instancia)}
-                          disabled={loadingQr[w.instancia]}
-                          className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2 py-1 rounded font-medium disabled:opacity-50"
-                        >
-                          {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
-                        </button>
-                      )}
-                      {w.state === "open" && (
-                        <button
-                          onClick={() => desconectar(w.instancia)}
-                          className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-2 py-1 rounded font-medium"
-                        >
-                          Desconectar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {qrInstancia[w.instancia] && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex gap-3 items-start">
-                      <img
-                        src={qrInstancia[w.instancia]!}
-                        alt="QR Code"
-                        className="w-36 h-36 border border-gray-200 rounded-lg p-1 bg-white"
-                      />
-                      <div className="flex-1 text-xs text-gray-500 space-y-1.5">
-                        <p className="font-medium text-gray-700">Como conectar:</p>
-                        <p>1. Abra o WhatsApp no celular</p>
-                        <p>2. Toque em ⋮ → Aparelhos conectados</p>
-                        <p>3. Conectar aparelho → Escaneie o QR</p>
-                        <p className="text-orange-500 font-medium">QR expira em ~20s — atualize se necessário</p>
-                      </div>
-                    </div>
-                  )}
+        {/* ── WHATSAPP ── */}
+        {aba === "whatsapp" && (
+          <div className="space-y-6 animate-fade-up">
+            <NovaInstancia onCriada={carregar} />
+            <div className="grid grid-cols-2 gap-4">
+              {loading ? (
+                <div className="col-span-2 space-y-3">
+                  {[1,2,3,4].map(i => <div key={i} className="shimmer h-20 rounded-2xl" />)}
                 </div>
-              ))
+              ) : (
+                data?.whatsapp.map((w) => (
+                  <div key={w.instancia} className="rounded-2xl p-4" style={cardStyle}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{
+                          background: w.state === "open" ? "#34d399" : w.state === "close" ? "#f87171" : "#94a3b8",
+                          boxShadow: w.state === "open" ? "0 0 8px rgba(52,211,153,.6)" : w.state === "close" ? "0 0 8px rgba(248,113,113,.4)" : "none",
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[14px] truncate" style={{ color: "#f1f5f9" }}>{w.nomeEmpresa}</div>
+                        <div className="text-[11px] truncate" style={{ color: "rgba(148,163,184,.45)" }}>{w.instancia}</div>
+                        <div className="text-[12px] font-medium mt-0.5" style={{ color: w.state === "open" ? "#34d399" : "#f87171" }}>
+                          {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5 items-end">
+                        {w.state !== "open" && (
+                          <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
+                            className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                            style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                            {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
+                          </button>
+                        )}
+                        {w.state === "open" && (
+                          <button onClick={() => desconectar(w.instancia)}
+                            className="text-[12px] px-3 py-1.5 rounded-lg font-semibold"
+                            style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                            Desconectar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {qrInstancia[w.instancia] && (
+                      <div className="mt-3 pt-3 flex gap-3 items-start" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                        <div className="bg-white p-2 rounded-xl">
+                          <img src={qrInstancia[w.instancia]!} alt="QR Code" className="w-36 h-36" />
+                        </div>
+                        <div className="flex-1 text-[12px] space-y-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
+                          <p className="font-semibold" style={{ color: "#e2e8f0" }}>Como conectar:</p>
+                          <p>1. Abra o WhatsApp no celular</p>
+                          <p>2. Toque em ⋮ → Aparelhos conectados</p>
+                          <p>3. Conectar aparelho → Escaneie o QR</p>
+                          <p className="font-semibold" style={{ color: "#fb923c" }}>QR expira em ~20s — atualize se necessário</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── ATIVIDADE ── */}
+        {aba === "atividade" && data && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { value: data.atividade.mensagensHoje, label: "Respostas Claude hoje", sub: "Mensagens enviadas pelo bot", color: "#60a5fa", bg: "rgba(96,165,250,.12)", border: "rgba(96,165,250,.2)" },
+                { value: data.atividade.leadsHoje, label: "Leads novos hoje", sub: "Primeiros contatos do dia", color: "#34d399", bg: "rgba(52,211,153,.12)", border: "rgba(52,211,153,.2)" },
+                { value: data.atividade.mensagensMes, label: "Respostas este mês", sub: "Total de tokens Claude usados", color: "#c084fc", bg: "rgba(192,132,252,.12)", border: "rgba(192,132,252,.2)" },
+              ].map((m, i) => (
+                <div key={i} className="bento-card p-5" style={{ background: m.bg, borderColor: m.border }}>
+                  <div className="text-[36px] font-bold tracking-tight leading-none mb-2" style={{ color: m.color }}>{m.value}</div>
+                  <div className="text-[13px] font-semibold" style={{ color: "#e2e8f0" }}>{m.label}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "rgba(148,163,184,.45)" }}>{m.sub}</div>
+                </div>
+              ))}
+            </div>
+            <div
+              className="px-4 py-3 rounded-xl text-[13px]"
+              style={{ background: "rgba(96,165,250,.06)", border: "1px solid rgba(96,165,250,.15)", color: "#60a5fa" }}
+            >
+              Para ver o custo exato de tokens Claude, acesse{" "}
+              <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">
+                console.anthropic.com
+              </a>{" "}
+              → Usage.
+            </div>
+          </div>
+        )}
+
+        {/* ── USUÁRIOS ── */}
+        {aba === "usuarios" && (
+          <div className="space-y-6 animate-fade-up">
+            <MigracaoBtn />
+
+            {msgUser && (
+              <div
+                className="text-[13px] rounded-xl px-4 py-3 font-medium"
+                style={msgUser.includes("sucesso")
+                  ? { background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)", color: "#34d399" }
+                  : { background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", color: "#f87171" }
+                }
+              >
+                {msgUser}
+              </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {aba === "atividade" && data && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <div className="text-3xl font-bold text-blue-600">{data.atividade.mensagensHoje}</div>
-              <div className="text-sm text-gray-600 mt-1">Respostas Claude hoje</div>
-              <div className="text-xs text-gray-400 mt-0.5">Mensagens enviadas pelo bot</div>
+            <div className="p-5 rounded-2xl" style={cardStyle}>
+              <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar acesso para empresa</h3>
+              <form onSubmit={criarUsuario} className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME</label>
+                  <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required placeholder="Maria Silva" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>EMAIL</label>
+                  <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} required placeholder="maria@empresa.com" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>SENHA INICIAL</label>
+                  <input type="password" value={userForm.senha} onChange={e => setUserForm(p => ({...p, senha: e.target.value}))} required minLength={6} placeholder="mínimo 6 caracteres" className={INPUT} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>EMPRESA</label>
+                  <select value={userForm.empresaId} onChange={e => setUserForm(p => ({...p, empresaId: e.target.value}))} required className={INPUT}>
+                    <option value="">Selecionar empresa...</option>
+                    {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2 flex justify-end">
+                  <button type="submit" disabled={salvandoUser} className="btn-primary px-5 py-2 text-[13px] disabled:opacity-50">
+                    {salvandoUser ? "Criando..." : "Criar usuário"}
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <div className="text-3xl font-bold text-green-600">{data.atividade.leadsHoje}</div>
-              <div className="text-sm text-gray-600 mt-1">Leads novos hoje</div>
-              <div className="text-xs text-gray-400 mt-0.5">Primeiros contatos do dia</div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <div className="text-3xl font-bold text-purple-600">{data.atividade.mensagensMes}</div>
-              <div className="text-sm text-gray-600 mt-1">Respostas este mês</div>
-              <div className="text-xs text-gray-400 mt-0.5">Total de tokens Claude usados este mês</div>
-            </div>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-            Para ver o custo exato de tokens Claude, acesse{" "}
-            <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">
-              console.anthropic.com
-            </a>{" "}
-            → Usage.
-          </div>
-        </div>
-      )}
-      {aba === "usuarios" && (
-        <div className="space-y-6">
-          {/* Migração do banco */}
-          <MigracaoBtn />
 
-          {msgUser && (
-            <div className={`text-sm rounded-lg px-4 py-3 font-medium ${msgUser.includes("sucesso") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
-              {msgUser}
-            </div>
-          )}
-
-          {/* Criar usuário */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Criar acesso para empresa</h3>
-            <form onSubmit={criarUsuario} className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nome</label>
-                <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Maria Silva" />
+            <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+                <h3 className="text-[14px] font-semibold" style={{ color: "#f1f5f9" }}>Acessos ativos ({usuarios.length})</h3>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="maria@empresa.com" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Senha inicial</label>
-                <input type="password" value={userForm.senha} onChange={e => setUserForm(p => ({...p, senha: e.target.value}))} required minLength={6}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="mínimo 6 caracteres" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Empresa</label>
-                <select value={userForm.empresaId} onChange={e => setUserForm(p => ({...p, empresaId: e.target.value}))} required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Selecionar empresa...</option>
-                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2 flex justify-end">
-                <button type="submit" disabled={salvandoUser}
-                  className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                  {salvandoUser ? "Criando..." : "Criar usuário"}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Lista usuários */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900">Acessos ativos ({usuarios.length})</h3>
-            </div>
-            {usuarios.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">Nenhum usuário de empresa criado ainda</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-                  <tr>
-                    <th className="text-left px-4 py-3">Nome</th>
-                    <th className="text-left px-4 py-3">Email</th>
-                    <th className="text-left px-4 py-3">Empresa</th>
-                    <th className="text-left px-4 py-3">Status</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {usuarios.map(u => (
-                    <tr key={u.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{u.nome}</td>
-                      <td className="px-4 py-3 text-gray-500">{u.email}</td>
-                      <td className="px-4 py-3 text-gray-500">{u.empresa?.nome ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => toggleAtivo(u.id, u.ativo)}
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${u.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                          {u.ativo ? "Ativo" : "Inativo"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => excluirUsuario(u.id, u.nome)} className="text-red-400 hover:text-red-600 text-xs">Excluir</button>
-                      </td>
+              {usuarios.length === 0 ? (
+                <div className="p-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhum usuário de empresa criado ainda</div>
+              ) : (
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                      <TH>Nome</TH><TH>Email</TH><TH>Empresa</TH><TH>Status</TH><TH></TH>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
+                  <tbody>
+                    {usuarios.map(u => (
+                      <tr key={u.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>{u.nome}</td>
+                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.6)" }}>{u.email}</td>
+                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.6)" }}>{u.empresa?.nome ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => toggleAtivo(u.id, u.ativo)}
+                            className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                            style={u.ativo
+                              ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                              : { background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.5)" }
+                            }>
+                            {u.ativo ? "Ativo" : "Inativo"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => excluirUsuario(u.id, u.nome)}
+                            className="text-[12px] transition-colors"
+                            style={{ color: "rgba(148,163,184,.35)" }}
+                            onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
+                            onMouseLeave={e => e.currentTarget.style.color = "rgba(148,163,184,.35)"}>
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div></div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -567,21 +555,21 @@ function MigracaoBtn() {
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "erro">("idle");
   const rodar = async () => {
     setStatus("loading");
-    const res = await fetch("/api/admin/migrate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: "crm2026migra" }),
-    });
+    const res = await fetch("/api/admin/migrate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ secret: "crm2026migra" }) });
     setStatus(res.ok ? "ok" : "erro");
   };
   return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-4">
+    <div
+      className="px-5 py-4 rounded-2xl flex items-center gap-4"
+      style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)" }}
+    >
       <div className="flex-1">
-        <div className="text-sm font-semibold text-yellow-800">Atualizar banco de dados</div>
-        <div className="text-xs text-yellow-700 mt-0.5">Rode uma vez após cada deploy com mudanças no schema.</div>
+        <div className="text-[14px] font-semibold" style={{ color: "#fbbf24" }}>Atualizar banco de dados</div>
+        <div className="text-[12px] mt-0.5" style={{ color: "rgba(251,191,36,.6)" }}>Rode uma vez após cada deploy com mudanças no schema.</div>
       </div>
       <button onClick={rodar} disabled={status === "loading"}
-        className="text-sm bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-yellow-700 disabled:opacity-50">
+        className="text-[13px] px-4 py-2 rounded-xl font-semibold disabled:opacity-50 transition-all"
+        style={{ background: "rgba(251,191,36,.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.25)" }}>
         {status === "loading" ? "Rodando..." : status === "ok" ? "Concluído ✓" : status === "erro" ? "Erro — tente novamente" : "Executar migração"}
       </button>
     </div>
@@ -596,16 +584,15 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
 
+  const cardStyle = {
+    background: "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
+    border: "1px solid rgba(255,255,255,.08)",
+    borderRadius: "16px",
+  };
+
   const criar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCriando(true);
-    setErro("");
-    setQrcode(null);
-    const res = await fetch("/api/central/instancia", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    e.preventDefault(); setCriando(true); setErro(""); setQrcode(null);
+    const res = await fetch("/api/central/instancia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     const data = await res.json();
     setCriando(false);
     if (!data.ok) { setErro(data.erro ?? "Erro ao criar instância"); return; }
@@ -624,50 +611,48 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5">
-      <h3 className="font-semibold text-gray-900 mb-4">Criar Nova Instância WhatsApp</h3>
+    <div className="p-5 rounded-2xl" style={cardStyle}>
+      <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar Nova Instância WhatsApp</h3>
       <form onSubmit={criar} className="flex gap-3 mb-4">
         <div className="flex-1">
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Nome da Empresa *</label>
-          <input
-            required
-            value={form.empresaNome}
-            onChange={(e) => setForm((p) => ({ ...p, empresaNome: e.target.value }))}
-            placeholder="Ex: Loja da Maria"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME DA EMPRESA *</label>
+          <input required value={form.empresaNome} onChange={(e) => setForm((p) => ({ ...p, empresaNome: e.target.value }))}
+            placeholder="Ex: Loja da Maria" className="w-full input-dark px-3 py-2.5 text-[13px]" />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-semibold text-gray-600 mb-1">Nome da Instância * (sem espaços)</label>
-          <input
-            required
-            value={form.instanciaNome}
+          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME DA INSTÂNCIA * (sem espaços)</label>
+          <input required value={form.instanciaNome}
             onChange={(e) => setForm((p) => ({ ...p, instanciaNome: e.target.value.replace(/\s/g, "_") }))}
-            placeholder="Ex: loja_maria"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            placeholder="Ex: loja_maria" className="w-full input-dark px-3 py-2.5 text-[13px]" />
         </div>
         <div className="flex items-end">
-          <button
-            type="submit"
-            disabled={criando}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={criando} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50">
             {criando ? "Criando..." : "Criar"}
           </button>
         </div>
       </form>
-      {erro && <p className="text-sm text-red-600 mb-3">{erro}</p>}
-      {sucesso && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">{sucesso}</p>}
+      {erro && <p className="text-[13px] mb-3" style={{ color: "#f87171" }}>{erro}</p>}
+      {sucesso && (
+        <p className="text-[13px] px-4 py-2.5 rounded-xl mb-3"
+          style={{ background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)", color: "#34d399" }}>
+          {sucesso}
+        </p>
+      )}
       {qrcode && (
         <div className="flex gap-4 items-start">
-          <div className="bg-white border border-gray-200 rounded-lg p-2">
+          <div className="bg-white p-2 rounded-xl">
             <img src={qrcode} alt="QR Code WhatsApp" className="w-48 h-48" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900 mb-1">QR Code gerado para <strong>{instanciaCriada}</strong></p>
-            <p className="text-xs text-gray-500 mb-3">Abra o WhatsApp no celular → Aparelhos conectados → Conectar aparelho → Escaneie o QR Code</p>
-            <button onClick={atualizarQr} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg">
+            <p className="text-[13px] font-semibold mb-1" style={{ color: "#f1f5f9" }}>
+              QR Code gerado para <strong>{instanciaCriada}</strong>
+            </p>
+            <p className="text-[12px] mb-3" style={{ color: "rgba(148,163,184,.5)" }}>
+              Abra o WhatsApp → Aparelhos conectados → Conectar aparelho → Escaneie
+            </p>
+            <button onClick={atualizarQr}
+              className="text-[12px] px-3 py-1.5 rounded-lg font-medium"
+              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}>
               Atualizar QR Code
             </button>
           </div>

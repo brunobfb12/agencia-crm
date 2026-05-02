@@ -8,6 +8,7 @@ interface Lead {
   score: number;
   observacoes: string | null;
   vendedorId: string | null;
+  empresaId: string;
   atualizadoEm: string;
   cliente: { nome: string | null; telefone: string };
   empresa: { nome: string };
@@ -62,6 +63,12 @@ export default function LeadsPage() {
   const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "" });
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [modoSelecao, setModoSelecao] = useState(false);
+  const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [modalCampanha, setModalCampanha] = useState(false);
+  const [mensagemCampanha, setMensagemCampanha] = useState("");
+  const [disparando, setDisparando] = useState(false);
+  const [campanhaOk, setCampanhaOk] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -116,6 +123,36 @@ export default function LeadsPage() {
     setSalvando(false);
   };
 
+  const toggleSelecao = (id: string) => {
+    setSelecionados((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const dispararCampanha = async () => {
+    if (!mensagemCampanha.trim() || !selecionados.length) return;
+    setDisparando(true);
+    const lead = leads.find((l) => selecionados.includes(l.id));
+    const res = await fetch("/api/campanhas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        empresaId: lead?.empresaId,
+        mensagem: mensagemCampanha,
+        leadIds: selecionados,
+      }),
+    });
+    setDisparando(false);
+    if (res.ok) {
+      setModalCampanha(false);
+      setModoSelecao(false);
+      setSelecionados([]);
+      setMensagemCampanha("");
+      setCampanhaOk(true);
+      setTimeout(() => setCampanhaOk(false), 4000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full" style={{ background: "#08080e", color: "#64748b" }}>
@@ -134,11 +171,49 @@ export default function LeadsPage() {
     <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
       <div className="p-6">
         {/* Header */}
-        <div className="mb-6 animate-fade-up">
-          <h2 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Leads</h2>
-          <p className="text-sm mt-1" style={{ color: "rgba(148,163,184,.55)" }}>
-            {leads.length} leads · Arraste os cards para mover entre colunas
-          </p>
+        <div className="mb-6 animate-fade-up flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Leads</h2>
+            <p className="text-sm mt-1" style={{ color: "rgba(148,163,184,.55)" }}>
+              {leads.length} leads · Arraste os cards para mover entre colunas
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {campanhaOk && (
+              <span
+                className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
+                style={{
+                  background: "rgba(52,211,153,.1)",
+                  color: "#34d399",
+                  border: "1px solid rgba(52,211,153,.2)",
+                }}
+              >
+                Campanha criada!
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setModoSelecao((v) => !v);
+                setSelecionados([]);
+              }}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+              style={
+                modoSelecao
+                  ? {
+                      background: "linear-gradient(135deg, #6366f1, #4f46e5)",
+                      color: "white",
+                      border: "1px solid transparent",
+                    }
+                  : {
+                      background: "rgba(255,255,255,.05)",
+                      border: "1px solid rgba(255,255,255,.1)",
+                      color: "rgba(148,163,184,.7)",
+                    }
+              }
+            >
+              {modoSelecao ? `Selecionar (${selecionados.length})` : "Selecionar"}
+            </button>
+          </div>
         </div>
 
         {/* Kanban */}
@@ -192,20 +267,47 @@ export default function LeadsPage() {
                   {leadsColuna.map((lead) => {
                     const sc = fireColor(lead.score);
                     const fl2 = fireLabel(lead.score);
+                    const isSelected = selecionados.includes(lead.id);
                     return (
                       <div
                         key={lead.id}
-                        draggable
-                        onDragStart={() => setDraggedId(lead.id)}
+                        draggable={!modoSelecao}
+                        onDragStart={() => !modoSelecao && setDraggedId(lead.id)}
                         onDragEnd={() => { setDraggedId(null); setDragOverCol(null); }}
-                        className="rounded-xl p-3 cursor-grab active:cursor-grabbing select-none transition-all glass-hover"
+                        onClick={() => modoSelecao && toggleSelecao(lead.id)}
+                        className="rounded-xl p-3 select-none transition-all glass-hover relative"
                         style={{
-                          background: "rgba(255,255,255,.04)",
-                          border: "1px solid rgba(255,255,255,.07)",
+                          background: isSelected
+                            ? "rgba(99,102,241,.12)"
+                            : "rgba(255,255,255,.04)",
+                          border: isSelected
+                            ? "1px solid rgba(99,102,241,.35)"
+                            : "1px solid rgba(255,255,255,.07)",
                           opacity: draggedId === lead.id ? 0.3 : 1,
+                          cursor: modoSelecao ? "pointer" : "grab",
                         }}
                       >
-                        <div className="flex justify-between items-start gap-1">
+                        {/* Selection checkbox */}
+                        {modoSelecao && (
+                          <div
+                            className="absolute top-2.5 left-2.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                            style={{
+                              background: isSelected
+                                ? "#6366f1"
+                                : "rgba(255,255,255,.08)",
+                              border: isSelected
+                                ? "1px solid #6366f1"
+                                : "1px solid rgba(255,255,255,.2)",
+                            }}
+                          >
+                            {isSelected && (
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+                        <div className={`flex justify-between items-start gap-1${modoSelecao ? " pl-5" : ""}`}>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-[13px] leading-tight truncate" style={{ color: "#f1f5f9" }}>
                               {lead.cliente.nome ?? lead.cliente.telefone}
@@ -275,6 +377,115 @@ export default function LeadsPage() {
           })}
         </div>
       </div>
+
+      {/* Floating campaign bar */}
+      {modoSelecao && selecionados.length > 0 && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-5 py-3 rounded-2xl animate-fade-up"
+          style={{
+            background: "linear-gradient(145deg, #13131f, #0d0d18)",
+            border: "1px solid rgba(99,102,241,.3)",
+            boxShadow: "0 8px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(99,102,241,.1)",
+          }}
+        >
+          <span className="text-[13px] font-semibold" style={{ color: "#a5b4fc" }}>
+            {selecionados.length} lead{selecionados.length !== 1 ? "s" : ""} selecionado{selecionados.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={() => { setSelecionados([]); }}
+            className="text-[12px] transition-colors"
+            style={{ color: "rgba(148,163,184,.4)" }}
+          >
+            Limpar
+          </button>
+          <button
+            onClick={() => setModalCampanha(true)}
+            className="btn-primary px-4 py-2 text-[13px]"
+          >
+            Disparar Campanha
+          </button>
+        </div>
+      )}
+
+      {/* Campaign modal */}
+      {modalCampanha && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
+            style={{
+              background: "linear-gradient(145deg, #13131f, #0d0d18)",
+              border: "1px solid rgba(255,255,255,.1)",
+              boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+            }}
+          >
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,.07)" }}>
+              <h3 className="font-bold text-[15px]" style={{ color: "#f1f5f9" }}>Disparar Campanha</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "rgba(148,163,184,.55)" }}>
+                {selecionados.length} lead{selecionados.length !== 1 ? "s" : ""} selecionado{selecionados.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              <div
+                className="px-3 py-2.5 rounded-xl text-[12px]"
+                style={{
+                  background: "rgba(251,191,36,.06)",
+                  border: "1px solid rgba(251,191,36,.15)",
+                  color: "#fbbf24",
+                }}
+              >
+                ⚡ As mensagens serão enviadas com espaçamento anti-spam automático.
+              </div>
+              <div>
+                <label
+                  className="block text-[11px] font-semibold mb-1.5"
+                  style={{ color: "rgba(148,163,184,.7)" }}
+                >
+                  MENSAGEM
+                </label>
+                <textarea
+                  rows={4}
+                  value={mensagemCampanha}
+                  onChange={(e) => setMensagemCampanha(e.target.value)}
+                  placeholder="Digite a mensagem da campanha... Use {nome} para personalizar."
+                  className="w-full input-dark px-3 py-2.5 text-[13px] resize-none"
+                  autoFocus
+                />
+                <p className="text-[11px] mt-1" style={{ color: "rgba(148,163,184,.3)" }}>
+                  Use {"{nome}"} para personalizar com o nome do cliente.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="px-5 py-4 flex gap-2 justify-end"
+              style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}
+            >
+              <button
+                onClick={() => { setModalCampanha(false); setMensagemCampanha(""); }}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                style={{
+                  background: "rgba(255,255,255,.06)",
+                  border: "1px solid rgba(255,255,255,.1)",
+                  color: "#94a3b8",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={dispararCampanha}
+                disabled={disparando || !mensagemCampanha.trim()}
+                className="btn-primary px-5 py-2 text-[13px] disabled:opacity-50"
+              >
+                {disparando ? "Disparando..." : "Disparar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editLead && (
