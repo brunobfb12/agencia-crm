@@ -207,7 +207,7 @@ export default function ConfiguracoesPage() {
     ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(99,102,241,.3)" }
     : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" };
 
-  const TH = ({ children }: { children: React.ReactNode }) => (
+  const TH = ({ children }: { children?: React.ReactNode }) => (
     <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.45)" }}>
       {children}
     </th>

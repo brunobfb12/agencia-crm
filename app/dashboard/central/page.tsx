@@ -159,7 +159,7 @@ export default function CentralPage() {
     borderBottom: "1px solid rgba(99,102,241,.12)",
   };
 
-  const TH = ({ children }: { children: React.ReactNode }) => (
+  const TH = ({ children }: { children?: React.ReactNode }) => (
     <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.45)" }}>
       {children}
     </th>
