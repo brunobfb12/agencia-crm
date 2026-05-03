@@ -32,11 +32,15 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   SEM_RESPOSTA:        { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Sem Resposta" },
 };
 
+const formVazio = { nome: "", telefone: "", email: "", dataNascimento: "", empresaId: "" };
+
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [busca, setBusca] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // modal CSV
   const [modalImport, setModalImport] = useState(false);
   const [importEmpresa, setImportEmpresa] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -44,8 +48,17 @@ export default function ClientesPage() {
   const [importResult, setImportResult] = useState<{ ok: boolean; importados: number; ignorados: number; erros: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // modal novo cliente
+  const [modalNovo, setModalNovo] = useState(false);
+  const [novoForm, setNovoForm] = useState(formVazio);
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
+  const [novoErro, setNovoErro] = useState("");
+
   useEffect(() => {
-    fetch("/api/empresas").then((r) => r.json()).then(setEmpresas);
+    fetch("/api/empresas").then((r) => r.json()).then((data) => {
+      setEmpresas(data);
+      if (data.length === 1) setNovoForm((f) => ({ ...f, empresaId: data[0].id }));
+    });
   }, []);
 
   useEffect(() => {
@@ -57,6 +70,36 @@ export default function ClientesPage() {
       .then((data) => { setClientes(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [busca]);
+
+  const salvarNovo = async () => {
+    if (!novoForm.telefone || !novoForm.empresaId) {
+      setNovoErro("Telefone e empresa são obrigatórios.");
+      return;
+    }
+    setSalvandoNovo(true);
+    setNovoErro("");
+    const res = await fetch("/api/clientes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nome: novoForm.nome || null,
+        telefone: novoForm.telefone,
+        email: novoForm.email || undefined,
+        dataNascimento: novoForm.dataNascimento || undefined,
+        empresaId: novoForm.empresaId,
+      }),
+    });
+    if (res.ok) {
+      setModalNovo(false);
+      setNovoForm(formVazio);
+      if (empresas.length === 1) setNovoForm((f) => ({ ...f, empresaId: empresas[0].id }));
+      fetch("/api/clientes").then((r) => r.json()).then(setClientes);
+    } else {
+      const d = await res.json();
+      setNovoErro(d.error ?? "Erro ao salvar cliente.");
+    }
+    setSalvandoNovo(false);
+  };
 
   const importar = async () => {
     if (!importFile || !importEmpresa) return;
@@ -102,7 +145,21 @@ export default function ClientesPage() {
                 {clientes.length} clientes cadastrados
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => { setModalNovo(true); setNovoErro(""); }}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+                style={{
+                  background: "rgba(99,102,241,.15)",
+                  border: "1px solid rgba(99,102,241,.3)",
+                  color: "#a5b4fc",
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Novo Cliente
+              </button>
               <button
                 onClick={() => { setModalImport(true); setImportResult(null); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
@@ -217,6 +274,102 @@ export default function ClientesPage() {
           </>
         )}
       </div>
+
+      {/* Modal Novo Cliente */}
+      {modalNovo && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
+          <div
+            className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
+            style={{ background: "var(--bg)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.4)" }}
+          >
+            <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Novo Cliente</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>Preencha os dados do cliente manualmente</p>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {empresas.length > 1 && (
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>EMPRESA *</label>
+                  <select
+                    value={novoForm.empresaId}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, empresaId: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  >
+                    <option value="">Selecione a empresa</option>
+                    {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
+                  <input
+                    type="text"
+                    placeholder="Nome do cliente"
+                    value={novoForm.nome}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, nome: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TELEFONE *</label>
+                  <input
+                    type="text"
+                    placeholder="5511999998888"
+                    value={novoForm.telefone}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, telefone: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px] font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>E-MAIL</label>
+                  <input
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={novoForm.email}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, email: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NASCIMENTO</label>
+                  <input
+                    type="date"
+                    value={novoForm.dataNascimento}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, dataNascimento: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  />
+                </div>
+              </div>
+
+              {novoErro && (
+                <p className="text-[12px] px-3 py-2 rounded-lg" style={{ background: "rgba(248,113,113,.1)", color: "#f87171", border: "1px solid rgba(248,113,113,.2)" }}>
+                  {novoErro}
+                </p>
+              )}
+            </div>
+
+            <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+              <button
+                onClick={() => { setModalNovo(false); setNovoForm(formVazio); if (empresas.length === 1) setNovoForm((f) => ({ ...f, empresaId: empresas[0].id })); }}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+                style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={salvarNovo}
+                disabled={salvandoNovo}
+                className="btn-primary px-5 py-2 text-[13px] disabled:opacity-40"
+              >
+                {salvandoNovo ? "Salvando..." : "Salvar Cliente"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Importar CSV */}
       {modalImport && (

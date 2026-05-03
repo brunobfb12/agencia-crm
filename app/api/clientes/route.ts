@@ -67,20 +67,17 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  if (!body.telefone || !body.empresaId) {
+    return NextResponse.json({ error: "telefone e empresaId são obrigatórios" }, { status: 400 });
+  }
+  const extra = {
+    ...(body.email    !== undefined && body.email    !== "" && { email: body.email }),
+    ...(body.dataNascimento && { dataNascimento: new Date(body.dataNascimento) }),
+  };
   const cliente = await prisma.cliente.upsert({
-    where: {
-      telefone_empresaId: {
-        telefone: body.telefone,
-        empresaId: body.empresaId,
-      },
-    },
-    update: { nome: body.nome, tags: body.tags ?? [] },
-    create: {
-      nome: body.nome,
-      telefone: body.telefone,
-      empresaId: body.empresaId,
-      tags: body.tags ?? [],
-    },
+    where: { telefone_empresaId: { telefone: body.telefone, empresaId: body.empresaId } },
+    update: { nome: body.nome, tags: body.tags ?? [], ...extra },
+    create: { nome: body.nome, telefone: body.telefone, empresaId: body.empresaId, tags: body.tags ?? [], ...extra },
   });
   return NextResponse.json(cliente, { status: 201 });
 }
