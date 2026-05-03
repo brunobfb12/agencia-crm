@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -52,13 +52,23 @@ const IconLogout = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   </svg>
 );
+const IconMenu = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+const IconClose = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
 
 /* ── Nav items ────────────────────────────────────────────────────── */
 const navItemsBase = [
-  { href: "/dashboard",               label: "Visão Geral",   Icon: IconOverview },
-  { href: "/dashboard/leads",         label: "Leads",         Icon: IconLeads    },
-  { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat     },
-  { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients  },
+  { href: "/dashboard",               label: "Visão Geral",   Icon: IconOverview  },
+  { href: "/dashboard/leads",         label: "Leads",         Icon: IconLeads     },
+  { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat      },
+  { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients   },
   { href: "/dashboard/agendamentos",  label: "Agendamentos",  Icon: IconSchedule  },
   { href: "/dashboard/campanhas",     label: "Campanhas",     Icon: IconCampanhas },
   { href: "/dashboard/configuracoes", label: "Configurações", Icon: IconSettings  },
@@ -67,18 +77,17 @@ const navItemsCentral = [
   { href: "/dashboard/central", label: "Painel Central", Icon: IconCentral },
 ];
 
-/* ── Component ────────────────────────────────────────────────────── */
-export default function Nav({
-  nome,
-  perfil,
-  empresa,
+/* ── Sidebar content (shared between desktop and mobile) ──────────── */
+function SidebarContent({
+  nome, perfil, empresa, items, onNavigate,
 }: {
-  nome: string;
-  perfil: string;
-  empresa?: string;
+  nome: string; perfil: string; empresa?: string;
+  items: typeof navItemsBase; onNavigate: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const initial = nome.charAt(0).toUpperCase();
+  const subLabel = perfil === "CENTRAL" ? "Admin · 10 empresas" : (empresa ?? perfil);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -86,45 +95,23 @@ export default function Nav({
     router.refresh();
   }
 
-  const items = [
-    ...navItemsBase,
-    ...(perfil === "CENTRAL" ? navItemsCentral : []),
-  ];
-
-  const initial = nome.charAt(0).toUpperCase();
-  const subLabel =
-    perfil === "CENTRAL" ? "Admin · 10 empresas" : (empresa ?? perfil);
-
   return (
-    <aside
-      className="sidebar-bg w-[232px] flex flex-col flex-shrink-0 overflow-hidden"
-      style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
-    >
-      {/* ── Logo ──────────────────────────────────────────────── */}
+    <>
+      {/* Logo */}
       <div className="px-5 pt-6 pb-5">
         <div className="flex items-center gap-3">
-          {/* Icon mark */}
           <div
             className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #6366f1 0%, #818cf8 60%, #38bdf8 100%)",
-              boxShadow: "0 4px 14px rgba(99,102,241,.5)",
-            }}
+            style={{ background: "linear-gradient(135deg,#6366f1 0%,#818cf8 60%,#38bdf8 100%)", boxShadow: "0 4px 14px rgba(99,102,241,.5)" }}
           >
             <svg className="w-[18px] h-[18px] text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
               <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
             </svg>
           </div>
-          {/* Name */}
           <div>
-            <div className="text-[15px] font-bold gradient-text leading-tight">
-              FácilCRM
-            </div>
-            <div
-              className="text-[10.5px] mt-0.5 leading-none font-medium"
-              style={{ color: "rgba(148,163,184,.55)" }}
-            >
+            <div className="text-[15px] font-bold gradient-text leading-tight">FácilCRM</div>
+            <div className="text-[10.5px] mt-0.5 leading-none font-medium" style={{ color: "rgba(148,163,184,.55)" }}>
               {subLabel}
             </div>
           </div>
@@ -133,97 +120,152 @@ export default function Nav({
 
       <div className="divider mx-4" />
 
-      {/* ── Nav ───────────────────────────────────────────────── */}
+      {/* Nav links */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {/* Section label */}
-        <p
-          className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest"
-          style={{ color: "rgba(148,163,184,.35)" }}
-        >
+        <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(148,163,184,.35)" }}>
           Menu
         </p>
-
         {items.map(({ href, label, Icon }) => {
-          const isActive =
-            href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(href);
-
+          const isActive = href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
+              onClick={onNavigate}
               className={`nav-item flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[13px] font-medium ${
-                isActive
-                  ? "active text-indigo-300"
-                  : "text-slate-400"
+                isActive ? "active text-indigo-300" : "text-slate-400"
               }`}
             >
-              <span
-                className="flex-shrink-0 transition-colors"
-                style={{ color: isActive ? "#a5b4fc" : "rgba(148,163,184,.6)" }}
-              >
+              <span className="flex-shrink-0 transition-colors" style={{ color: isActive ? "#a5b4fc" : "rgba(148,163,184,.6)" }}>
                 <Icon />
               </span>
               {label}
               {isActive && (
-                <span
-                  className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: "#818cf8", boxShadow: "0 0 6px #818cf8" }}
-                />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#818cf8", boxShadow: "0 0 6px #818cf8" }} />
               )}
             </Link>
           );
         })}
-
         {perfil === "CENTRAL" && <div className="divider my-2" />}
       </nav>
 
-      {/* ── User ──────────────────────────────────────────────── */}
+      {/* User */}
       <div className="divider mx-4" />
       <div className="px-4 py-4">
         <div className="flex items-center gap-2.5 mb-3">
-          {/* Avatar */}
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg, #6366f1, #38bdf8)",
-              color: "white",
-              boxShadow: "0 0 0 2px rgba(99,102,241,.3)",
-            }}
+            style={{ background: "linear-gradient(135deg,#6366f1,#38bdf8)", color: "white", boxShadow: "0 0 0 2px rgba(99,102,241,.3)" }}
           >
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <div
-              className="text-[12.5px] font-semibold truncate"
-              style={{ color: "#e2e8f0" }}
-            >
-              {nome}
-            </div>
+            <div className="text-[12.5px] font-semibold truncate" style={{ color: "#e2e8f0" }}>{nome}</div>
             <div className="text-[10.5px] capitalize" style={{ color: "rgba(148,163,184,.5)" }}>
               {perfil === "CENTRAL" ? "Administrador" : "Empresa"}
             </div>
           </div>
         </div>
-
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] text-[12px] font-medium transition-all"
           style={{ color: "rgba(148,163,184,.5)" }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,.08)";
-            (e.currentTarget as HTMLElement).style.color = "#f87171";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "transparent";
-            (e.currentTarget as HTMLElement).style.color = "rgba(148,163,184,.5)";
-          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,.08)"; (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "rgba(148,163,184,.5)"; }}
         >
           <IconLogout />
           Sair da conta
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+/* ── Main Nav component ───────────────────────────────────────────── */
+export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: string; empresa?: string }) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close drawer on route change
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    if (open) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  const items = [...navItemsBase, ...(perfil === "CENTRAL" ? navItemsCentral : [])];
+
+  return (
+    <>
+      {/* ── Desktop sidebar (md+) ──────────────────────────────── */}
+      <aside
+        className="sidebar-bg hidden md:flex w-[232px] flex-col flex-shrink-0 overflow-hidden"
+        style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
+      >
+        <SidebarContent nome={nome} perfil={perfil} empresa={empresa} items={items} onNavigate={() => {}} />
+      </aside>
+
+      {/* ── Mobile top bar ─────────────────────────────────────── */}
+      <header
+        className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
+        style={{ background: "#08080e", borderBottom: "1px solid rgba(255,255,255,.06)" }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(135deg,#6366f1 0%,#818cf8 60%,#38bdf8 100%)" }}
+          >
+            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
+              <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
+            </svg>
+          </div>
+          <span className="text-[15px] font-bold gradient-text">FácilCRM</span>
+        </div>
+
+        {/* Hamburger */}
+        <button
+          onClick={() => setOpen(true)}
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: "rgba(148,163,184,.7)" }}
+        >
+          <IconMenu />
+        </button>
+      </header>
+
+      {/* ── Mobile drawer backdrop ─────────────────────────────── */}
+      {open && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile drawer ──────────────────────────────────────── */}
+      <aside
+        className={`md:hidden fixed top-0 left-0 z-50 h-full w-[280px] sidebar-bg flex flex-col overflow-hidden transition-transform duration-300 ease-in-out ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute top-4 right-4 p-1.5 rounded-lg"
+          style={{ color: "rgba(148,163,184,.6)" }}
+        >
+          <IconClose />
+        </button>
+
+        <SidebarContent
+          nome={nome} perfil={perfil} empresa={empresa} items={items}
+          onNavigate={() => setOpen(false)}
+        />
+      </aside>
+    </>
   );
 }

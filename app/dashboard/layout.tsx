@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex h-full" style={{ background: "#08080e" }}>
       <Nav nome={usuario.nome} perfil={usuario.perfil} empresa={nomeEmpresa} />
-      <main className="flex-1 overflow-hidden flex flex-col">{children}</main>
+      <main className="flex-1 overflow-hidden flex flex-col pt-14 md:pt-0">{children}</main>
     </div>
   );
 }
