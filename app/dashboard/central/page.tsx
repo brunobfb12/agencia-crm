@@ -267,6 +267,7 @@ export default function CentralPage() {
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}</div>
             ) : (
+              <>
               <ScrollHint />
               <div className="relative">
                 <GradientFade />
@@ -358,6 +359,7 @@ export default function CentralPage() {
                 </table>
               </div>
               </div>
+              </>
             )}
           </div>
         )}
