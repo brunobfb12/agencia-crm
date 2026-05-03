@@ -177,7 +177,7 @@ export default function ConversasPage() {
 
       {/* ── Sidebar lista ─────────────────────────────────── */}
       <div
-        className="w-80 flex-shrink-0 flex flex-col"
+        className={`${ativa ? "hidden md:flex" : "flex"} w-full md:w-80 flex-shrink-0 flex-col`}
         style={{
           background: "#0a0916",
           borderRight: "1px solid rgba(255,255,255,.06)",
@@ -267,7 +267,7 @@ export default function ConversasPage() {
       </div>
 
       {/* ── Chat area ─────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0" style={{ background: "#08080e" }}>
+      <div className={`${ativa || loadingChat ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0`} style={{ background: "#08080e" }}>
         {!ativa && !loadingChat ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center" style={{ color: "rgba(148,163,184,.3)" }}>
@@ -292,6 +292,16 @@ export default function ConversasPage() {
               }}
             >
               <div className="flex items-center gap-3">
+                {/* Back button — mobile only */}
+                <button
+                  onClick={() => setAtiva(null)}
+                  className="md:hidden p-1.5 rounded-lg flex-shrink-0 -ml-1"
+                  style={{ color: "rgba(148,163,184,.7)" }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold flex-shrink-0"
                   style={{ background: "linear-gradient(135deg, #6366f1, #38bdf8)", color: "white" }}

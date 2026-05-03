@@ -167,7 +167,7 @@ export default function CentralPage() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
@@ -204,7 +204,7 @@ export default function CentralPage() {
 
         {/* Metric cards */}
         {data && (
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             {[
               { value: data.atividade.mensagensHoje, label: "Respostas Claude hoje", color: "#60a5fa", bg: "rgba(96,165,250,.12)", border: "rgba(96,165,250,.2)" },
               { value: data.atividade.leadsHoje, label: "Leads criados hoje", color: "#34d399", bg: "rgba(52,211,153,.12)", border: "rgba(52,211,153,.2)" },
@@ -219,7 +219,7 @@ export default function CentralPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {(["ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
             <button key={tab} onClick={() => setAba(tab)}
               className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
@@ -233,7 +233,7 @@ export default function CentralPage() {
         {aba === "ferramentas" && (
           <div className="space-y-4 animate-fade-up">
             <form onSubmit={criarFerramenta} className="p-4 rounded-2xl" style={cardStyle}>
-              <div className="grid grid-cols-3 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                 {[
                   { key: "nome", label: "NOME *", placeholder: "Ex: Claude API", required: true, type: "text" },
                   { key: "link", label: "LINK / URL", placeholder: "https://...", type: "text" },
@@ -266,8 +266,8 @@ export default function CentralPage() {
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}</div>
             ) : (
-              <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-                <table className="w-full text-[13px]">
+              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+                <table className="w-full text-[13px] min-w-[560px]">
                   <thead>
                     <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                       <TH>Ferramenta</TH><TH>Tipo</TH><TH>Valor/mês</TH><TH>Vencimento</TH><TH>Obs.</TH><TH></TH>
@@ -311,7 +311,7 @@ export default function CentralPage() {
                         {editId === f.id && (
                           <tr key={`${f.id}-edit`}>
                             <td colSpan={6} className="px-4 py-4" style={editRowStyle}>
-                              <div className="grid grid-cols-3 gap-3 mb-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                                 {[
                                   { key: "nome", label: "NOME", type: "text" },
                                   { key: "link", label: "LINK", type: "text" },
@@ -361,9 +361,9 @@ export default function CentralPage() {
         {aba === "whatsapp" && (
           <div className="space-y-6 animate-fade-up">
             <NovaInstancia onCriada={carregar} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {loading ? (
-                <div className="col-span-2 space-y-3">
+                <div className="col-span-1 sm:col-span-2 space-y-3">
                   {[1,2,3,4].map(i => <div key={i} className="shimmer h-20 rounded-2xl" />)}
                 </div>
               ) : (
@@ -402,7 +402,7 @@ export default function CentralPage() {
                       </div>
                     </div>
                     {qrInstancia[w.instancia] && (
-                      <div className="mt-3 pt-3 flex gap-3 items-start" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                      <div className="mt-3 pt-3 flex flex-col sm:flex-row gap-3 items-start" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
                         <div className="bg-white p-2 rounded-xl">
                           <img src={qrInstancia[w.instancia]!} alt="QR Code" className="w-36 h-36" />
                         </div>
@@ -425,7 +425,7 @@ export default function CentralPage() {
         {/* ── ATIVIDADE ── */}
         {aba === "atividade" && data && (
           <div className="space-y-4 animate-fade-up">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { value: data.atividade.mensagensHoje, label: "Respostas Claude hoje", sub: "Mensagens enviadas pelo bot", color: "#60a5fa", bg: "rgba(96,165,250,.12)", border: "rgba(96,165,250,.2)" },
                 { value: data.atividade.leadsHoje, label: "Leads novos hoje", sub: "Primeiros contatos do dia", color: "#34d399", bg: "rgba(52,211,153,.12)", border: "rgba(52,211,153,.2)" },
@@ -470,7 +470,7 @@ export default function CentralPage() {
 
             <div className="p-5 rounded-2xl" style={cardStyle}>
               <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar acesso para empresa</h3>
-              <form onSubmit={criarUsuario} className="grid grid-cols-2 gap-3">
+              <form onSubmit={criarUsuario} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME</label>
                   <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required placeholder="Maria Silva" className={INPUT} />
@@ -498,14 +498,14 @@ export default function CentralPage() {
               </form>
             </div>
 
-            <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+            <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
                 <h3 className="text-[14px] font-semibold" style={{ color: "#f1f5f9" }}>Acessos ativos ({usuarios.length})</h3>
               </div>
               {usuarios.length === 0 ? (
                 <div className="p-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhum usuário de empresa criado ainda</div>
               ) : (
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[13px] min-w-[480px]">
                   <thead>
                     <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                       <TH>Nome</TH><TH>Email</TH><TH>Empresa</TH><TH>Status</TH><TH></TH>
@@ -613,7 +613,7 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   return (
     <div className="p-5 rounded-2xl" style={cardStyle}>
       <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar Nova Instância WhatsApp</h3>
-      <form onSubmit={criar} className="flex gap-3 mb-4">
+      <form onSubmit={criar} className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex-1">
           <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME DA EMPRESA *</label>
           <input required value={form.empresaNome} onChange={(e) => setForm((p) => ({ ...p, empresaNome: e.target.value }))}
@@ -639,8 +639,8 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
         </p>
       )}
       {qrcode && (
-        <div className="flex gap-4 items-start">
-          <div className="bg-white p-2 rounded-xl">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <div className="bg-white p-2 rounded-xl self-center sm:self-auto">
             <img src={qrcode} alt="QR Code WhatsApp" className="w-48 h-48" />
           </div>
           <div className="flex-1">

@@ -230,7 +230,7 @@ export default function ConfiguracoesPage() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
@@ -253,7 +253,7 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {(["empresas", "vendedores", "midias"] as const).map((tab) => (
             <button key={tab} onClick={() => setAba(tab)}
               className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
@@ -266,7 +266,7 @@ export default function ConfiguracoesPage() {
         {/* ── EMPRESAS ── */}
         {aba === "empresas" && (
           <div className="space-y-4 animate-fade-up">
-            <form onSubmit={criarEmpresa} className="flex gap-3 p-4 rounded-2xl" style={cardStyle}>
+            <form onSubmit={criarEmpresa} className="flex flex-col sm:flex-row gap-3 p-4 rounded-2xl" style={cardStyle}>
               <input required placeholder="Nome da empresa" value={novaEmpresa.nome}
                 onChange={(e) => setNovaEmpresa((p) => ({ ...p, nome: e.target.value }))}
                 className={`flex-1 ${INPUT}`} />
@@ -276,8 +276,8 @@ export default function ConfiguracoesPage() {
               <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
             </form>
 
-            <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-              <table className="w-full text-[13px]">
+            <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+              <table className="w-full text-[13px] min-w-[520px]">
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                     <TH>Empresa</TH><TH>Instância</TH><TH>Clientes</TH><TH>Info</TH><TH></TH>
@@ -309,7 +309,7 @@ export default function ConfiguracoesPage() {
                       {editEmpresa === emp.id && (
                         <tr key={`${emp.id}-edit`}>
                           <td colSpan={5} className="px-5 py-5" style={editRowStyle}>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                               {SECOES.map((sec) => (
                                 <div key={sec}>
                                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
@@ -351,7 +351,7 @@ export default function ConfiguracoesPage() {
                               <p className="text-[12px] font-semibold mb-3" style={{ color: "rgba(148,163,184,.7)" }}>
                                 📆 Google Calendar (opcional)
                               </p>
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>ID DO CALENDÁRIO</label>
                                   <input value={calendarFields.googleCalendarId} onChange={e => setCalendarFields(p => ({ ...p, googleCalendarId: e.target.value }))}
@@ -405,7 +405,7 @@ export default function ConfiguracoesPage() {
         {/* ── VENDEDORES ── */}
         {aba === "vendedores" && (
           <div className="space-y-4 animate-fade-up">
-            <form onSubmit={criarVendedor} className="flex gap-3 p-4 rounded-2xl" style={cardStyle}>
+            <form onSubmit={criarVendedor} className="flex flex-col sm:flex-row flex-wrap gap-3 p-4 rounded-2xl" style={cardStyle}>
               <input required placeholder="Nome" value={novoVendedor.nome}
                 onChange={(e) => setNovoVendedor((p) => ({ ...p, nome: e.target.value }))}
                 className={`flex-1 ${INPUT}`} />
@@ -421,8 +421,8 @@ export default function ConfiguracoesPage() {
               <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
             </form>
 
-            <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-              <table className="w-full text-[13px]">
+            <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+              <table className="w-full text-[13px] min-w-[600px]">
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                     <TH>Vendedor</TH><TH>Telefone</TH><TH>Empresa</TH><TH>Ordem</TH><TH>Status</TH><TH></TH>
@@ -535,7 +535,7 @@ export default function ConfiguracoesPage() {
               <>
                 <form onSubmit={criarMidia} className="p-5 rounded-2xl space-y-4" style={cardStyle}>
                   <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.5)" }}>Adicionar nova mídia</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>ETIQUETA</label>
                       <input required placeholder="ex: Catálogo Verão 2026" value={novaMidia.etiqueta}
@@ -567,7 +567,7 @@ export default function ConfiguracoesPage() {
                   </button>
                 </form>
 
-                <div className="rounded-2xl overflow-hidden" style={cardStyle}>
+                <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
                   {carregandoMidias ? (
                     <div className="p-6 space-y-2">
                       {[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}
@@ -577,7 +577,7 @@ export default function ConfiguracoesPage() {
                       Nenhuma mídia cadastrada para esta empresa.
                     </div>
                   ) : (
-                    <table className="w-full text-[13px]">
+                    <table className="w-full text-[13px] min-w-[520px]">
                       <thead>
                         <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                           <TH>Etiqueta</TH><TH>Tipo</TH><TH>Quando usar</TH><TH>Status</TH><TH></TH>
