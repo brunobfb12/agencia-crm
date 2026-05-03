@@ -62,6 +62,60 @@ const IconClose = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
+const IconSun = () => (
+  <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="5" />
+    <path strokeLinecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+const IconMoon = () => (
+  <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+  </svg>
+);
+
+/* ── Theme toggle ─────────────────────────────────────────────────── */
+function ThemeToggle({ compact = false }: { compact?: boolean }) {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    setDark(saved !== "light");
+  }, []);
+
+  function toggle() {
+    const next = dark ? "light" : "dark";
+    setDark(!dark);
+    localStorage.setItem("theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+  }
+
+  if (compact) {
+    return (
+      <button
+        onClick={toggle}
+        className="p-2 rounded-lg transition-colors"
+        style={{ color: "var(--muted)" }}
+        title={dark ? "Tema claro" : "Tema escuro"}
+      >
+        {dark ? <IconSun /> : <IconMoon />}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] text-[12px] font-medium transition-all mb-1"
+      style={{ color: "var(--muted-2)" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--card-2)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+    >
+      {dark ? <IconSun /> : <IconMoon />}
+      {dark ? "Tema claro" : "Tema escuro"}
+    </button>
+  );
+}
 
 /* ── Nav items ────────────────────────────────────────────────────── */
 const navItemsBase = [
@@ -111,7 +165,7 @@ function SidebarContent({
           </div>
           <div>
             <div className="text-[15px] font-bold gradient-text leading-tight">FácilCRM</div>
-            <div className="text-[10.5px] mt-0.5 leading-none font-medium" style={{ color: "rgba(148,163,184,.55)" }}>
+            <div className="text-[10.5px] mt-0.5 leading-none font-medium" style={{ color: "var(--muted-2)" }}>
               {subLabel}
             </div>
           </div>
@@ -122,7 +176,7 @@ function SidebarContent({
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(148,163,184,.35)" }}>
+        <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--muted-3)" }}>
           Menu
         </p>
         {items.map(({ href, label, Icon }) => {
@@ -136,7 +190,7 @@ function SidebarContent({
                 isActive ? "active text-indigo-300" : "text-slate-400"
               }`}
             >
-              <span className="flex-shrink-0 transition-colors" style={{ color: isActive ? "#a5b4fc" : "rgba(148,163,184,.6)" }}>
+              <span className="flex-shrink-0 transition-colors" style={{ color: isActive ? "#a5b4fc" : "var(--muted)" }}>
                 <Icon />
               </span>
               {label}
@@ -160,18 +214,19 @@ function SidebarContent({
             {initial}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[12.5px] font-semibold truncate" style={{ color: "#e2e8f0" }}>{nome}</div>
-            <div className="text-[10.5px] capitalize" style={{ color: "rgba(148,163,184,.5)" }}>
+            <div className="text-[12.5px] font-semibold truncate" style={{ color: "var(--text-2)" }}>{nome}</div>
+            <div className="text-[10.5px] capitalize" style={{ color: "var(--muted-2)" }}>
               {perfil === "CENTRAL" ? "Administrador" : "Empresa"}
             </div>
           </div>
         </div>
+        <ThemeToggle />
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-[8px] text-[12px] font-medium transition-all"
-          style={{ color: "rgba(148,163,184,.5)" }}
+          style={{ color: "var(--muted-2)" }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,.08)"; (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "rgba(148,163,184,.5)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--muted-2)"; }}
         >
           <IconLogout />
           Sair da conta
@@ -203,7 +258,7 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
       {/* ── Desktop sidebar (md+) ──────────────────────────────── */}
       <aside
         className="sidebar-bg hidden md:flex w-[232px] flex-col flex-shrink-0 overflow-hidden"
-        style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
+        style={{ borderRight: "1px solid var(--border)" }}
       >
         <SidebarContent nome={nome} perfil={perfil} empresa={empresa} items={items} onNavigate={() => {}} />
       </aside>
@@ -211,7 +266,7 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
       {/* ── Mobile top bar ─────────────────────────────────────── */}
       <header
         className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
-        style={{ background: "#08080e", borderBottom: "1px solid rgba(255,255,255,.06)" }}
+        style={{ background: "var(--bg)", borderBottom: "1px solid var(--border)" }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2.5">
@@ -227,14 +282,16 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
           <span className="text-[15px] font-bold gradient-text">FácilCRM</span>
         </div>
 
-        {/* Hamburger */}
-        <button
-          onClick={() => setOpen(true)}
-          className="p-2 rounded-lg transition-colors"
-          style={{ color: "rgba(148,163,184,.7)" }}
-        >
-          <IconMenu />
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle compact />
+          <button
+            onClick={() => setOpen(true)}
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: "var(--muted)" }}
+          >
+            <IconMenu />
+          </button>
+        </div>
       </header>
 
       {/* ── Mobile drawer backdrop ─────────────────────────────── */}
@@ -250,13 +307,13 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
         className={`md:hidden fixed top-0 left-0 z-50 h-full w-[280px] sidebar-bg flex flex-col overflow-hidden transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ borderRight: "1px solid rgba(255,255,255,.06)" }}
+        style={{ borderRight: "1px solid var(--border)" }}
       >
         {/* Close button */}
         <button
           onClick={() => setOpen(false)}
           className="absolute top-4 right-4 p-1.5 rounded-lg"
-          style={{ color: "rgba(148,163,184,.6)" }}
+          style={{ color: "var(--muted)" }}
         >
           <IconClose />
         </button>

@@ -155,7 +155,7 @@ export default function LeadsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full" style={{ background: "#08080e", color: "#64748b" }}>
+      <div className="flex items-center justify-center h-full" style={{ background: "var(--bg)", color: "#64748b" }}>
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-sm">Carregando leads...</span>
@@ -168,13 +168,13 @@ export default function LeadsPage() {
   const fl = fireLabel(editForm.score);
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-6">
         {/* Header */}
         <div className="mb-6 animate-fade-up flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold" style={{ color: "#f1f5f9" }}>Leads</h2>
-            <p className="text-sm mt-1" style={{ color: "rgba(148,163,184,.55)" }}>
+            <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Leads</h2>
+            <p className="text-sm mt-1" style={{ color: "var(--muted-2)" }}>
               {leads.length} leads · Arraste os cards para mover entre colunas
             </p>
           </div>
@@ -205,9 +205,9 @@ export default function LeadsPage() {
                       border: "1px solid transparent",
                     }
                   : {
-                      background: "rgba(255,255,255,.05)",
-                      border: "1px solid rgba(255,255,255,.1)",
-                      color: "rgba(148,163,184,.7)",
+                      background: "var(--input)",
+                      border: "1px solid var(--border-2)",
+                      color: "var(--muted)",
                     }
               }
             >
@@ -239,9 +239,9 @@ export default function LeadsPage() {
                   style={{
                     background: isOver
                       ? `${col.hex}18`
-                      : "rgba(255,255,255,.04)",
+                      : "var(--card)",
                     borderTop: `2px solid ${col.hex}`,
-                    border: isOver ? `1px solid ${col.hex}55` : "1px solid rgba(255,255,255,.07)",
+                    border: isOver ? `1px solid ${col.hex}55` : "1px solid var(--border)",
                     borderTopWidth: "2px",
                   }}
                 >
@@ -279,10 +279,10 @@ export default function LeadsPage() {
                         style={{
                           background: isSelected
                             ? "rgba(99,102,241,.12)"
-                            : "rgba(255,255,255,.04)",
+                            : "var(--card)",
                           border: isSelected
                             ? "1px solid rgba(99,102,241,.35)"
-                            : "1px solid rgba(255,255,255,.07)",
+                            : "1px solid var(--border)",
                           opacity: draggedId === lead.id ? 0.3 : 1,
                           cursor: modoSelecao ? "pointer" : "grab",
                         }}
@@ -294,10 +294,10 @@ export default function LeadsPage() {
                             style={{
                               background: isSelected
                                 ? "#6366f1"
-                                : "rgba(255,255,255,.08)",
+                                : "var(--card-3)",
                               border: isSelected
                                 ? "1px solid #6366f1"
-                                : "1px solid rgba(255,255,255,.2)",
+                                : "1px solid var(--border-2)",
                             }}
                           >
                             {isSelected && (
@@ -309,11 +309,11 @@ export default function LeadsPage() {
                         )}
                         <div className={`flex justify-between items-start gap-1${modoSelecao ? " pl-5" : ""}`}>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[13px] leading-tight truncate" style={{ color: "#f1f5f9" }}>
+                            <p className="font-semibold text-[13px] leading-tight truncate" style={{ color: "var(--text)" }}>
                               {lead.cliente.nome ?? lead.cliente.telefone}
                             </p>
                             {lead.cliente.nome && (
-                              <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(148,163,184,.5)" }}>
+                              <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--muted-2)" }}>
                                 {lead.cliente.telefone}
                               </p>
                             )}
@@ -327,12 +327,12 @@ export default function LeadsPage() {
                           </button>
                         </div>
 
-                        <p className="text-[11px] mt-1 truncate" style={{ color: "rgba(148,163,184,.45)" }}>
+                        <p className="text-[11px] mt-1 truncate" style={{ color: "var(--muted-2)" }}>
                           {lead.empresa.nome}
                         </p>
 
                         {lead.observacoes && (
-                          <p className="text-[11px] mt-1.5 line-clamp-2 leading-tight" style={{ color: "rgba(148,163,184,.55)" }}>
+                          <p className="text-[11px] mt-1.5 line-clamp-2 leading-tight" style={{ color: "var(--muted-2)" }}>
                             {lead.observacoes}
                           </p>
                         )}
@@ -341,7 +341,7 @@ export default function LeadsPage() {
                           <div className="mt-2 flex items-center gap-1.5">
                             <div
                               className="flex-1 h-1.5 rounded-full"
-                              style={{ background: "rgba(255,255,255,.08)" }}
+                              style={{ background: "var(--card-3)" }}
                             >
                               <div
                                 className="h-full rounded-full transition-all"
@@ -363,7 +363,7 @@ export default function LeadsPage() {
                     <div
                       className="text-center py-8 text-[11px] rounded-xl border border-dashed transition-all"
                       style={{
-                        borderColor: isOver ? `${col.hex}66` : "rgba(255,255,255,.07)",
+                        borderColor: isOver ? `${col.hex}66` : "var(--border)",
                         color: isOver ? col.hex : "rgba(148,163,184,.25)",
                         background: isOver ? `${col.hex}06` : "transparent",
                       }}
@@ -394,7 +394,7 @@ export default function LeadsPage() {
           <button
             onClick={() => { setSelecionados([]); }}
             className="text-[12px] transition-colors"
-            style={{ color: "rgba(148,163,184,.4)" }}
+            style={{ color: "var(--muted-3)" }}
           >
             Limpar
           </button>
@@ -417,13 +417,13 @@ export default function LeadsPage() {
             className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
             style={{
               background: "linear-gradient(145deg, #13131f, #0d0d18)",
-              border: "1px solid rgba(255,255,255,.1)",
-              boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+              border: "1px solid var(--border-2)",
+              boxShadow: "0 24px 80px var(--overlay)",
             }}
           >
-            <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,.07)" }}>
-              <h3 className="font-bold text-[15px]" style={{ color: "#f1f5f9" }}>Disparar Campanha</h3>
-              <p className="text-[12px] mt-0.5" style={{ color: "rgba(148,163,184,.55)" }}>
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="font-bold text-[15px]" style={{ color: "var(--text)" }}>Disparar Campanha</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
                 {selecionados.length} lead{selecionados.length !== 1 ? "s" : ""} selecionado{selecionados.length !== 1 ? "s" : ""}
               </p>
             </div>
@@ -442,7 +442,7 @@ export default function LeadsPage() {
               <div>
                 <label
                   className="block text-[11px] font-semibold mb-1.5"
-                  style={{ color: "rgba(148,163,184,.7)" }}
+                  style={{ color: "var(--muted)" }}
                 >
                   MENSAGEM
                 </label>
@@ -454,7 +454,7 @@ export default function LeadsPage() {
                   className="w-full input-dark px-3 py-2.5 text-[13px] resize-none"
                   autoFocus
                 />
-                <p className="text-[11px] mt-1" style={{ color: "rgba(148,163,184,.3)" }}>
+                <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
                   Use {"{nome}"} para personalizar com o nome do cliente.
                 </p>
               </div>
@@ -462,14 +462,14 @@ export default function LeadsPage() {
 
             <div
               className="px-5 py-4 flex gap-2 justify-end"
-              style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}
+              style={{ borderTop: "1px solid var(--border)" }}
             >
               <button
                 onClick={() => { setModalCampanha(false); setMensagemCampanha(""); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-medium"
                 style={{
-                  background: "rgba(255,255,255,.06)",
-                  border: "1px solid rgba(255,255,255,.1)",
+                  background: "var(--card-2)",
+                  border: "1px solid var(--border-2)",
                   color: "#94a3b8",
                 }}
               >
@@ -497,14 +497,14 @@ export default function LeadsPage() {
             className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
             style={{
               background: "linear-gradient(145deg, #13131f, #0d0d18)",
-              border: "1px solid rgba(255,255,255,.1)",
-              boxShadow: "0 24px 80px rgba(0,0,0,.7)",
+              border: "1px solid var(--border-2)",
+              boxShadow: "0 24px 80px var(--overlay)",
             }}
           >
             {/* Modal header */}
-            <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,.07)" }}>
-              <h3 className="font-bold text-[15px]" style={{ color: "#f1f5f9" }}>Editar Lead</h3>
-              <p className="text-[12px] mt-0.5" style={{ color: "rgba(148,163,184,.55)" }}>
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="font-bold text-[15px]" style={{ color: "var(--text)" }}>Editar Lead</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
                 {editLead.cliente.nome ?? editLead.cliente.telefone} · {editLead.empresa.nome}
               </p>
             </div>
@@ -512,7 +512,7 @@ export default function LeadsPage() {
             <div className="px-5 py-4 space-y-4">
               {/* Status */}
               <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   STATUS
                 </label>
                 <select
@@ -528,12 +528,12 @@ export default function LeadsPage() {
 
               {/* Score fire bar */}
               <div>
-                <label className="block text-[11px] font-semibold mb-2" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>
                   SCORE DO LEAD
                 </label>
                 <div
                   className="rounded-xl p-3"
-                  style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.07)" }}
+                  style={{ background: "var(--card)", border: "1px solid var(--border)" }}
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-xl w-16 text-center leading-none">{fl.emoji}</span>
@@ -547,7 +547,7 @@ export default function LeadsPage() {
                         onChange={(e) => setEditForm((p) => ({ ...p, score: Number(e.target.value) }))}
                         className="w-full h-2 rounded-full appearance-none cursor-pointer"
                         style={{
-                          background: `linear-gradient(90deg, ${fc} ${editForm.score}%, rgba(255,255,255,.1) ${editForm.score}%)`,
+                          background: `linear-gradient(90deg, ${fc} ${editForm.score}%, var(--border-2) ${editForm.score}%)`,
                           accentColor: fc,
                         }}
                       />
@@ -559,7 +559,7 @@ export default function LeadsPage() {
                       {editForm.score}
                     </span>
                   </div>
-                  <div className="flex justify-between text-[10px] px-1" style={{ color: "rgba(148,163,184,.35)" }}>
+                  <div className="flex justify-between text-[10px] px-1" style={{ color: "var(--muted-3)" }}>
                     <span>Frio</span>
                     <span className="font-medium" style={{ color: fc }}>{fl.label}</span>
                     <span>Em chamas</span>
@@ -569,7 +569,7 @@ export default function LeadsPage() {
 
               {/* Observações */}
               <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   OBSERVAÇÕES
                 </label>
                 <textarea
@@ -583,7 +583,7 @@ export default function LeadsPage() {
 
               {/* Vendedor */}
               <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   VENDEDOR
                 </label>
                 <select
@@ -602,7 +602,7 @@ export default function LeadsPage() {
             {/* Modal footer */}
             <div
               className="px-5 py-4 flex gap-2 justify-between items-center"
-              style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}
+              style={{ borderTop: "1px solid var(--border)" }}
             >
               <div>
                 {!confirmandoExclusao ? (
@@ -629,7 +629,7 @@ export default function LeadsPage() {
                     <button
                       onClick={() => setConfirmandoExclusao(false)}
                       className="text-[11px]"
-                      style={{ color: "rgba(148,163,184,.5)" }}
+                      style={{ color: "var(--muted-2)" }}
                     >
                       Não
                     </button>
@@ -642,8 +642,8 @@ export default function LeadsPage() {
                   onClick={() => { setEditLead(null); setConfirmandoExclusao(false); }}
                   className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
                   style={{
-                    background: "rgba(255,255,255,.06)",
-                    border: "1px solid rgba(255,255,255,.1)",
+                    background: "var(--card-2)",
+                    border: "1px solid var(--border-2)",
                     color: "#94a3b8",
                   }}
                 >

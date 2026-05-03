@@ -24,7 +24,7 @@ function diasRestantes(venc: string | null) {
 }
 
 function VencimentoBadge({ vencimento }: { vencimento: string | null }) {
-  if (!vencimento) return <span style={{ color: "rgba(148,163,184,.35)", fontSize: "12px" }}>—</span>;
+  if (!vencimento) return <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>;
   const dias = diasRestantes(vencimento);
   const data = new Date(vencimento).toLocaleDateString("pt-BR");
   if (dias === null) return null;
@@ -40,7 +40,7 @@ function VencimentoBadge({ vencimento }: { vencimento: string | null }) {
       Vence em {dias}d ({data})
     </span>
   );
-  return <span className="text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{data}</span>;
+  return <span className="text-[12px]" style={{ color: "var(--muted-2)" }}>{data}</span>;
 }
 
 interface Empresa { id: string; nome: string; instanciaWhatsapp: string }
@@ -147,11 +147,11 @@ export default function CentralPage() {
 
   const tabStyle = (id: string) => aba === id
     ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(99,102,241,.3)" }
-    : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" };
+    : { background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" };
 
   const cardStyle = {
-    background: "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
-    border: "1px solid rgba(255,255,255,.08)",
+    background: "linear-gradient(145deg, var(--card), var(--card))",
+    border: "1px solid var(--border)",
     borderRadius: "16px",
   };
 
@@ -161,13 +161,13 @@ export default function CentralPage() {
   };
 
   const TH = ({ children }: { children?: React.ReactNode }) => (
-    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.45)" }}>
+    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-2)" }}>
       {children}
     </th>
   );
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
         {/* Header */}
@@ -178,8 +178,8 @@ export default function CentralPage() {
           </span>
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>Central</h1>
-              <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.5)" }}>Ferramentas, WhatsApp, atividade e usuários</p>
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Central</h1>
+              <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>Ferramentas, WhatsApp, atividade e usuários</p>
             </div>
             <div className="flex items-center gap-3">
               {msg && (
@@ -196,7 +196,7 @@ export default function CentralPage() {
               ) : null}
               <button onClick={carregar}
                 className="text-[13px] px-3 py-1.5 rounded-xl font-medium transition-all"
-                style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}>
+                style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
                 Atualizar
               </button>
             </div>
@@ -213,7 +213,7 @@ export default function CentralPage() {
             ].map((m, i) => (
               <div key={i} className="bento-card p-5 animate-fade-up" style={{ background: m.bg, borderColor: m.border, animationDelay: `${i * 55}ms` }}>
                 <div className="text-[30px] font-bold tracking-tight leading-none mb-1" style={{ color: m.color }}>{m.value}</div>
-                <div className="text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{m.label}</div>
+                <div className="text-[12px]" style={{ color: "var(--muted-2)" }}>{m.label}</div>
               </div>
             ))}
           </div>
@@ -244,7 +244,7 @@ export default function CentralPage() {
                 ].map(f => (
                   f.key === "tipo" ? null :
                   <div key={f.key}>
-                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>{f.label}</label>
+                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>{f.label}</label>
                     <input required={f.required} type={f.type} step={f.key === "valor" ? "0.01" : undefined}
                       placeholder={f.placeholder}
                       value={(form as Record<string, string>)[f.key]}
@@ -253,7 +253,7 @@ export default function CentralPage() {
                   </div>
                 ))}
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>TIPO *</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO *</label>
                   <select required value={form.tipo} onChange={(e) => setForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
                     {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -274,30 +274,30 @@ export default function CentralPage() {
               <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
                 <table className="w-full text-[13px] min-w-[560px]">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                       <TH>Ferramenta</TH><TH>Tipo</TH><TH>Valor/mês</TH><TH>Vencimento</TH><TH>Obs.</TH><TH></TH>
                     </tr>
                   </thead>
                   <tbody>
                     {data?.ferramentas.map((f) => (
                       <>
-                        <tr key={f.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                        <tr key={f.id} style={{ borderBottom: "1px solid var(--card)" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
                           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                          <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>
+                          <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>
                             {f.link
                               ? <a href={f.link} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "#60a5fa" }}>{f.nome}</a>
                               : f.nome}
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                              style={{ background: "rgba(255,255,255,.07)", color: "rgba(148,163,184,.7)" }}>{f.tipo}</span>
+                              style={{ background: "var(--border)", color: "var(--muted)" }}>{f.tipo}</span>
                           </td>
-                          <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.7)" }}>
+                          <td className="px-4 py-3" style={{ color: "var(--muted)" }}>
                             {f.valor != null ? `R$ ${f.valor.toFixed(2)}` : "—"}
                           </td>
                           <td className="px-4 py-3"><VencimentoBadge vencimento={f.vencimento} /></td>
-                          <td className="px-4 py-3 text-[12px] max-w-xs truncate" style={{ color: "rgba(148,163,184,.5)" }}>{f.observacoes ?? "—"}</td>
+                          <td className="px-4 py-3 text-[12px] max-w-xs truncate" style={{ color: "var(--muted-2)" }}>{f.observacoes ?? "—"}</td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2 justify-end">
                               <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
@@ -325,7 +325,7 @@ export default function CentralPage() {
                                   { key: "vencimento", label: "VENCIMENTO", type: "date" },
                                 ].map(fi => (
                                   <div key={fi.key}>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>{fi.label}</label>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>{fi.label}</label>
                                     <input type={fi.type} step={fi.key === "valor" ? "0.01" : undefined}
                                       value={(editForm as Record<string, string>)[fi.key]}
                                       onChange={(e) => setEditForm((p) => ({ ...p, [fi.key]: e.target.value }))}
@@ -333,7 +333,7 @@ export default function CentralPage() {
                                   </div>
                                 ))}
                                 <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>TIPO</label>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO</label>
                                   <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
                                     {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
                                   </select>
@@ -343,7 +343,7 @@ export default function CentralPage() {
                                 <button onClick={() => salvarEdicao(f.id)} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
                                 <button onClick={() => setEditId(null)}
                                   className="px-4 py-2 rounded-xl text-[13px] font-medium"
-                                  style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" }}>
+                                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                                   Cancelar
                                 </button>
                               </div>
@@ -353,7 +353,7 @@ export default function CentralPage() {
                       </>
                     ))}
                     {!data?.ferramentas.length && (
-                      <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhuma ferramenta cadastrada.</td></tr>
+                      <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma ferramenta cadastrada.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -385,8 +385,8 @@ export default function CentralPage() {
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[14px] truncate" style={{ color: "#f1f5f9" }}>{w.nomeEmpresa}</div>
-                        <div className="text-[11px] truncate" style={{ color: "rgba(148,163,184,.45)" }}>{w.instancia}</div>
+                        <div className="font-semibold text-[14px] truncate" style={{ color: "var(--text)" }}>{w.nomeEmpresa}</div>
+                        <div className="text-[11px] truncate" style={{ color: "var(--muted-2)" }}>{w.instancia}</div>
                         <div className="text-[12px] font-medium mt-0.5" style={{ color: w.state === "open" ? "#34d399" : "#f87171" }}>
                           {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
                         </div>
@@ -409,12 +409,12 @@ export default function CentralPage() {
                       </div>
                     </div>
                     {qrInstancia[w.instancia] && (
-                      <div className="mt-3 pt-3 flex flex-col sm:flex-row gap-3 items-start" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                      <div className="mt-3 pt-3 flex flex-col sm:flex-row gap-3 items-start" style={{ borderTop: "1px solid var(--border)" }}>
                         <div className="bg-white p-2 rounded-xl">
                           <img src={qrInstancia[w.instancia]!} alt="QR Code" className="w-36 h-36" />
                         </div>
-                        <div className="flex-1 text-[12px] space-y-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
-                          <p className="font-semibold" style={{ color: "#e2e8f0" }}>Como conectar:</p>
+                        <div className="flex-1 text-[12px] space-y-1.5" style={{ color: "var(--muted)" }}>
+                          <p className="font-semibold" style={{ color: "var(--text-2)" }}>Como conectar:</p>
                           <p>1. Abra o WhatsApp no celular</p>
                           <p>2. Toque em ⋮ → Aparelhos conectados</p>
                           <p>3. Conectar aparelho → Escaneie o QR</p>
@@ -440,8 +440,8 @@ export default function CentralPage() {
               ].map((m, i) => (
                 <div key={i} className="bento-card p-5" style={{ background: m.bg, borderColor: m.border }}>
                   <div className="text-[36px] font-bold tracking-tight leading-none mb-2" style={{ color: m.color }}>{m.value}</div>
-                  <div className="text-[13px] font-semibold" style={{ color: "#e2e8f0" }}>{m.label}</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: "rgba(148,163,184,.45)" }}>{m.sub}</div>
+                  <div className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>{m.label}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: "var(--muted-2)" }}>{m.sub}</div>
                 </div>
               ))}
             </div>
@@ -476,22 +476,22 @@ export default function CentralPage() {
             )}
 
             <div className="p-5 rounded-2xl" style={cardStyle}>
-              <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar acesso para empresa</h3>
+              <h3 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text)" }}>Criar acesso para empresa</h3>
               <form onSubmit={criarUsuario} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
                   <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required placeholder="Maria Silva" className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>EMAIL</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>EMAIL</label>
                   <input type="email" value={userForm.email} onChange={e => setUserForm(p => ({...p, email: e.target.value}))} required placeholder="maria@empresa.com" className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>SENHA INICIAL</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>SENHA INICIAL</label>
                   <input type="password" value={userForm.senha} onChange={e => setUserForm(p => ({...p, senha: e.target.value}))} required minLength={6} placeholder="mínimo 6 caracteres" className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>EMPRESA</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>EMPRESA</label>
                   <select value={userForm.empresaId} onChange={e => setUserForm(p => ({...p, empresaId: e.target.value}))} required className={INPUT}>
                     <option value="">Selecionar empresa...</option>
                     {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
@@ -509,32 +509,32 @@ export default function CentralPage() {
             <div className="relative">
               <GradientFade />
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                <h3 className="text-[14px] font-semibold" style={{ color: "#f1f5f9" }}>Acessos ativos ({usuarios.length})</h3>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                <h3 className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Acessos ativos ({usuarios.length})</h3>
               </div>
               {usuarios.length === 0 ? (
-                <div className="p-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhum usuário de empresa criado ainda</div>
+                <div className="p-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhum usuário de empresa criado ainda</div>
               ) : (
                 <table className="w-full text-[13px] min-w-[480px]">
                   <thead>
-                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                       <TH>Nome</TH><TH>Email</TH><TH>Empresa</TH><TH>Status</TH><TH></TH>
                     </tr>
                   </thead>
                   <tbody>
                     {usuarios.map(u => (
-                      <tr key={u.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                      <tr key={u.id} style={{ borderBottom: "1px solid var(--card)" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>{u.nome}</td>
-                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.6)" }}>{u.email}</td>
-                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.6)" }}>{u.empresa?.nome ?? "—"}</td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{u.nome}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.email}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.empresa?.nome ?? "—"}</td>
                         <td className="px-4 py-3">
                           <button onClick={() => toggleAtivo(u.id, u.ativo)}
                             className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
                             style={u.ativo
                               ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                              : { background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.5)" }
+                              : { background: "var(--card-2)", color: "var(--muted-2)" }
                             }>
                             {u.ativo ? "Ativo" : "Inativo"}
                           </button>
@@ -542,9 +542,9 @@ export default function CentralPage() {
                         <td className="px-4 py-3 text-right">
                           <button onClick={() => excluirUsuario(u.id, u.nome)}
                             className="text-[12px] transition-colors"
-                            style={{ color: "rgba(148,163,184,.35)" }}
+                            style={{ color: "var(--muted-3)" }}
                             onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                            onMouseLeave={e => e.currentTarget.style.color = "rgba(148,163,184,.35)"}>
+                            onMouseLeave={e => e.currentTarget.style.color = "var(--muted-3)"}>
                             Excluir
                           </button>
                         </td>
@@ -596,8 +596,8 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   const [sucesso, setSucesso] = useState("");
 
   const cardStyle = {
-    background: "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
-    border: "1px solid rgba(255,255,255,.08)",
+    background: "linear-gradient(145deg, var(--card), var(--card))",
+    border: "1px solid var(--border)",
     borderRadius: "16px",
   };
 
@@ -623,15 +623,15 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
 
   return (
     <div className="p-5 rounded-2xl" style={cardStyle}>
-      <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Criar Nova Instância WhatsApp</h3>
+      <h3 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text)" }}>Criar Nova Instância WhatsApp</h3>
       <form onSubmit={criar} className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="flex-1">
-          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME DA EMPRESA *</label>
+          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME DA EMPRESA *</label>
           <input required value={form.empresaNome} onChange={(e) => setForm((p) => ({ ...p, empresaNome: e.target.value }))}
             placeholder="Ex: Loja da Maria" className="w-full input-dark px-3 py-2.5 text-[13px]" />
         </div>
         <div className="flex-1">
-          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME DA INSTÂNCIA * (sem espaços)</label>
+          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME DA INSTÂNCIA * (sem espaços)</label>
           <input required value={form.instanciaNome}
             onChange={(e) => setForm((p) => ({ ...p, instanciaNome: e.target.value.replace(/\s/g, "_") }))}
             placeholder="Ex: loja_maria" className="w-full input-dark px-3 py-2.5 text-[13px]" />
@@ -655,15 +655,15 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
             <img src={qrcode} alt="QR Code WhatsApp" className="w-48 h-48" />
           </div>
           <div className="flex-1">
-            <p className="text-[13px] font-semibold mb-1" style={{ color: "#f1f5f9" }}>
+            <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--text)" }}>
               QR Code gerado para <strong>{instanciaCriada}</strong>
             </p>
-            <p className="text-[12px] mb-3" style={{ color: "rgba(148,163,184,.5)" }}>
+            <p className="text-[12px] mb-3" style={{ color: "var(--muted-2)" }}>
               Abra o WhatsApp → Aparelhos conectados → Conectar aparelho → Escaneie
             </p>
             <button onClick={atualizarQr}
               className="text-[12px] px-3 py-1.5 rounded-lg font-medium"
-              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}>
+              style={{ background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
               Atualizar QR Code
             </button>
           </div>

@@ -12,7 +12,7 @@ interface Stats {
 }
 
 const STATUS_META: Record<string, { label: string; color: string; glow: string; bar: string }> = {
-  LEAD:                { label: "Novos Leads",      color: "#94a3b8", glow: "rgba(148,163,184,.3)",  bar: "#475569" },
+  LEAD:                { label: "Novos Leads",      color: "#94a3b8", glow: "var(--muted-3)",  bar: "#475569" },
   AQUECIMENTO:         { label: "Aquecimento",       color: "#fb923c", glow: "rgba(251,146,60,.3)",   bar: "#ea580c" },
   PRONTO_PARA_COMPRAR: { label: "Pronto p/ Comprar", color: "#fbbf24", glow: "rgba(251,191,36,.3)",   bar: "#d97706" },
   NEGOCIACAO:          { label: "Em Negociação",     color: "#60a5fa", glow: "rgba(96,165,250,.3)",   bar: "#2563eb" },
@@ -113,7 +113,7 @@ export default function DashboardPage() {
     : 1;
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-8 max-w-5xl mx-auto">
 
         {/* Header */}
@@ -124,10 +124,10 @@ export default function DashboardPage() {
           >
             Visão Geral
           </span>
-          <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>
+          <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
             Painel de Controle
           </h1>
-          <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.55)" }}>
+          <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
             Resumo em tempo real de todas as empresas
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
                     <AnimatedNumber value={value} />
                   </div>
                 )}
-                <p className="text-[11.5px] font-medium mt-1.5" style={{ color: "rgba(148,163,184,.65)" }}>
+                <p className="text-[11.5px] font-medium mt-1.5" style={{ color: "var(--muted)" }}>
                   {card.label}
                 </p>
               </div>
@@ -176,8 +176,8 @@ export default function DashboardPage() {
         <div className="bento-card p-6 animate-fade-up" style={{ animationDelay: "220ms" }}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-[15px] font-semibold" style={{ color: "#f1f5f9" }}>Funil de Leads</h2>
-              <p className="text-[12px] mt-0.5" style={{ color: "rgba(148,163,184,.45)" }}>Distribuição por status</p>
+              <h2 className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Funil de Leads</h2>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>Distribuição por status</p>
             </div>
             {stats?.totalLeads ? (
               <span
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                       >
                         {meta?.label ?? item.status}
                       </span>
-                      <div className="flex-1 h-7 rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,.04)" }}>
+                      <div className="flex-1 h-7 rounded-xl overflow-hidden" style={{ background: "var(--card)" }}>
                         <div
                           className="h-full rounded-xl flex items-center px-3"
                           style={{
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                 })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 gap-3" style={{ color: "rgba(148,163,184,.3)" }}>
+            <div className="flex flex-col items-center justify-center py-12 gap-3" style={{ color: "var(--muted-3)" }}>
               <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>

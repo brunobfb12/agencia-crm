@@ -31,6 +31,8 @@ export default function RootLayout({
     <html lang="pt-BR" className="h-full">
       <head>
         <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+        {/* Anti-flash: aplica tema antes do React hidratar */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();` }} />
       </head>
       <body className={`${inter.className} h-full`}>
         {children}

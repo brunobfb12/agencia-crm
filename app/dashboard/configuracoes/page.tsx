@@ -210,17 +210,17 @@ export default function ConfiguracoesPage() {
 
   const tabStyle = (id: string) => aba === id
     ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", border: "1px solid transparent", boxShadow: "0 4px 14px rgba(99,102,241,.3)" }
-    : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" };
+    : { background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" };
 
   const TH = ({ children }: { children?: React.ReactNode }) => (
-    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.45)" }}>
+    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-2)" }}>
       {children}
     </th>
   );
 
   const cardStyle = {
-    background: "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
-    border: "1px solid rgba(255,255,255,.08)",
+    background: "linear-gradient(145deg, var(--card), var(--card))",
+    border: "1px solid var(--border)",
     borderRadius: "16px",
   };
 
@@ -230,7 +230,7 @@ export default function ConfiguracoesPage() {
   };
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
         {/* Header */}
@@ -241,8 +241,8 @@ export default function ConfiguracoesPage() {
           </span>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>Configurações</h1>
-              <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.5)" }}>Empresas, vendedores e mídias da IA</p>
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Configurações</h1>
+              <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>Empresas, vendedores e mídias da IA</p>
             </div>
             {msg && (
               <span className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
@@ -283,19 +283,19 @@ export default function ConfiguracoesPage() {
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <table className="w-full text-[13px] min-w-[520px]">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                     <TH>Empresa</TH><TH>Instância</TH><TH>Clientes</TH><TH>Info</TH><TH></TH>
                   </tr>
                 </thead>
                 <tbody>
                   {empresas.map((emp) => (
                     <>
-                      <tr key={emp.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                      <tr key={emp.id} style={{ borderBottom: "1px solid var(--card)" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>{emp.nome}</td>
-                        <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{emp.instanciaWhatsapp}</td>
-                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.7)" }}>{emp._count.clientes}</td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{emp.nome}</td>
+                        <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "var(--muted-2)" }}>{emp.instanciaWhatsapp}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{emp._count.clientes}</td>
                         <td className="px-4 py-3">
                           {emp.informacoes
                             ? <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(52,211,153,.1)", color: "#34d399" }}>Preenchida</span>
@@ -316,7 +316,7 @@ export default function ConfiguracoesPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                               {SECOES.map((sec) => (
                                 <div key={sec}>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                                     {LABELS[sec].toUpperCase()}
                                   </label>
                                   <textarea rows={3} value={infoCampos[sec] ?? ""}
@@ -327,53 +327,53 @@ export default function ConfiguracoesPage() {
                               ))}
                             </div>
 
-                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                              <p className="text-[12px] font-semibold mb-3" style={{ color: "rgba(148,163,184,.7)" }}>
+                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                              <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>
                                 📅 Calendly (opcional)
                               </p>
                               <div className="mb-3">
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>LINK DO CALENDLY</label>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>LINK DO CALENDLY</label>
                                 <input value={calendarFields.calendlyUrl} onChange={e => setCalendarFields(p => ({ ...p, calendlyUrl: e.target.value }))}
                                   placeholder="https://calendly.com/studio-thaisy/consulta" className={INPUT} />
-                                <p className="text-[11px] mt-1" style={{ color: "rgba(148,163,184,.35)" }}>A IA envia este link quando o cliente pedir para agendar.</p>
+                                <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA envia este link quando o cliente pedir para agendar.</p>
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>URL DO WEBHOOK</label>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>URL DO WEBHOOK</label>
                                 <div className="flex gap-2">
                                   <input readOnly value={`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`}
                                     className={`flex-1 ${INPUT}`} style={{ opacity: 0.6 }} />
                                   <button type="button" onClick={() => navigator.clipboard.writeText(`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`)}
                                     className="px-3 py-2 rounded-xl text-[12px] font-medium transition-all"
-                                    style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}>
+                                    style={{ background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
                                     Copiar
                                   </button>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                              <p className="text-[12px] font-semibold mb-3" style={{ color: "rgba(148,163,184,.7)" }}>
+                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                              <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>
                                 📆 Google Calendar (opcional)
                               </p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>ID DO CALENDÁRIO</label>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DO CALENDÁRIO</label>
                                   <input value={calendarFields.googleCalendarId} onChange={e => setCalendarFields(p => ({ ...p, googleCalendarId: e.target.value }))}
                                     placeholder="abc123@group.calendar.google.com" className={INPUT} />
                                 </div>
                                 <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.5)" }}>ID DA CREDENCIAL N8N</label>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DA CREDENCIAL N8N</label>
                                   <input value={calendarFields.googleCredentialId} onChange={e => setCalendarFields(p => ({ ...p, googleCredentialId: e.target.value }))}
                                     placeholder="ex: 5" className={INPUT} />
                                 </div>
                               </div>
                             </div>
 
-                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid rgba(255,255,255,.06)" }}>
-                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>
+                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                                 ROTEIRO DE QUALIFICAÇÃO DA IA
                               </label>
-                              <p className="text-[11px] mb-2" style={{ color: "rgba(148,163,184,.35)" }}>
+                              <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
                                 Perguntas que a IA deve fazer para qualificar leads (uma por linha)
                               </p>
                               <textarea rows={5} value={perguntasQualificacao}
@@ -388,7 +388,7 @@ export default function ConfiguracoesPage() {
                               </button>
                               <button onClick={() => setEditEmpresa(null)}
                                 className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                                style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" }}>
+                                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                                 Cancelar
                               </button>
                             </div>
@@ -398,7 +398,7 @@ export default function ConfiguracoesPage() {
                     </>
                   ))}
                   {empresas.length === 0 && (
-                    <tr><td colSpan={5} className="px-4 py-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhuma empresa cadastrada.</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -432,25 +432,25 @@ export default function ConfiguracoesPage() {
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <table className="w-full text-[13px] min-w-[600px]">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                     <TH>Vendedor</TH><TH>Telefone</TH><TH>Empresa</TH><TH>Ordem</TH><TH>Status</TH><TH></TH>
                   </tr>
                 </thead>
                 <tbody>
                   {vendedores.map((v) => (
                     <>
-                      <tr key={v.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)", opacity: v.ativo ? 1 : 0.45 }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                      <tr key={v.id} style={{ borderBottom: "1px solid var(--card)", opacity: v.ativo ? 1 : 0.45 }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
                         onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="px-4 py-3 font-semibold" style={{ color: "#f1f5f9" }}>{v.nome}</td>
-                        <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>{v.telefone}</td>
-                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.7)" }}>{v.empresa.nome}</td>
-                        <td className="px-4 py-3" style={{ color: "rgba(148,163,184,.55)" }}>#{v.ordemChamada}</td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{v.nome}</td>
+                        <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "var(--muted-2)" }}>{v.telefone}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{v.empresa.nome}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--muted-2)" }}>#{v.ordemChamada}</td>
                         <td className="px-4 py-3">
                           <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
                             style={v.ativo
                               ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                              : { background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.5)" }
+                              : { background: "var(--card-2)", color: "var(--muted-2)" }
                             }>
                             {v.ativo ? "Ativo" : "Inativo"}
                           </span>
@@ -483,17 +483,17 @@ export default function ConfiguracoesPage() {
                           <td colSpan={6} className="px-4 py-4" style={editRowStyle}>
                             <div className="flex gap-3 items-end flex-wrap">
                               <div>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>NOME</label>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
                                 <input value={editVendedorData.nome} onChange={(e) => setEditVendedorData((p) => ({ ...p, nome: e.target.value }))}
                                   className="input-dark px-3 py-2 text-[13px]" />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>TELEFONE</label>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TELEFONE</label>
                                 <input value={editVendedorData.telefone} onChange={(e) => setEditVendedorData((p) => ({ ...p, telefone: e.target.value }))}
                                   className="input-dark px-3 py-2 text-[13px]" />
                               </div>
                               <div>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>ORDEM</label>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>ORDEM</label>
                                 <input type="number" min={1} value={editVendedorData.ordemChamada}
                                   onChange={(e) => setEditVendedorData((p) => ({ ...p, ordemChamada: Number(e.target.value) }))}
                                   className="input-dark px-3 py-2 text-[13px] w-20" />
@@ -503,7 +503,7 @@ export default function ConfiguracoesPage() {
                               </button>
                               <button onClick={() => setEditVendedor(null)}
                                 className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                                style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" }}>
+                                style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                                 Cancelar
                               </button>
                             </div>
@@ -513,7 +513,7 @@ export default function ConfiguracoesPage() {
                     </>
                   ))}
                   {vendedores.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>Nenhum vendedor cadastrado.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhum vendedor cadastrado.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -532,7 +532,7 @@ export default function ConfiguracoesPage() {
 
             {empresas.length > 1 && (
               <div className="flex items-center gap-3">
-                <label className="text-[13px] font-semibold" style={{ color: "rgba(148,163,184,.7)" }}>Empresa:</label>
+                <label className="text-[13px] font-semibold" style={{ color: "var(--muted)" }}>Empresa:</label>
                 <select value={midiaEmpresaId} onChange={(e) => setMidiaEmpresaId(e.target.value)} className="input-dark px-3 py-2 text-[13px]">
                   <option value="">Selecione uma empresa</option>
                   {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
@@ -543,15 +543,15 @@ export default function ConfiguracoesPage() {
             {midiaEmpresaId && (
               <>
                 <form onSubmit={criarMidia} className="p-5 rounded-2xl space-y-4" style={cardStyle}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "rgba(148,163,184,.5)" }}>Adicionar nova mídia</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--muted-2)" }}>Adicionar nova mídia</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>ETIQUETA</label>
+                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>ETIQUETA</label>
                       <input required placeholder="ex: Catálogo Verão 2026" value={novaMidia.etiqueta}
                         onChange={(e) => setNovaMidia((p) => ({ ...p, etiqueta: e.target.value }))} className={INPUT} />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>TIPO</label>
+                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TIPO</label>
                       <select value={novaMidia.tipo} onChange={(e) => setNovaMidia((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
                         <option value="imagem">Imagem</option>
                         <option value="documento">Documento (PDF)</option>
@@ -561,13 +561,13 @@ export default function ConfiguracoesPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>URL DO ARQUIVO</label>
+                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>URL DO ARQUIVO</label>
                     <input required type="url" placeholder="https://exemplo.com/catalogo.pdf" value={novaMidia.url}
                       onChange={(e) => setNovaMidia((p) => ({ ...p, url: e.target.value }))} className={INPUT} />
-                    <p className="text-[11px] mt-1" style={{ color: "rgba(148,163,184,.35)" }}>Use um link público (Google Drive, Dropbox, S3, etc.)</p>
+                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>Use um link público (Google Drive, Dropbox, S3, etc.)</p>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>QUANDO A IA DEVE ENVIAR</label>
+                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>QUANDO A IA DEVE ENVIAR</label>
                     <input required placeholder="ex: quando o cliente pedir o catálogo ou perguntar sobre produtos" value={novaMidia.descricaoUso}
                       onChange={(e) => setNovaMidia((p) => ({ ...p, descricaoUso: e.target.value }))} className={INPUT} />
                   </div>
@@ -585,34 +585,34 @@ export default function ConfiguracoesPage() {
                       {[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}
                     </div>
                   ) : midias.length === 0 ? (
-                    <div className="p-10 text-center text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>
+                    <div className="p-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>
                       Nenhuma mídia cadastrada para esta empresa.
                     </div>
                   ) : (
                     <table className="w-full text-[13px] min-w-[520px]">
                       <thead>
-                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                        <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                           <TH>Etiqueta</TH><TH>Tipo</TH><TH>Quando usar</TH><TH>Status</TH><TH></TH>
                         </tr>
                       </thead>
                       <tbody>
                         {midias.map((m) => (
-                          <tr key={m.id} style={{ borderBottom: "1px solid rgba(255,255,255,.04)", opacity: m.ativo ? 1 : 0.45 }}
-                            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,.02)"}
+                          <tr key={m.id} style={{ borderBottom: "1px solid var(--card)", opacity: m.ativo ? 1 : 0.45 }}
+                            onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
                             onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                             <td className="px-4 py-3">
-                              <div className="font-semibold" style={{ color: "#f1f5f9" }}>{m.etiqueta}</div>
+                              <div className="font-semibold" style={{ color: "var(--text)" }}>{m.etiqueta}</div>
                               <a href={m.url} target="_blank" rel="noopener noreferrer"
                                 className="text-[11px] truncate block max-w-xs hover:underline"
                                 style={{ color: "#60a5fa" }}>{m.url}</a>
                             </td>
-                            <td className="px-4 py-3 capitalize" style={{ color: "rgba(148,163,184,.6)" }}>{m.tipo}</td>
-                            <td className="px-4 py-3 text-[12px] max-w-xs" style={{ color: "rgba(148,163,184,.55)" }}>{m.descricaoUso}</td>
+                            <td className="px-4 py-3 capitalize" style={{ color: "var(--muted)" }}>{m.tipo}</td>
+                            <td className="px-4 py-3 text-[12px] max-w-xs" style={{ color: "var(--muted-2)" }}>{m.descricaoUso}</td>
                             <td className="px-4 py-3">
                               <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
                                 style={m.ativo
                                   ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                                  : { background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.5)" }
+                                  : { background: "var(--card-2)", color: "var(--muted-2)" }
                                 }>
                                 {m.ativo ? "Ativa" : "Inativa"}
                               </span>

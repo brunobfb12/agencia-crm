@@ -129,10 +129,10 @@ export default function AgendamentosPage() {
 
   const tabStyle = (id: string) => aba === id
     ? { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", border: "1px solid transparent" }
-    : { background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" };
+    : { background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" };
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-8 max-w-4xl mx-auto">
 
         {/* Header */}
@@ -145,8 +145,8 @@ export default function AgendamentosPage() {
           </span>
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>Agendamentos</h1>
-              <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.5)" }}>
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Agendamentos</h1>
+              <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
                 Follow-ups, consultas, aniversários e lembretes
               </p>
             </div>
@@ -178,16 +178,16 @@ export default function AgendamentosPage() {
           <div
             className="rounded-2xl p-5 mb-6 animate-fade-up"
             style={{
-              background: "linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.02))",
-              border: "1px solid rgba(255,255,255,.09)",
+              background: "linear-gradient(145deg, var(--card-2), var(--card))",
+              border: "1px solid var(--card-3)",
               boxShadow: "0 16px 48px rgba(0,0,0,.4)",
             }}
           >
-            <h3 className="text-[15px] font-semibold mb-4" style={{ color: "#f1f5f9" }}>Novo Agendamento</h3>
+            <h3 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text)" }}>Novo Agendamento</h3>
             <form onSubmit={criar} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>CLIENTE *</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CLIENTE *</label>
                   {form.clienteId ? (
                     <div className="flex items-center gap-2">
                       <span
@@ -197,9 +197,9 @@ export default function AgendamentosPage() {
                         {form.clienteNome}
                       </span>
                       <button type="button" onClick={() => { setForm(p => ({ ...p, clienteId: "", clienteNome: "" })); setBuscaCliente(""); }}
-                        className="text-[12px] transition-colors" style={{ color: "rgba(148,163,184,.4)" }}
+                        className="text-[12px] transition-colors" style={{ color: "var(--muted-3)" }}
                         onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(148,163,184,.4)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--muted-3)"}
                       >
                         Trocar
                       </button>
@@ -211,18 +211,18 @@ export default function AgendamentosPage() {
                       {clientes.length > 0 && (
                         <div
                           className="absolute z-10 w-full mt-1 rounded-xl overflow-hidden"
-                          style={{ background: "#0d0b1f", border: "1px solid rgba(255,255,255,.1)", boxShadow: "0 16px 48px rgba(0,0,0,.6)" }}
+                          style={{ background: "#0d0b1f", border: "1px solid var(--border-2)", boxShadow: "0 16px 48px rgba(0,0,0,.6)" }}
                         >
                           {clientes.map(c => (
                             <button key={c.id} type="button"
                               onClick={() => { setForm(p => ({ ...p, clienteId: c.id, clienteNome: c.nome ?? c.telefone })); setClientes([]); setBuscaCliente(""); }}
                               className="w-full text-left px-4 py-2.5 text-[13px] transition-colors"
-                              style={{ borderBottom: "1px solid rgba(255,255,255,.05)", color: "#e2e8f0" }}
+                              style={{ borderBottom: "1px solid var(--border)", color: "var(--text-2)" }}
                               onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,.1)"}
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                             >
                               <span className="font-medium">{c.nome ?? "—"}</span>
-                              <span className="ml-2 text-[12px]" style={{ color: "rgba(148,163,184,.5)" }}>{c.telefone}</span>
+                              <span className="ml-2 text-[12px]" style={{ color: "var(--muted-2)" }}>{c.telefone}</span>
                             </button>
                           ))}
                         </div>
@@ -232,7 +232,7 @@ export default function AgendamentosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>TIPO *</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TIPO *</label>
                   <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))} required
                     className="w-full input-dark px-3 py-2.5 text-[13px]">
                     {Object.entries(TIPOS).map(([v, t]) => (
@@ -242,19 +242,19 @@ export default function AgendamentosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>DATA *</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>DATA *</label>
                   <input type="date" value={form.data} onChange={e => setForm(p => ({ ...p, data: e.target.value }))} required
                     className="w-full input-dark px-3 py-2.5 text-[13px]" />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>HORÁRIO</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>HORÁRIO</label>
                   <input type="time" value={form.hora} onChange={e => setForm(p => ({ ...p, hora: e.target.value }))}
                     className="w-full input-dark px-3 py-2.5 text-[13px]" />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.6)" }}>OBSERVAÇÕES</label>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>OBSERVAÇÕES</label>
                   <input value={form.notas} onChange={e => setForm(p => ({ ...p, notas: e.target.value }))}
                     placeholder="Ex: cliente pediu para ligar às 14h"
                     className="w-full input-dark px-3 py-2.5 text-[13px]" />
@@ -276,7 +276,7 @@ export default function AgendamentosPage() {
                 </button>
                 <button type="button" onClick={() => setMostrarForm(false)}
                   className="px-5 py-2.5 rounded-xl text-[13px] font-medium transition-all"
-                  style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.7)" }}>
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                   Cancelar
                 </button>
               </div>
@@ -306,7 +306,7 @@ export default function AgendamentosPage() {
             {[1,2,3].map(i => <div key={i} className="shimmer h-20 rounded-2xl" />)}
           </div>
         ) : filtrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3" style={{ color: "rgba(148,163,184,.3)" }}>
+          <div className="flex flex-col items-center justify-center py-20 gap-3" style={{ color: "var(--muted-3)" }}>
             <div className="text-5xl">📅</div>
             <p className="text-[13px]">
               {aba === "hoje" ? "Nenhum agendamento para hoje." :
@@ -328,18 +328,18 @@ export default function AgendamentosPage() {
                   style={{
                     background: atrasado
                       ? "linear-gradient(145deg, rgba(248,113,113,.07), rgba(248,113,113,.03))"
-                      : "linear-gradient(145deg, rgba(255,255,255,.05), rgba(255,255,255,.02))",
-                    border: atrasado ? "1px solid rgba(248,113,113,.2)" : "1px solid rgba(255,255,255,.07)",
+                      : "linear-gradient(145deg, var(--input), var(--card))",
+                    border: atrasado ? "1px solid rgba(248,113,113,.2)" : "1px solid var(--border)",
                     animationDelay: `${idx * 40}ms`,
                   }}
                 >
                   {/* Date block */}
                   <div
                     className="flex-shrink-0 text-center w-14 pt-1 rounded-xl py-2"
-                    style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.06)" }}
+                    style={{ background: "var(--card)", border: "1px solid var(--border)" }}
                   >
-                    <div className="text-[22px] font-bold leading-none" style={{ color: "#f1f5f9" }}>{data.getDate()}</div>
-                    <div className="text-[10px] font-semibold uppercase mt-0.5" style={{ color: "rgba(148,163,184,.5)" }}>
+                    <div className="text-[22px] font-bold leading-none" style={{ color: "var(--text)" }}>{data.getDate()}</div>
+                    <div className="text-[10px] font-semibold uppercase mt-0.5" style={{ color: "var(--muted-2)" }}>
                       {data.toLocaleString("pt-BR", { month: "short" })}
                     </div>
                     {a.hora && <div className="text-[11px] font-semibold mt-1" style={{ color: "#60a5fa" }}>{a.hora}</div>}
@@ -365,14 +365,14 @@ export default function AgendamentosPage() {
                           style={{ background: "rgba(251,191,36,.1)", color: "#fbbf24" }}>⏳ Aguardando sync</span>
                       )}
                     </div>
-                    <p className="font-semibold text-[14px]" style={{ color: "#f1f5f9" }}>
+                    <p className="font-semibold text-[14px]" style={{ color: "var(--text)" }}>
                       {a.cliente.nome ?? a.cliente.telefone}
                     </p>
-                    <p className="text-[12px] mt-0.5" style={{ color: "rgba(148,163,184,.5)" }}>
+                    <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
                       {a.cliente.empresa.nome} · {a.cliente.telefone}
                     </p>
                     {a.notas && (
-                      <p className="text-[12px] mt-1 italic" style={{ color: "rgba(148,163,184,.4)" }}>"{a.notas}"</p>
+                      <p className="text-[12px] mt-1 italic" style={{ color: "var(--muted-3)" }}>"{a.notas}"</p>
                     )}
                   </div>
 
@@ -386,7 +386,7 @@ export default function AgendamentosPage() {
                       </button>
                       <button onClick={() => cancelar(a.id)}
                         className="text-[12px] px-3 py-1.5 rounded-lg font-medium transition-all"
-                        style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(148,163,184,.6)" }}>
+                        style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
                         Cancelar
                       </button>
                     </div>

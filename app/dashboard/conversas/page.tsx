@@ -173,19 +173,19 @@ export default function ConversasPage() {
   const lead = ativa?.cliente.leads[0] ?? null;
 
   return (
-    <div className="flex h-full overflow-hidden" style={{ background: "#08080e" }}>
+    <div className="flex h-full overflow-hidden" style={{ background: "var(--bg)" }}>
 
       {/* ── Sidebar lista ─────────────────────────────────── */}
       <div
         className={`${ativa ? "hidden md:flex" : "flex"} w-full md:w-80 flex-shrink-0 flex-col`}
         style={{
-          background: "#0a0916",
-          borderRight: "1px solid rgba(255,255,255,.06)",
+          background: "var(--bg)",
+          borderRight: "1px solid var(--border)",
         }}
       >
         {/* Header */}
-        <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,.05)" }}>
-          <h2 className="text-[15px] font-bold mb-3" style={{ color: "#f1f5f9" }}>Conversas</h2>
+        <div className="px-4 pt-5 pb-4" style={{ borderBottom: "1px solid var(--border)" }}>
+          <h2 className="text-[15px] font-bold mb-3" style={{ color: "var(--text)" }}>Conversas</h2>
           <input
             type="text"
             placeholder="Buscar..."
@@ -210,7 +210,7 @@ export default function ConversasPage() {
               {[1,2,3,4].map(i => <div key={i} className="shimmer h-16 rounded-xl" />)}
             </div>
           ) : conversas.length === 0 ? (
-            <div className="p-6 text-center" style={{ color: "rgba(148,163,184,.35)" }}>
+            <div className="p-6 text-center" style={{ color: "var(--muted-3)" }}>
               <div className="text-3xl mb-2">💬</div>
               <p className="text-[12px]">Nenhuma conversa ainda.</p>
               <p className="text-[11px] mt-1">Conecte os WhatsApps para começar.</p>
@@ -226,26 +226,26 @@ export default function ConversasPage() {
                   onClick={() => abrirConversa(c.id)}
                   className="w-full text-left px-4 py-3 transition-all"
                   style={{
-                    borderBottom: "1px solid rgba(255,255,255,.04)",
+                    borderBottom: "1px solid var(--card)",
                     borderLeft: isAtiva ? "2px solid #818cf8" : "2px solid transparent",
                     background: isAtiva ? "rgba(99,102,241,.1)" : "transparent",
                   }}
-                  onMouseEnter={e => { if (!isAtiva) e.currentTarget.style.background = "rgba(255,255,255,.03)"; }}
+                  onMouseEnter={e => { if (!isAtiva) e.currentTarget.style.background = "var(--card)"; }}
                   onMouseLeave={e => { if (!isAtiva) e.currentTarget.style.background = "transparent"; }}
                 >
                   <div className="flex items-start justify-between gap-2 mb-0.5">
-                    <span className="font-semibold text-[13px] truncate" style={{ color: isAtiva ? "#c7d2fe" : "#e2e8f0" }}>
+                    <span className="font-semibold text-[13px] truncate" style={{ color: isAtiva ? "#c7d2fe" : "var(--text-2)" }}>
                       {c.cliente.nome ?? c.cliente.telefone}
                     </span>
-                    <span className="text-[11px] flex-shrink-0" style={{ color: "rgba(148,163,184,.4)" }}>
+                    <span className="text-[11px] flex-shrink-0" style={{ color: "var(--muted-3)" }}>
                       {timeAgo(c.ultimaAtividade)}
                     </span>
                   </div>
-                  <div className="text-[12px] truncate mb-1.5" style={{ color: "rgba(148,163,184,.45)" }}>
+                  <div className="text-[12px] truncate mb-1.5" style={{ color: "var(--muted-2)" }}>
                     {c.ultimaMensagem ?? "Sem mensagens"}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px]" style={{ color: "rgba(148,163,184,.35)" }}>{c.cliente.empresa.nome}</span>
+                    <span className="text-[11px]" style={{ color: "var(--muted-3)" }}>{c.cliente.empresa.nome}</span>
                     {c.modoHumano && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
                         style={{ background: "rgba(251,146,60,.1)", color: "#fb923c" }}>
@@ -267,10 +267,10 @@ export default function ConversasPage() {
       </div>
 
       {/* ── Chat area ─────────────────────────────────────── */}
-      <div className={`${ativa || loadingChat ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0`} style={{ background: "#08080e" }}>
+      <div className={`${ativa || loadingChat ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0`} style={{ background: "var(--bg)" }}>
         {!ativa && !loadingChat ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center" style={{ color: "rgba(148,163,184,.3)" }}>
+            <div className="text-center" style={{ color: "var(--muted-3)" }}>
               <div className="text-5xl mb-3">💬</div>
               <p className="text-[14px] font-medium">Selecione uma conversa</p>
               <p className="text-[12px] mt-1">para ver o histórico com o cliente</p>
@@ -286,8 +286,8 @@ export default function ConversasPage() {
             <div
               className="px-5 py-3.5 flex items-center justify-between flex-shrink-0"
               style={{
-                background: "rgba(255,255,255,.03)",
-                borderBottom: "1px solid rgba(255,255,255,.06)",
+                background: "var(--card)",
+                borderBottom: "1px solid var(--border)",
                 backdropFilter: "blur(12px)",
               }}
             >
@@ -296,7 +296,7 @@ export default function ConversasPage() {
                 <button
                   onClick={() => setAtiva(null)}
                   className="md:hidden p-1.5 rounded-lg flex-shrink-0 -ml-1"
-                  style={{ color: "rgba(148,163,184,.7)" }}
+                  style={{ color: "var(--muted)" }}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -309,17 +309,17 @@ export default function ConversasPage() {
                   {(ativa.cliente.nome ?? ativa.cliente.telefone)[0].toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-[14px]" style={{ color: "#f1f5f9" }}>
+                  <p className="font-semibold text-[14px]" style={{ color: "var(--text)" }}>
                     {ativa.cliente.nome ?? ativa.cliente.telefone}
                   </p>
-                  <p className="text-[11px]" style={{ color: "rgba(148,163,184,.5)" }}>
+                  <p className="text-[11px]" style={{ color: "var(--muted-2)" }}>
                     {ativa.cliente.telefone} · {ativa.cliente.empresa.nome}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 {ativa.cliente.email && (
-                  <span className="text-[11px]" style={{ color: "rgba(148,163,184,.4)" }}>{ativa.cliente.email}</span>
+                  <span className="text-[11px]" style={{ color: "var(--muted-3)" }}>{ativa.cliente.email}</span>
                 )}
                 {lead && (() => {
                   const b = STATUS_BADGE[lead.status];
@@ -330,7 +330,7 @@ export default function ConversasPage() {
                 })()}
                 {lead?.vendedor && (
                   <span className="text-[11px] px-2.5 py-1 rounded-full"
-                    style={{ background: "rgba(255,255,255,.06)", color: "rgba(148,163,184,.7)" }}>
+                    style={{ background: "var(--card-2)", color: "var(--muted)" }}>
                     {lead.vendedor.nome}
                   </span>
                 )}
@@ -363,12 +363,12 @@ export default function ConversasPage() {
               {groupByDate(ativa.mensagens).map(({ date, items }) => (
                 <div key={date}>
                   <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,.06)" }} />
+                    <div className="flex-1 h-px" style={{ background: "var(--card-2)" }} />
                     <span className="text-[11px] font-medium px-3 py-1 rounded-full"
-                      style={{ background: "rgba(255,255,255,.04)", color: "rgba(148,163,184,.45)", border: "1px solid rgba(255,255,255,.06)" }}>
+                      style={{ background: "var(--card)", color: "var(--muted-2)", border: "1px solid var(--border)" }}>
                       {date}
                     </span>
-                    <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,.06)" }} />
+                    <div className="flex-1 h-px" style={{ background: "var(--card-2)" }} />
                   </div>
                   <div className="space-y-2">
                     {items.map((m) => (
@@ -383,15 +383,15 @@ export default function ConversasPage() {
                                 boxShadow: "0 4px 14px rgba(99,102,241,.3)",
                               }
                             : {
-                                background: "rgba(255,255,255,.07)",
-                                color: "#e2e8f0",
-                                border: "1px solid rgba(255,255,255,.1)",
+                                background: "var(--border)",
+                                color: "var(--text-2)",
+                                border: "1px solid var(--border-2)",
                                 borderBottomLeftRadius: "4px",
                               }
                           }
                         >
                           <p className="whitespace-pre-wrap break-words leading-relaxed">{m.conteudo}</p>
-                          <p className="text-[11px] mt-1.5" style={{ color: m.direcao === "SAIDA" ? "rgba(255,255,255,.5)" : "rgba(148,163,184,.4)" }}>
+                          <p className="text-[11px] mt-1.5" style={{ color: m.direcao === "SAIDA" ? "rgba(255,255,255,.5)" : "var(--muted-3)" }}>
                             {new Date(m.criadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
@@ -401,7 +401,7 @@ export default function ConversasPage() {
                 </div>
               ))}
               {ativa.mensagens.length === 0 && (
-                <div className="text-center py-12 text-[13px]" style={{ color: "rgba(148,163,184,.3)" }}>
+                <div className="text-center py-12 text-[13px]" style={{ color: "var(--muted-3)" }}>
                   Nenhuma mensagem nesta conversa ainda.
                 </div>
               )}
@@ -410,7 +410,7 @@ export default function ConversasPage() {
             {/* Input */}
             <div
               className="p-3 flex-shrink-0"
-              style={{ background: "rgba(255,255,255,.02)", borderTop: "1px solid rgba(255,255,255,.06)" }}
+              style={{ background: "var(--card)", borderTop: "1px solid var(--border)" }}
             >
               <div className="flex items-end gap-2">
                 <textarea
@@ -431,7 +431,7 @@ export default function ConversasPage() {
                   {enviando ? "..." : "Enviar"}
                 </button>
               </div>
-              <p className="text-[11px] mt-1.5 px-1" style={{ color: "rgba(148,163,184,.3)" }}>
+              <p className="text-[11px] mt-1.5 px-1" style={{ color: "var(--muted-3)" }}>
                 Shift+Enter para nova linha · enviado pelo WhatsApp da {ativa.cliente.empresa.nome}
               </p>
             </div>

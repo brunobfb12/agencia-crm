@@ -77,14 +77,14 @@ export default function ClientesPage() {
   const TH = ({ children }: { children: React.ReactNode }) => (
     <th
       className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide"
-      style={{ color: "rgba(148,163,184,.5)" }}
+      style={{ color: "var(--muted-2)" }}
     >
       {children}
     </th>
   );
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-4 md:p-8 max-w-6xl mx-auto">
 
         {/* Header */}
@@ -97,8 +97,8 @@ export default function ClientesPage() {
           </span>
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "#f1f5f9" }}>Clientes</h1>
-              <p className="text-[13px] mt-1" style={{ color: "rgba(148,163,184,.5)" }}>
+              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Clientes</h1>
+              <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
                 {clientes.length} clientes cadastrados
               </p>
             </div>
@@ -146,7 +146,7 @@ export default function ClientesPage() {
               >
             <table className="w-full text-sm min-w-[520px]">
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
+                <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
                   <TH>Cliente</TH>
                   <TH>Telefone</TH>
                   <TH>E-mail</TH>
@@ -160,22 +160,22 @@ export default function ClientesPage() {
                   <tr
                     key={c.id}
                     style={{
-                      borderBottom: idx < clientes.length - 1 ? "1px solid rgba(255,255,255,.04)" : "none",
+                      borderBottom: idx < clientes.length - 1 ? "1px solid var(--card)" : "none",
                       transition: "background .15s",
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,.03)")}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--card)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <td className="px-4 py-3 font-semibold text-[13px]" style={{ color: "#f1f5f9" }}>
+                    <td className="px-4 py-3 font-semibold text-[13px]" style={{ color: "var(--text)" }}>
                       {c.nome ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-[13px] font-mono" style={{ color: "rgba(148,163,184,.8)" }}>
+                    <td className="px-4 py-3 text-[13px] font-mono" style={{ color: "var(--muted)" }}>
                       {c.telefone}
                     </td>
-                    <td className="px-4 py-3 text-[12px]" style={{ color: "rgba(148,163,184,.55)" }}>
+                    <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
                       {c.email ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-[13px]" style={{ color: "rgba(148,163,184,.7)" }}>
+                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--muted)" }}>
                       {c.empresa.nome}
                     </td>
                     <td className="px-4 py-3">
@@ -190,10 +190,10 @@ export default function ClientesPage() {
                           </span>
                         );
                       })() : (
-                        <span style={{ color: "rgba(148,163,184,.3)", fontSize: "12px" }}>—</span>
+                        <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-[12px]" style={{ color: "rgba(148,163,184,.4)" }}>
+                    <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-3)" }}>
                       {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
                     </td>
                   </tr>
@@ -201,7 +201,7 @@ export default function ClientesPage() {
                 {clientes.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-16 text-center">
-                      <div className="flex flex-col items-center gap-3" style={{ color: "rgba(148,163,184,.3)" }}>
+                      <div className="flex flex-col items-center gap-3" style={{ color: "var(--muted-3)" }}>
                         <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 10v-2a4 4 0 00-3-3.87M23 21v-2a4 4 0 00-3-3.87" />
                         </svg>
@@ -220,23 +220,23 @@ export default function ClientesPage() {
 
       {/* Modal Importar CSV */}
       {modalImport && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)" }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
           <div
             className="w-full max-w-lg rounded-2xl overflow-hidden animate-fade-up"
             style={{
-              background: "linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.03))",
-              border: "1px solid rgba(255,255,255,.1)",
-              boxShadow: "0 32px 80px rgba(0,0,0,.7)",
+              background: "linear-gradient(145deg, var(--border), var(--card))",
+              border: "1px solid var(--border-2)",
+              boxShadow: "0 32px 80px var(--overlay)",
             }}
           >
             {/* Header */}
-            <div className="px-6 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,.07)" }}>
-              <h3 className="text-[16px] font-bold" style={{ color: "#f1f5f9" }}>Importar Clientes via CSV</h3>
+            <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Importar Clientes via CSV</h3>
               <div
                 className="mt-4 rounded-xl p-4 space-y-2 text-[12px]"
-                style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.06)" }}
+                style={{ background: "var(--card)", border: "1px solid var(--border)" }}
               >
-                <p className="font-semibold mb-2" style={{ color: "rgba(148,163,184,.8)" }}>Colunas aceitas:</p>
+                <p className="font-semibold mb-2" style={{ color: "var(--muted)" }}>Colunas aceitas:</p>
                 {[
                   { col: "telefone", obrig: true,  uso: "Identifica o cliente — obrigatório. Ex: 5511999998888" },
                   { col: "nome",     obrig: false, uso: "Nome exibido no CRM e usado pela IA" },
@@ -247,13 +247,13 @@ export default function ClientesPage() {
                   { col: "observacoes",     obrig: false, uso: "Nota livre sobre o cliente" },
                 ].map(({ col, obrig, uso }) => (
                   <div key={col} className="flex gap-2">
-                    <span className="shrink-0 font-mono font-semibold" style={{ color: obrig ? "#60a5fa" : "rgba(148,163,184,.6)" }}>
+                    <span className="shrink-0 font-mono font-semibold" style={{ color: obrig ? "#60a5fa" : "var(--muted)" }}>
                       {col}{obrig && " *"}
                     </span>
-                    <span style={{ color: "rgba(148,163,184,.4)" }}>— {uso}</span>
+                    <span style={{ color: "var(--muted-3)" }}>— {uso}</span>
                   </div>
                 ))}
-                <p className="pt-2" style={{ color: "rgba(148,163,184,.35)", borderTop: "1px solid rgba(255,255,255,.05)" }}>
+                <p className="pt-2" style={{ color: "var(--muted-3)", borderTop: "1px solid var(--border)" }}>
                   * obrigatório · Separador: vírgula · Data: DD/MM/AAAA
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function ClientesPage() {
             {/* Body */}
             <div className="px-6 py-5 space-y-4">
               <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   EMPRESA *
                 </label>
                 <select
@@ -275,7 +275,7 @@ export default function ClientesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   ARQUIVO CSV *
                 </label>
                 <input
@@ -286,7 +286,7 @@ export default function ClientesPage() {
                   className="w-full input-dark px-3 py-2.5 text-[13px]"
                 />
                 {importFile && (
-                  <p className="text-[11px] mt-1.5" style={{ color: "rgba(148,163,184,.4)" }}>{importFile.name}</p>
+                  <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-3)" }}>{importFile.name}</p>
                 )}
               </div>
 
@@ -317,11 +317,11 @@ export default function ClientesPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid rgba(255,255,255,.07)" }}>
+            <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
               <button
                 onClick={() => { setModalImport(false); setImportFile(null); setImportResult(null); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", color: "#e2e8f0" }}
+                style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}
               >
                 Fechar
               </button>

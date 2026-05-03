@@ -96,20 +96,20 @@ export default function CampanhasPage() {
           border: "1px solid transparent",
         }
       : {
-          background: "rgba(255,255,255,.04)",
-          border: "1px solid rgba(255,255,255,.08)",
-          color: "rgba(148,163,184,.7)",
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          color: "var(--muted)",
         };
 
   const cardStyle = {
     background:
-      "linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.02))",
-    border: "1px solid rgba(255,255,255,.08)",
+      "linear-gradient(145deg, var(--card), var(--card))",
+    border: "1px solid var(--border)",
     borderRadius: "16px",
   };
 
   return (
-    <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
+    <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-8 max-w-5xl mx-auto">
 
         {/* Header */}
@@ -128,13 +128,13 @@ export default function CampanhasPage() {
             <div>
               <h1
                 className="text-[28px] font-bold tracking-tight"
-                style={{ color: "#f1f5f9" }}
+                style={{ color: "var(--text)" }}
               >
                 Campanhas
               </h1>
               <p
                 className="text-[13px] mt-1"
-                style={{ color: "rgba(148,163,184,.5)" }}
+                style={{ color: "var(--muted-2)" }}
               >
                 Follow-ups automáticos e disparos manuais com espaçamento anti-spam
               </p>
@@ -192,7 +192,7 @@ export default function CampanhasPage() {
               </div>
               <div
                 className="text-[12px]"
-                style={{ color: "rgba(148,163,184,.55)" }}
+                style={{ color: "var(--muted-2)" }}
               >
                 {m.label}
               </div>
@@ -249,7 +249,7 @@ export default function CampanhasPage() {
             ) : campanhas.length === 0 ? (
               <div
                 className="flex flex-col items-center justify-center py-20 gap-3"
-                style={{ color: "rgba(148,163,184,.3)" }}
+                style={{ color: "var(--muted-3)" }}
               >
                 <div className="text-5xl">📨</div>
                 <p className="text-[13px]">Nenhuma campanha disparada ainda.</p>
@@ -303,8 +303,8 @@ export default function CampanhasPage() {
                                       color: "#fb923c",
                                     }
                                   : {
-                                      background: "rgba(255,255,255,.06)",
-                                      color: "rgba(148,163,184,.5)",
+                                      background: "var(--card-2)",
+                                      color: "var(--muted-2)",
                                     }
                               }
                             >
@@ -316,20 +316,20 @@ export default function CampanhasPage() {
                             </span>
                             <span
                               className="text-[11px]"
-                              style={{ color: "rgba(148,163,184,.35)" }}
+                              style={{ color: "var(--muted-3)" }}
                             >
                               {c.nomeEmpresa}
                             </span>
                             <span
                               className="text-[11px]"
-                              style={{ color: "rgba(148,163,184,.3)" }}
+                              style={{ color: "var(--muted-3)" }}
                             >
                               {timeAgo(c.criadoEm)}
                             </span>
                           </div>
                           <p
                             className="text-[13px] truncate mb-2"
-                            style={{ color: "rgba(148,163,184,.7)" }}
+                            style={{ color: "var(--muted)" }}
                           >
                             &quot;{c.mensagem}&quot;
                           </p>
@@ -337,7 +337,7 @@ export default function CampanhasPage() {
                           <div className="flex items-center gap-3">
                             <div
                               className="flex-1 h-1.5 rounded-full overflow-hidden"
-                              style={{ background: "rgba(255,255,255,.06)" }}
+                              style={{ background: "var(--card-2)" }}
                             >
                               <div
                                 className="h-full rounded-full transition-all"
@@ -350,7 +350,7 @@ export default function CampanhasPage() {
                             </div>
                             <span
                               className="text-[11px] font-semibold shrink-0"
-                              style={{ color: "rgba(148,163,184,.6)" }}
+                              style={{ color: "var(--muted)" }}
                             >
                               {c.enviados}/{c.total}
                               {c.erros > 0 && (
@@ -402,10 +402,10 @@ export default function CampanhasPage() {
                       style={{
                         background: r.ativo
                           ? "rgba(52,211,153,.3)"
-                          : "rgba(255,255,255,.1)",
+                          : "var(--border-2)",
                         border: r.ativo
                           ? "1px solid rgba(52,211,153,.4)"
-                          : "1px solid rgba(255,255,255,.1)",
+                          : "1px solid var(--border-2)",
                       }}
                     >
                       <div
@@ -414,7 +414,7 @@ export default function CampanhasPage() {
                           left: r.ativo ? "18px" : "2px",
                           background: r.ativo
                             ? "#34d399"
-                            : "rgba(148,163,184,.4)",
+                            : "var(--muted-3)",
                         }}
                       />
                     </button>
@@ -423,7 +423,7 @@ export default function CampanhasPage() {
                         <span
                           className="text-[14px] font-semibold"
                           style={{
-                            color: r.ativo ? "#f1f5f9" : "rgba(148,163,184,.4)",
+                            color: r.ativo ? "var(--text)" : "var(--muted-3)",
                           }}
                         >
                           {REGRA_LABELS[r.tipo] ?? r.tipo}
@@ -431,8 +431,8 @@ export default function CampanhasPage() {
                         <span
                           className="text-[11px] px-2 py-0.5 rounded-full"
                           style={{
-                            background: "rgba(255,255,255,.06)",
-                            color: "rgba(148,163,184,.5)",
+                            background: "var(--card-2)",
+                            color: "var(--muted-2)",
                           }}
                         >
                           após {r.diasInativo} dias inativo
@@ -442,7 +442,7 @@ export default function CampanhasPage() {
                         <div>
                           <label
                             className="block text-[11px] font-semibold mb-1"
-                            style={{ color: "rgba(148,163,184,.5)" }}
+                            style={{ color: "var(--muted-2)" }}
                           >
                             DIAS INATIVO
                           </label>
@@ -466,7 +466,7 @@ export default function CampanhasPage() {
                       <div>
                         <label
                           className="block text-[11px] font-semibold mb-1"
-                          style={{ color: "rgba(148,163,184,.5)" }}
+                          style={{ color: "var(--muted-2)" }}
                         >
                           MENSAGEM
                         </label>
@@ -484,7 +484,7 @@ export default function CampanhasPage() {
                         />
                         <p
                           className="text-[11px] mt-1"
-                          style={{ color: "rgba(148,163,184,.3)" }}
+                          style={{ color: "var(--muted-3)" }}
                         >
                           Use {"{nome}"} para personalizar com o nome do cliente.
                         </p>
