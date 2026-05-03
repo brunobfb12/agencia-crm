@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
 interface Empresa {
   id: string;
@@ -276,6 +277,9 @@ export default function ConfiguracoesPage() {
               <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
             </form>
 
+            <ScrollHint />
+            <div className="relative">
+              <GradientFade />
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <table className="w-full text-[13px] min-w-[520px]">
                 <thead>
@@ -399,6 +403,7 @@ export default function ConfiguracoesPage() {
                 </tbody>
               </table>
             </div>
+            </div>
           </div>
         )}
 
@@ -421,6 +426,9 @@ export default function ConfiguracoesPage() {
               <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
             </form>
 
+            <ScrollHint />
+            <div className="relative">
+              <GradientFade />
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <table className="w-full text-[13px] min-w-[600px]">
                 <thead>
@@ -510,6 +518,7 @@ export default function ConfiguracoesPage() {
                 </tbody>
               </table>
             </div>
+            </div>
           </div>
         )}
 
@@ -567,6 +576,9 @@ export default function ConfiguracoesPage() {
                   </button>
                 </form>
 
+                <ScrollHint />
+                <div className="relative">
+                  <GradientFade />
                 <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
                   {carregandoMidias ? (
                     <div className="p-6 space-y-2">
@@ -627,6 +639,7 @@ export default function ConfiguracoesPage() {
                       </tbody>
                     </table>
                   )}
+                </div>
                 </div>
               </>
             )}

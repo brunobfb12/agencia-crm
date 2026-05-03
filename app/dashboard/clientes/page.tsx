@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
 interface Cliente {
   id: string;
@@ -84,7 +85,7 @@ export default function ClientesPage() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: "#08080e" }}>
-      <div className="p-8 max-w-6xl mx-auto">
+      <div className="p-4 md:p-8 max-w-6xl mx-auto">
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
@@ -135,11 +136,15 @@ export default function ClientesPage() {
             ))}
           </div>
         ) : (
-          <div
-            className="bento-card overflow-hidden animate-fade-up"
-            style={{ animationDelay: "80ms" }}
-          >
-            <table className="w-full text-sm">
+          <>
+            <ScrollHint />
+            <div className="relative">
+              <GradientFade />
+              <div
+                className="bento-card overflow-x-auto animate-fade-up"
+                style={{ animationDelay: "80ms" }}
+              >
+            <table className="w-full text-sm min-w-[520px]">
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255,255,255,.06)", background: "rgba(255,255,255,.02)" }}>
                   <TH>Cliente</TH>
@@ -207,7 +212,9 @@ export default function ClientesPage() {
                 )}
               </tbody>
             </table>
-          </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 

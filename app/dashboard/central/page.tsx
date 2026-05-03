@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
 interface WhatsAppStatus { instancia: string; state: string; nomeEmpresa: string }
 interface Ferramenta {
@@ -266,6 +267,9 @@ export default function CentralPage() {
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}</div>
             ) : (
+              <ScrollHint />
+              <div className="relative">
+                <GradientFade />
               <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
                 <table className="w-full text-[13px] min-w-[560px]">
                   <thead>
@@ -352,6 +356,7 @@ export default function CentralPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
               </div>
             )}
           </div>
@@ -498,6 +503,9 @@ export default function CentralPage() {
               </form>
             </div>
 
+            <ScrollHint />
+            <div className="relative">
+              <GradientFade />
             <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
               <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}>
                 <h3 className="text-[14px] font-semibold" style={{ color: "#f1f5f9" }}>Acessos ativos ({usuarios.length})</h3>
@@ -543,6 +551,7 @@ export default function CentralPage() {
                   </tbody>
                 </table>
               )}
+            </div>
             </div>
           </div>
         )}
