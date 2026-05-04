@@ -10,8 +10,8 @@ interface Lead {
   vendedorId: string | null;
   empresaId: string;
   atualizadoEm: string;
-  cliente: { nome: string | null; telefone: string };
-  empresa: { nome: string };
+  cliente: { nome: string | null; telefone: string; email: string | null; dataNascimento: string | null };
+  empresa: { nome: string; instanciaWhatsapp: string };
 }
 
 interface Vendedor {
@@ -36,6 +36,15 @@ const todasOpcoes = [
   ...colunas,
   { status: "PERDIDO", label: "Perdido", hex: "#f87171" },
 ];
+
+function calcularIdade(dataNascimento: string): number {
+  const nasc = new Date(dataNascimento);
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nasc.getFullYear();
+  const m = hoje.getMonth() - nasc.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  return idade;
+}
 
 function fireLabel(score: number) {
   if (score === 0)   return { emoji: "·", label: "Sem score" };
@@ -510,6 +519,55 @@ export default function LeadsPage() {
             </div>
 
             <div className="px-5 py-4 space-y-4">
+              {/* Dados do cliente */}
+              <div
+                className="rounded-xl p-3 space-y-2"
+                style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--muted)" }}>
+                  Dados do Cliente
+                </p>
+                {/* Nome */}
+                <div className="flex items-center gap-2 text-[13px]">
+                  <span style={{ color: "var(--muted-2)" }}>👤</span>
+                  <span style={{ color: "var(--text)" }}>{editLead.cliente.nome ?? <span style={{ color: "var(--muted-3)" }}>Nome não informado</span>}</span>
+                </div>
+                {/* Telefone clicável WhatsApp */}
+                <div className="flex items-center gap-2 text-[13px]">
+                  <span style={{ color: "var(--muted-2)" }}>📱</span>
+                  <a
+                    href={`https://wa.me/${editLead.cliente.telefone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium transition-colors"
+                    style={{ color: "#25D366" }}
+                    onMouseEnter={(e) => ((e.target as HTMLElement).style.textDecoration = "underline")}
+                    onMouseLeave={(e) => ((e.target as HTMLElement).style.textDecoration = "none")}
+                  >
+                    {editLead.cliente.telefone}
+                  </a>
+                </div>
+                {/* Email */}
+                {editLead.cliente.email && (
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <span style={{ color: "var(--muted-2)" }}>✉️</span>
+                    <span style={{ color: "var(--text)" }}>{editLead.cliente.email}</span>
+                  </div>
+                )}
+                {/* Aniversário + Idade */}
+                {editLead.cliente.dataNascimento && (
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <span style={{ color: "var(--muted-2)" }}>🎂</span>
+                    <span style={{ color: "var(--text)" }}>
+                      {new Date(editLead.cliente.dataNascimento).toLocaleDateString("pt-BR")}
+                      <span className="ml-2 text-[11px]" style={{ color: "var(--muted-2)" }}>
+                        ({calcularIdade(editLead.cliente.dataNascimento)} anos)
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Status */}
               <div>
                 <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
