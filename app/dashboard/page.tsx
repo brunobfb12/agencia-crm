@@ -1,6 +1,130 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+
+/* ── Setup checklist (só perfil EMPRESA, some quando tudo ok) ──────── */
+interface SetupStatus {
+  informacoesOk: boolean;
+  whatsappOk: boolean;
+  vendedoresOk: boolean;
+  clientesOk: boolean;
+}
+
+function SetupChecklist() {
+  const [status, setStatus] = useState<SetupStatus | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/dashboard/setup").then((r) => r.json()).then((d) => {
+      if (d) setStatus(d);
+    });
+  }, []);
+
+  if (!status || dismissed) return null;
+
+  const steps = [
+    { ok: true,                label: "Conta criada e login realizado",  href: null },
+    { ok: status.informacoesOk, label: "Informações da empresa preenchidas", href: "/dashboard/configuracoes" },
+    { ok: status.whatsappOk,    label: "WhatsApp conectado",              href: "/dashboard/configuracoes" },
+    { ok: status.vendedoresOk,  label: "Pelo menos 1 vendedor cadastrado", href: "/dashboard/configuracoes" },
+    { ok: status.clientesOk,    label: "Primeiros clientes adicionados",   href: "/dashboard/clientes" },
+  ];
+
+  const done = steps.filter((s) => s.ok).length;
+  const total = steps.length;
+  const allDone = done === total;
+  const pct = Math.round((done / total) * 100);
+
+  return (
+    <div
+      className="mb-8 rounded-2xl p-5 animate-fade-up"
+      style={{
+        background: allDone
+          ? "linear-gradient(135deg, rgba(52,211,153,.08), rgba(16,185,129,.04))"
+          : "linear-gradient(135deg, rgba(99,102,241,.08), rgba(79,70,229,.03))",
+        border: `1px solid ${allDone ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.18)"}`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            {allDone ? (
+              <span className="text-[18px]">🎉</span>
+            ) : (
+              <span className="text-[14px] font-bold" style={{ color: "#a5b4fc" }}>{pct}%</span>
+            )}
+            <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>
+              {allDone ? "Tudo configurado! Seu CRM está pronto." : "Configure sua conta"}
+            </p>
+          </div>
+          <p className="text-[12px]" style={{ color: "var(--muted-2)" }}>
+            {allDone ? "Você completou todas as etapas iniciais." : `${done} de ${total} etapas concluídas`}
+          </p>
+        </div>
+        <button
+          onClick={() => setDismissed(true)}
+          className="flex-shrink-0 p-1 rounded-lg transition-colors"
+          style={{ color: "var(--muted-3)" }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: "var(--border)" }}>
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${pct}%`,
+            background: allDone
+              ? "linear-gradient(90deg, #34d399, #10b981)"
+              : "linear-gradient(90deg, #6366f1, #818cf8)",
+          }}
+        />
+      </div>
+
+      {/* Steps */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <div
+              className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+              style={step.ok
+                ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" }
+                : { background: "var(--card)", border: `1.5px solid var(--border-2)` }
+              }
+            >
+              {step.ok && (
+                <svg className="w-2.5 h-2.5" fill="none" stroke="#34d399" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            {step.href && !step.ok ? (
+              <Link
+                href={step.href}
+                className="text-[12.5px] hover:underline transition-colors"
+                style={{ color: "#a5b4fc" }}
+              >
+                {step.label}
+              </Link>
+            ) : (
+              <span
+                className="text-[12.5px]"
+                style={{ color: step.ok ? "var(--muted)" : "var(--muted-2)", textDecoration: step.ok ? "line-through" : "none" }}
+              >
+                {step.label}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface Stats {
   totalClientes: number;
@@ -131,6 +255,8 @@ export default function DashboardPage() {
             Resumo em tempo real de todas as empresas
           </p>
         </div>
+
+        <SetupChecklist />
 
         {/* Metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
