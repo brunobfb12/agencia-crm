@@ -122,6 +122,13 @@ export async function POST(req: Request) {
     orderBy: { criadoEm: "desc" },
   });
 
+  const agendamentos = await prisma.agendamento.findMany({
+    where: { clienteId: cliente.id, status: "PENDENTE" },
+    select: { tipo: true, dataAgendada: true, hora: true, notas: true },
+    orderBy: { dataAgendada: "asc" },
+    take: 3,
+  });
+
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
@@ -133,5 +140,6 @@ export async function POST(req: Request) {
     vendedor,
     telefonePrincipal,
     midias,
+    agendamentos,
   });
 }

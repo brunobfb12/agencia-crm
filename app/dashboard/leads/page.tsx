@@ -37,8 +37,14 @@ const todasOpcoes = [
   { status: "PERDIDO", label: "Perdido", hex: "#f87171" },
 ];
 
+function parseDateLocal(iso: string): Date {
+  // Extract date-only portion to avoid UTC-midnight timezone shift
+  const [year, month, day] = iso.split("T")[0].split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function calcularIdade(dataNascimento: string): number {
-  const nasc = new Date(dataNascimento);
+  const nasc = parseDateLocal(dataNascimento);
   const hoje = new Date();
   let idade = hoje.getFullYear() - nasc.getFullYear();
   const m = hoje.getMonth() - nasc.getMonth();
@@ -559,7 +565,7 @@ export default function LeadsPage() {
                   <div className="flex items-center gap-2 text-[13px]">
                     <span style={{ color: "var(--muted-2)" }}>🎂</span>
                     <span style={{ color: "var(--text)" }}>
-                      {new Date(editLead.cliente.dataNascimento).toLocaleDateString("pt-BR")}
+                      {parseDateLocal(editLead.cliente.dataNascimento).toLocaleDateString("pt-BR")}
                       <span className="ml-2 text-[11px]" style={{ color: "var(--muted-2)" }}>
                         ({calcularIdade(editLead.cliente.dataNascimento)} anos)
                       </span>
