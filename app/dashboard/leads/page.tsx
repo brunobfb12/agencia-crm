@@ -509,22 +509,23 @@ export default function LeadsPage() {
           style={{ background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)" }}
         >
           <div
-            className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
+            className="w-full max-w-md rounded-2xl flex flex-col animate-fade-up"
             style={{
               background: "var(--modal)",
               border: "1px solid var(--border-2)",
               boxShadow: "0 24px 80px var(--overlay)",
+              maxHeight: "calc(100vh - 2rem)",
             }}
           >
             {/* Modal header */}
-            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+            <div className="px-5 py-4 flex-shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
               <h3 className="font-bold text-[15px]" style={{ color: "var(--text)" }}>Editar Lead</h3>
               <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
                 {editLead.cliente.nome ?? editLead.cliente.telefone} · {editLead.empresa.nome}
               </p>
             </div>
 
-            <div className="px-5 py-4 space-y-4">
+            <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
               {/* Dados do cliente */}
               <div
                 className="rounded-xl p-3 space-y-2"
@@ -665,7 +666,7 @@ export default function LeadsPage() {
 
             {/* Modal footer */}
             <div
-              className="px-5 py-4 flex gap-2 justify-between items-center"
+              className="px-5 py-4 flex gap-2 justify-between items-center flex-shrink-0"
               style={{ borderTop: "1px solid var(--border)" }}
             >
               <div>
