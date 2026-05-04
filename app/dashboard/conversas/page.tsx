@@ -166,12 +166,15 @@ export default function ConversasPage() {
   const toggleModoHumano = async () => {
     if (!ativa) return;
     const novoModo = !ativa.modoHumano;
-    await fetch(`/api/conversas/${ativa.id}`, {
+    const res = await fetch(`/api/conversas/${ativa.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ modoHumano: novoModo }),
     });
-    setAtiva((prev) => prev ? { ...prev, modoHumano: novoModo } : prev);
+    if (!res.ok) return;
+    // Re-fetch from server to confirm the change persisted
+    const data = await fetch(`/api/conversas/${ativa.id}`).then((r) => r.json());
+    setAtiva(data);
     carregarLista();
   };
 
