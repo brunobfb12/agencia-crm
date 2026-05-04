@@ -416,7 +416,7 @@ export default function LeadsPage() {
           <div
             className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
             style={{
-              background: "linear-gradient(145deg, #13131f, #0d0d18)",
+              background: "var(--modal)",
               border: "1px solid var(--border-2)",
               boxShadow: "0 24px 80px var(--overlay)",
             }}
@@ -496,7 +496,7 @@ export default function LeadsPage() {
           <div
             className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
             style={{
-              background: "linear-gradient(145deg, #13131f, #0d0d18)",
+              background: "var(--modal)",
               border: "1px solid var(--border-2)",
               boxShadow: "0 24px 80px var(--overlay)",
             }}

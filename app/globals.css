@@ -16,6 +16,7 @@
   --muted-3: rgba(148,163,184,.35);
   --overlay: rgba(0,0,0,.70);
   --fade-edge: rgba(8,8,14,.95);
+  --modal:   #13131f;
 }
 
 html[data-theme="light"] {
@@ -33,6 +34,7 @@ html[data-theme="light"] {
   --muted-3: rgba(71,85,105,.42);
   --overlay: rgba(0,0,0,.50);
   --fade-edge: rgba(241,245,249,.95);
+  --modal:   #ffffff;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────── */
