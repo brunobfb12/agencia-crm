@@ -89,6 +89,7 @@ export default function ConversasPage() {
   const [loadingChat, setLoadingChat] = useState(false);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState("");
   const chatRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -139,6 +140,7 @@ export default function ConversasPage() {
   const enviar = async () => {
     if (!texto.trim() || !ativa || enviando) return;
     setEnviando(true);
+    setErroEnvio("");
     const res = await fetch(`/api/conversas/${ativa.id}/enviar`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -149,6 +151,9 @@ export default function ConversasPage() {
       const data = await fetch(`/api/conversas/${ativa.id}`).then((r) => r.json());
       setAtiva(data);
       setTimeout(() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }), 100);
+    } else {
+      const d = await res.json().catch(() => ({}));
+      setErroEnvio(d.erro || "Falha ao enviar. Verifique se o WhatsApp está conectado.");
     }
     setEnviando(false);
     inputRef.current?.focus();
@@ -431,9 +436,16 @@ export default function ConversasPage() {
                   {enviando ? "..." : "Enviar"}
                 </button>
               </div>
-              <p className="text-[11px] mt-1.5 px-1" style={{ color: "var(--muted-3)" }}>
-                Shift+Enter para nova linha · enviado pelo WhatsApp da {ativa.cliente.empresa.nome}
-              </p>
+              {erroEnvio && (
+                <p className="text-[11px] mt-1.5 px-1" style={{ color: "#f87171" }}>
+                  ⚠ {erroEnvio}
+                </p>
+              )}
+              {!erroEnvio && (
+                <p className="text-[11px] mt-1.5 px-1" style={{ color: "var(--muted-3)" }}>
+                  Shift+Enter para nova linha · enviado pelo WhatsApp da {ativa.cliente.empresa.nome}
+                </p>
+              )}
             </div>
           </>
         ) : null}

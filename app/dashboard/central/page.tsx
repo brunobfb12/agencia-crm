@@ -77,7 +77,7 @@ export default function CentralPage() {
     if (!confirm(`Desconectar "${instancia}"? O WhatsApp precisará ser escaneado novamente.`)) return;
     await fetch(`/api/central/instancia?instancia=${instancia}`, { method: "DELETE" });
     showMsg(`${instancia} desconectado`);
-    carregar();
+    setTimeout(() => carregar(), 2000);
   };
 
   const carregar = () => {
