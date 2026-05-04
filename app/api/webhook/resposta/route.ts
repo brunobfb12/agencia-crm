@@ -19,11 +19,29 @@ export async function POST(req: Request) {
     data: { ultimaMensagem: resposta, ultimaAtividade: new Date() },
   });
 
+  // Status hierarchy — AI cannot downgrade leads that reached AGENDADO or beyond
+  const statusOrder: LeadStatus[] = [
+    "LEAD", "AQUECIMENTO", "PRONTO_PARA_COMPRAR", "AGENDADO",
+    "NEGOCIACAO", "VENDA_REALIZADA", "POS_VENDA",
+  ];
+  const terminalStatus: LeadStatus[] = ["PERDIDO", "SEM_INTERESSE", "SEM_RESPOSTA", "FOLLOW_UP"];
+
   if (leadId && (novoStatus || observacoes)) {
+    let statusToApply: LeadStatus | undefined;
+    if (novoStatus) {
+      const current = await prisma.lead.findUnique({ where: { id: leadId }, select: { status: true } });
+      const currentIdx = current ? statusOrder.indexOf(current.status as LeadStatus) : -1;
+      const newIdx = statusOrder.indexOf(novoStatus as LeadStatus);
+      const isTerminal = terminalStatus.includes(novoStatus as LeadStatus);
+      // Only apply if it's a promotion, a terminal status, or current isn't in the ordered list
+      if (isTerminal || newIdx === -1 || currentIdx === -1 || newIdx > currentIdx) {
+        statusToApply = novoStatus as LeadStatus;
+      }
+    }
     await prisma.lead.update({
       where: { id: leadId },
       data: {
-        ...(novoStatus && { status: novoStatus as LeadStatus }),
+        ...(statusToApply && { status: statusToApply }),
         ...(observacoes && { observacoes }),
       },
     });
