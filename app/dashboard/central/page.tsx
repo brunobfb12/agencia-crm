@@ -203,7 +203,7 @@ export default function CentralPage() {
                   ⚠ {data.alertas.length} vencimento{data.alertas.length > 1 ? "s" : ""} próximo{data.alertas.length > 1 ? "s" : ""}
                 </span>
               ) : null}
-              <button onClick={carregar}
+              <button onClick={() => carregar()}
                 className="text-[13px] px-3 py-1.5 rounded-xl font-medium transition-all"
                 style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
                 Atualizar
