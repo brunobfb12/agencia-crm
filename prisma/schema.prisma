@@ -17,7 +17,8 @@ model Empresa {
   informacoes       String?
   googleCalendarId   String?
   googleCredentialId String?
-  calendlyUrl        String?
+  calendlyUrl              String?
+  perguntasQualificacao    String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]

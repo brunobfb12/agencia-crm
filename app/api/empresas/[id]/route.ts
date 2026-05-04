@@ -17,6 +17,7 @@ export async function PATCH(
       ...(body.googleCalendarId !== undefined && { googleCalendarId: body.googleCalendarId || null }),
       ...(body.googleCredentialId !== undefined && { googleCredentialId: body.googleCredentialId || null }),
       ...(body.calendlyUrl !== undefined && { calendlyUrl: body.calendlyUrl || null }),
+      ...(body.perguntasQualificacao !== undefined && { perguntasQualificacao: body.perguntasQualificacao || null }),
     },
   });
   return NextResponse.json(empresa);
