@@ -80,8 +80,8 @@ export default function CentralPage() {
     setTimeout(() => carregar(), 2000);
   };
 
-  const carregar = () => {
-    setLoading(true);
+  const carregar = (silent = false) => {
+    if (!silent) setLoading(true);
     fetch("/api/central/status").then((r) => r.json()).then((d) => { setData(d); setLoading(false); });
   };
 
@@ -92,6 +92,15 @@ export default function CentralPage() {
   };
 
   useEffect(() => { carregar(); carregarUsuarios(); }, []);
+
+  // Auto-refresh WhatsApp status every 8s when on whatsapp tab, until all open
+  useEffect(() => {
+    if (aba !== "whatsapp") return;
+    const allOpen = data?.whatsapp.every((w) => w.state === "open") ?? false;
+    if (allOpen) return;
+    const t = setInterval(() => carregar(true), 8000);
+    return () => clearInterval(t);
+  }, [aba, data?.whatsapp]);
 
   const criarUsuario = async (e: React.FormEvent) => {
     e.preventDefault();
