@@ -24,6 +24,7 @@ const colunas = [
   { status: "LEAD",                label: "Novos Leads",      hex: "#9ca3af" },
   { status: "AQUECIMENTO",         label: "Aquecimento",      hex: "#fb923c" },
   { status: "PRONTO_PARA_COMPRAR", label: "Pronto p/ Comprar",hex: "#fbbf24" },
+  { status: "AGENDADO",            label: "Agendado / Orçamento", hex: "#a78bfa" },
   { status: "NEGOCIACAO",          label: "Em Negociação",    hex: "#60a5fa" },
   { status: "VENDA_REALIZADA",     label: "Venda Realizada",  hex: "#34d399" },
   { status: "POS_VENDA",           label: "Pós-Venda",        hex: "#c084fc" },

@@ -134,6 +134,7 @@ END $$`,
     // --- novos status de lead ---
     `ALTER TYPE "LeadStatus" ADD VALUE IF NOT EXISTS 'SEM_INTERESSE'`,
     `ALTER TYPE "LeadStatus" ADD VALUE IF NOT EXISTS 'SEM_RESPOSTA'`,
+    `ALTER TYPE "LeadStatus" ADD VALUE IF NOT EXISTS 'AGENDADO'`,
 
     // --- tabela Midia ---
     `CREATE TABLE IF NOT EXISTS "Midia" (
