@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const EVO_URL = "http://201.76.43.149:8081";
+const EVO_URL = "http://201.76.43.149:8080";
 const EVO_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 const WEBHOOK_URL = "https://n8n-n8n.6jgzku.easypanel.host/webhook/whatsapp";
 
@@ -29,11 +29,13 @@ export async function POST(req: Request) {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVO_KEY },
     body: JSON.stringify({
-      enabled: true,
-      url: WEBHOOK_URL,
-      events: ["MESSAGES_UPSERT"],
-      webhook_by_events: false,
-      webhook_base64: false,
+      webhook: {
+        enabled: true,
+        url: WEBHOOK_URL,
+        events: ["MESSAGES_UPSERT"],
+        webhook_by_events: false,
+        webhook_base64: false,
+      },
     }),
   });
 

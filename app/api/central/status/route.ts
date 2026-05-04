@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const EVOLUTION_URL = "http://201.76.43.149:8081";
+const EVOLUTION_URL = "http://201.76.43.149:8080";
 const EVOLUTION_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
 async function checkInstancia(instancia: string) {

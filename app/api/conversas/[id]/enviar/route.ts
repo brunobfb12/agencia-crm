@@ -21,12 +21,12 @@ export async function POST(
   const { telefone, empresa } = conversa.cliente;
   const instancia = empresa.instanciaWhatsapp;
   const apiKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
-  const apiUrl = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8081";
+  const apiUrl = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
 
   const res = await fetch(`${apiUrl}/message/sendText/${instancia}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: apiKey },
-    body: JSON.stringify({ number: telefone, textMessage: { text: texto } }),
+    body: JSON.stringify({ number: telefone, text: texto }),
   });
 
   if (!res.ok) {
