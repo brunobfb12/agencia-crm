@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const EVO_URL = "http://201.76.43.149:8080";
+const EVO_URL = "http://201.76.43.149:8081";
 const EVO_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
 export async function GET(req: Request) {
