@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     ? { instanciaWhatsapp: instancia }
     : me?.perfil !== "CENTRAL" && me?.empresaId
       ? { id: me.empresaId }
-      : {};
+      : { ativa: true };
 
   const empresas = await prisma.empresa.findMany({
     where,
