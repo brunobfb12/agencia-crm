@@ -118,7 +118,7 @@ export async function POST(req: Request) {
 
   const midias = await prisma.midia.findMany({
     where: { empresaId: empresa.id, ativo: true },
-    select: { id: true, etiqueta: true, url: true, descricaoUso: true, tipo: true },
+    select: { id: true, etiqueta: true, mimeType: true, descricaoUso: true, tipo: true },
     orderBy: { criadoEm: "desc" },
   });
 

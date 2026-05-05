@@ -32,7 +32,9 @@ model Midia {
   id           String   @id @default(cuid())
   empresaId    String
   etiqueta     String
-  url          String
+  url          String?
+  base64       String?
+  mimeType     String?
   descricaoUso String
   tipo         String   @default("imagem")
   ativo        Boolean  @default(true)

@@ -17,8 +17,8 @@ interface Vendedor {
   empresa: { nome: string }; _count: { vendas: number };
 }
 interface Midia {
-  id: string; empresaId: string; etiqueta: string; url: string;
-  descricaoUso: string; tipo: string; ativo: boolean; criadoEm: string;
+  id: string; empresaId: string; etiqueta: string; url: string | null;
+  mimeType: string | null; descricaoUso: string; tipo: string; ativo: boolean; criadoEm: string;
 }
 
 const SECOES = ["PRODUTOS", "PRECOS", "PAGAMENTO", "ENTREGA", "DIFERENCIAIS", "HORARIO"] as const;
@@ -185,7 +185,8 @@ export default function ConfiguracoesPage() {
 
   const [midias, setMidias] = useState<Midia[]>([]);
   const [midiaEmpresaId, setMidiaEmpresaId] = useState("");
-  const [novaMidia, setNovaMidia] = useState({ etiqueta: "", url: "", descricaoUso: "", tipo: "imagem" });
+  const [novaMidia, setNovaMidia] = useState({ etiqueta: "", descricaoUso: "", tipo: "imagem" });
+  const [novaMidiaArquivo, setNovaMidiaArquivo] = useState<File | null>(null);
   const [carregandoMidias, setCarregandoMidias] = useState(false);
 
   const [salvando, setSalvando] = useState(false);
@@ -291,12 +292,20 @@ export default function ConfiguracoesPage() {
 
   const criarMidia = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!midiaEmpresaId) return;
+    if (!midiaEmpresaId || !novaMidiaArquivo) return;
     setSalvando(true);
-    const res = await fetch("/api/midias", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...novaMidia, empresaId: midiaEmpresaId }) });
+    const form = new FormData();
+    form.append("arquivo", novaMidiaArquivo);
+    form.append("etiqueta", novaMidia.etiqueta);
+    form.append("descricaoUso", novaMidia.descricaoUso);
+    form.append("tipo", novaMidia.tipo);
+    form.append("empresaId", midiaEmpresaId);
+    const res = await fetch("/api/midias/upload", { method: "POST", body: form });
+    if (!res.ok) { showMsg("Erro ao enviar arquivo."); setSalvando(false); return; }
     const created = await res.json();
     setMidias((prev) => [created, ...prev]);
-    setNovaMidia({ etiqueta: "", url: "", descricaoUso: "", tipo: "imagem" });
+    setNovaMidia({ etiqueta: "", descricaoUso: "", tipo: "imagem" });
+    setNovaMidiaArquivo(null);
     setSalvando(false);
     showMsg("Mídia adicionada!");
   };
@@ -680,7 +689,7 @@ export default function ConfiguracoesPage() {
                     <div>
                       <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TIPO</label>
                       <select value={novaMidia.tipo} onChange={(e) => setNovaMidia((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
-                        <option value="imagem">Imagem</option>
+                        <option value="imagem">Imagem (JPG, PNG)</option>
                         <option value="documento">Documento (PDF)</option>
                         <option value="video">Vídeo</option>
                         <option value="audio">Áudio</option>
@@ -688,18 +697,40 @@ export default function ConfiguracoesPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>URL DO ARQUIVO</label>
-                    <input required type="url" placeholder="https://exemplo.com/catalogo.pdf" value={novaMidia.url}
-                      onChange={(e) => setNovaMidia((p) => ({ ...p, url: e.target.value }))} className={INPUT} />
-                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>Use um link público (Google Drive, Dropbox, S3, etc.)</p>
+                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>ARQUIVO</label>
+                    <label className="flex flex-col items-center justify-center w-full py-6 rounded-xl cursor-pointer transition-all"
+                      style={{
+                        border: novaMidiaArquivo ? "1px solid rgba(52,211,153,.4)" : "1px dashed var(--border)",
+                        background: novaMidiaArquivo ? "rgba(52,211,153,.05)" : "var(--card-2)",
+                      }}>
+                      <input type="file" accept="image/*,application/pdf,video/*,audio/*" className="hidden"
+                        onChange={(e) => setNovaMidiaArquivo(e.target.files?.[0] ?? null)} />
+                      {novaMidiaArquivo ? (
+                        <div className="text-center">
+                          <p className="text-[13px] font-semibold" style={{ color: "#34d399" }}>{novaMidiaArquivo.name}</p>
+                          <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                            {(novaMidiaArquivo.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"
+                            style={{ color: "var(--muted-3)" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                          </svg>
+                          <p className="text-[13px]" style={{ color: "var(--muted)" }}>Clique para selecionar o arquivo</p>
+                          <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>JPG, PNG, PDF, MP4 · até 10 MB</p>
+                        </div>
+                      )}
+                    </label>
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>QUANDO A IA DEVE ENVIAR</label>
                     <input required placeholder="ex: quando o cliente pedir o catálogo ou perguntar sobre produtos" value={novaMidia.descricaoUso}
                       onChange={(e) => setNovaMidia((p) => ({ ...p, descricaoUso: e.target.value }))} className={INPUT} />
                   </div>
-                  <button type="submit" disabled={salvando} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50">
-                    {salvando ? "Adicionando..." : "Adicionar Mídia"}
+                  <button type="submit" disabled={salvando || !novaMidiaArquivo} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50">
+                    {salvando ? "Enviando arquivo..." : "Adicionar Mídia"}
                   </button>
                 </form>
 
@@ -729,9 +760,16 @@ export default function ConfiguracoesPage() {
                               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                               <td className="px-4 py-3">
                                 <div className="font-semibold" style={{ color: "var(--text)" }}>{m.etiqueta}</div>
-                                <a href={m.url} target="_blank" rel="noopener noreferrer"
-                                  className="text-[11px] truncate block max-w-xs hover:underline"
-                                  style={{ color: "#60a5fa" }}>{m.url}</a>
+                                {m.url ? (
+                                  <a href={m.url} target="_blank" rel="noopener noreferrer"
+                                    className="text-[11px] truncate block max-w-xs hover:underline"
+                                    style={{ color: "#60a5fa" }}>{m.url}</a>
+                                ) : (
+                                  <span className="text-[11px] px-1.5 py-0.5 rounded font-mono"
+                                    style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc" }}>
+                                    {m.mimeType || "arquivo"}
+                                  </span>
+                                )}
                               </td>
                               <td className="px-4 py-3 capitalize" style={{ color: "var(--muted)" }}>{m.tipo}</td>
                               <td className="px-4 py-3 text-[12px] max-w-xs" style={{ color: "var(--muted-2)" }}>{m.descricaoUso}</td>
