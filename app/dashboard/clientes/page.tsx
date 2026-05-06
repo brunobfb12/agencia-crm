@@ -54,6 +54,12 @@ export default function ClientesPage() {
   const [salvandoNovo, setSalvandoNovo] = useState(false);
   const [novoErro, setNovoErro] = useState("");
 
+  // modal iniciar conversa
+  const [modalAtivar, setModalAtivar] = useState<Cliente | null>(null);
+  const [msgInicial, setMsgInicial] = useState("");
+  const [ativando, setAtivando] = useState(false);
+  const [ativarResultado, setAtivarResultado] = useState<{ ok: boolean; msg: string } | null>(null);
+
   useEffect(() => {
     fetch("/api/empresas").then((r) => r.json()).then((data) => {
       setEmpresas(data);
@@ -115,6 +121,21 @@ export default function ClientesPage() {
     if (data.ok) {
       fetch(`/api/clientes`).then((r) => r.json()).then(setClientes);
     }
+  };
+
+  const ativarLead = async () => {
+    if (!modalAtivar) return;
+    setAtivando(true);
+    setAtivarResultado(null);
+    const res = await fetch("/api/leads/ativar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clienteId: modalAtivar.id, mensagemInicial: msgInicial || undefined }),
+    });
+    const data = await res.json();
+    setAtivarResultado({ ok: data.ok, msg: data.ok ? `Mensagem enviada: "${data.mensagem}"` : (data.error ?? "Erro ao enviar") });
+    setAtivando(false);
+    if (data.ok) fetch("/api/clientes").then(r => r.json()).then(setClientes);
   };
 
   const TH = ({ children }: { children: React.ReactNode }) => (
@@ -210,6 +231,7 @@ export default function ClientesPage() {
                   <TH>Empresa</TH>
                   <TH>Status</TH>
                   <TH>Cadastro</TH>
+                  <TH>{" "}</TH>
                 </tr>
               </thead>
               <tbody>
@@ -252,6 +274,19 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-3)" }}>
                       {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                        style={{ background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.25)", color: "#a5b4fc" }}
+                        title="Enviar primeira mensagem e ativar lead"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Ativar
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -490,6 +525,50 @@ export default function ClientesPage() {
               >
                 {importando ? "Importando..." : "Importar"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Iniciar Conversa */}
+      {modalAtivar && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up" style={{ background: "linear-gradient(145deg, var(--border), var(--card))", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px var(--overlay)" }}>
+            <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Iniciar Conversa</h3>
+              <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>
+                Envia a primeira mensagem para <strong>{modalAtivar.nome ?? modalAtivar.telefone}</strong> via WhatsApp e coloca no funil.
+              </p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>MENSAGEM INICIAL (opcional)</label>
+                <textarea
+                  rows={3}
+                  value={msgInicial}
+                  onChange={e => setMsgInicial(e.target.value)}
+                  placeholder="Deixe em branco para usar a saudação padrão da empresa..."
+                  className="w-full input-dark px-3 py-2.5 text-[13px] resize-none"
+                />
+                <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                  Empresa: {modalAtivar.empresa.nome}
+                </p>
+              </div>
+              {ativarResultado && (
+                <div className="rounded-xl px-4 py-3 text-[12px]" style={{ background: ativarResultado.ok ? "rgba(52,211,153,.1)" : "rgba(248,113,113,.1)", border: `1px solid ${ativarResultado.ok ? "rgba(52,211,153,.2)" : "rgba(248,113,113,.2)"}`, color: ativarResultado.ok ? "#34d399" : "#f87171" }}>
+                  {ativarResultado.msg}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+              <button onClick={() => { setModalAtivar(null); setAtivarResultado(null); }} className="px-4 py-2 rounded-xl text-[13px] font-medium" style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
+                {ativarResultado?.ok ? "Fechar" : "Cancelar"}
+              </button>
+              {!ativarResultado?.ok && (
+                <button onClick={ativarLead} disabled={ativando} className="btn-primary px-5 py-2 text-[13px] disabled:opacity-40">
+                  {ativando ? "Enviando..." : "Enviar Mensagem"}
+                </button>
+              )}
             </div>
           </div>
         </div>
