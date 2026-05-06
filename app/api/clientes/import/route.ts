@@ -38,6 +38,7 @@ export async function POST(req: Request) {
   const formData = await req.formData();
   const file = formData.get("arquivo") as File | null;
   const empresaId = formData.get("empresaId") as string;
+  const vendedorId = (formData.get("vendedorId") as string | null) || null;
 
   if (!file || !empresaId) {
     return NextResponse.json({ ok: false, erro: "arquivo e empresaId obrigatorios" }, { status: 400 });
@@ -92,10 +93,20 @@ export async function POST(req: Request) {
 
       if (!leadExiste) {
         await prisma.lead.create({
-          data: { clienteId: cliente.id, empresaId, ...(obs && { observacoes: obs }) },
+          data: {
+            clienteId: cliente.id,
+            empresaId,
+            ...(vendedorId && { vendedorId }),
+            ...(obs && { observacoes: obs }),
+          },
         });
-      } else if (obs && !leadExiste.observacoes) {
-        await prisma.lead.update({ where: { id: leadExiste.id }, data: { observacoes: obs } });
+      } else {
+        const updateData: Record<string, unknown> = {};
+        if (vendedorId && !leadExiste.vendedorId) updateData.vendedorId = vendedorId;
+        if (obs && !leadExiste.observacoes) updateData.observacoes = obs;
+        if (Object.keys(updateData).length > 0) {
+          await prisma.lead.update({ where: { id: leadExiste.id }, data: updateData });
+        }
       }
 
       importados++;

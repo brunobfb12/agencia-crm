@@ -79,5 +79,19 @@ export async function POST(req: Request) {
     update: { nome: body.nome, tags: body.tags ?? [], ...extra },
     create: { nome: body.nome, telefone: body.telefone, empresaId: body.empresaId, tags: body.tags ?? [], ...extra },
   });
+
+  if (body.vendedorId) {
+    const leadExiste = await prisma.lead.findFirst({
+      where: { clienteId: cliente.id, empresaId: body.empresaId, status: { notIn: ["PERDIDO", "SEM_INTERESSE"] } },
+    });
+    if (leadExiste) {
+      await prisma.lead.update({ where: { id: leadExiste.id }, data: { vendedorId: body.vendedorId } });
+    } else {
+      await prisma.lead.create({
+        data: { clienteId: cliente.id, empresaId: body.empresaId, vendedorId: body.vendedorId },
+      });
+    }
+  }
+
   return NextResponse.json(cliente, { status: 201 });
 }

@@ -19,6 +19,11 @@ interface Empresa {
   nome: string;
 }
 
+interface Vendedor {
+  id: string;
+  nome: string;
+}
+
 const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
   LEAD:                { bg: "rgba(148,163,184,.1)",  color: "#94a3b8", label: "Lead" },
   AQUECIMENTO:         { bg: "rgba(251,146,60,.1)",   color: "#fb923c", label: "Aquecimento" },
@@ -32,7 +37,7 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   SEM_RESPOSTA:        { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Sem Resposta" },
 };
 
-const formVazio = { nome: "", telefone: "", email: "", dataNascimento: "", empresaId: "" };
+const formVazio = { nome: "", telefone: "", email: "", dataNascimento: "", empresaId: "", vendedorId: "" };
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -43,6 +48,8 @@ export default function ClientesPage() {
   // modal CSV
   const [modalImport, setModalImport] = useState(false);
   const [importEmpresa, setImportEmpresa] = useState("");
+  const [importVendedores, setImportVendedores] = useState<Vendedor[]>([]);
+  const [importVendedorId, setImportVendedorId] = useState("");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importando, setImportando] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; importados: number; ignorados: number; erros: string[] } | null>(null);
@@ -51,6 +58,7 @@ export default function ClientesPage() {
   // modal novo cliente
   const [modalNovo, setModalNovo] = useState(false);
   const [novoForm, setNovoForm] = useState(formVazio);
+  const [novoVendedores, setNovoVendedores] = useState<Vendedor[]>([]);
   const [salvandoNovo, setSalvandoNovo] = useState(false);
   const [novoErro, setNovoErro] = useState("");
 
@@ -66,6 +74,17 @@ export default function ClientesPage() {
       if (data.length === 1) setNovoForm((f) => ({ ...f, empresaId: data[0].id }));
     });
   }, []);
+
+  useEffect(() => {
+    if (!novoForm.empresaId) { setNovoVendedores([]); return; }
+    fetch(`/api/vendedores?empresaId=${novoForm.empresaId}`).then(r => r.json()).then(setNovoVendedores);
+  }, [novoForm.empresaId]);
+
+  useEffect(() => {
+    if (!importEmpresa) { setImportVendedores([]); setImportVendedorId(""); return; }
+    fetch(`/api/vendedores?empresaId=${importEmpresa}`).then(r => r.json()).then(setImportVendedores);
+    setImportVendedorId("");
+  }, [importEmpresa]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -93,6 +112,7 @@ export default function ClientesPage() {
         email: novoForm.email || undefined,
         dataNascimento: novoForm.dataNascimento || undefined,
         empresaId: novoForm.empresaId,
+        ...(novoForm.vendedorId && { vendedorId: novoForm.vendedorId }),
       }),
     });
     if (res.ok) {
@@ -114,6 +134,7 @@ export default function ClientesPage() {
     const fd = new FormData();
     fd.append("arquivo", importFile);
     fd.append("empresaId", importEmpresa);
+    if (importVendedorId) fd.append("vendedorId", importVendedorId);
     const res = await fetch("/api/clientes/import", { method: "POST", body: fd });
     const data = await res.json();
     setImportResult(data);
@@ -328,11 +349,25 @@ export default function ClientesPage() {
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>EMPRESA *</label>
                   <select
                     value={novoForm.empresaId}
-                    onChange={(e) => setNovoForm((f) => ({ ...f, empresaId: e.target.value }))}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, empresaId: e.target.value, vendedorId: "" }))}
                     className="w-full input-dark px-3 py-2.5 text-[13px]"
                   >
                     <option value="">Selecione a empresa</option>
                     {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {novoVendedores.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>VENDEDOR RESPONSÁVEL</label>
+                  <select
+                    value={novoForm.vendedorId}
+                    onChange={(e) => setNovoForm((f) => ({ ...f, vendedorId: e.target.value }))}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  >
+                    <option value="">Sem vendedor (atribuir depois)</option>
+                    {novoVendedores.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}
                   </select>
                 </div>
               )}
@@ -462,6 +497,23 @@ export default function ClientesPage() {
                   {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
                 </select>
               </div>
+
+              {importVendedores.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                    VENDEDOR RESPONSÁVEL
+                  </label>
+                  <select
+                    value={importVendedorId}
+                    onChange={(e) => setImportVendedorId(e.target.value)}
+                    className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  >
+                    <option value="">Sem vendedor (atribuir depois)</option>
+                    {importVendedores.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
                   ARQUIVO CSV *
@@ -507,7 +559,7 @@ export default function ClientesPage() {
             {/* Footer */}
             <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
               <button
-                onClick={() => { setModalImport(false); setImportFile(null); setImportResult(null); }}
+                onClick={() => { setModalImport(false); setImportFile(null); setImportResult(null); setImportVendedorId(""); setImportVendedores([]); setImportEmpresa(""); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
                 style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}
               >
