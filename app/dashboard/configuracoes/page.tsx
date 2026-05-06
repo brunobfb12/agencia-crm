@@ -492,7 +492,7 @@ export default function ConfiguracoesPage() {
                                 </div>
                               </div>
 
-                              {tipoAtendimento === "AGENDAMENTO" && (
+                              {tipoAtendimento === "AGENDAMENTO" && (<>
                               <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                                 <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📅 Calendly (opcional)</p>
                                 <div className="mb-3">
@@ -530,7 +530,7 @@ export default function ConfiguracoesPage() {
                                   </div>
                                 </div>
                               </div>
-                              )}
+                              </>)}
 
                               <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                                 <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
