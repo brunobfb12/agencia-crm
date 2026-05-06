@@ -24,11 +24,16 @@ export async function GET() {
   // Fetch instances from DB — dynamic, includes any company registered via the form
   const empresas = await prisma.empresa.findMany({
     where: { ativa: true },
-    select: { instanciaWhatsapp: true, nome: true },
+    select: {
+      id: true, instanciaWhatsapp: true, nome: true,
+      informacoes: true, nomeIA: true, tipoAtendimento: true,
+      calendlyUrl: true, perguntasQualificacao: true,
+      _count: { select: { vendedores: { where: { ativo: true } } } },
+    },
     orderBy: { nome: "asc" },
   });
 
-  const instancias = empresas.map((e: { instanciaWhatsapp: string; nome: string }) => e.instanciaWhatsapp);
+  const instancias = empresas.map((e) => e.instanciaWhatsapp);
 
   // Safe counts — tables may not exist if migration hasn't run yet
   let mensagensHoje = 0, leadsHoje = 0, mensagensMes = 0;
@@ -56,10 +61,20 @@ export async function GET() {
     return dias <= 7;
   });
 
-  // Enrich with empresa name
-  const whatsapp = whatsappStatus.map((w: { instancia: string; state: string }) => {
-    const empresa = empresas.find((e: { instanciaWhatsapp: string; nome: string }) => e.instanciaWhatsapp === w.instancia);
-    return { ...w, nomeEmpresa: empresa?.nome ?? w.instancia };
+  const whatsapp = whatsappStatus.map((w) => {
+    const empresa = empresas.find((e) => e.instanciaWhatsapp === w.instancia);
+    const tipo = empresa?.tipoAtendimento ?? "AGENDAMENTO";
+    const precisaCalendly = tipo === "AGENDAMENTO" || tipo === "AMBOS";
+    const setup = empresa ? {
+      vendedores:    empresa._count.vendedores > 0,
+      informacoes:  !!empresa.informacoes?.trim(),
+      nomeIA:       !!empresa.nomeIA?.trim(),
+      tipoDefinido: true,
+      calendly:     !precisaCalendly || !!empresa.calendlyUrl?.trim(),
+      qualificacao: !!empresa.perguntasQualificacao?.trim(),
+      tipoAtendimento: tipo,
+    } : null;
+    return { ...w, nomeEmpresa: empresa?.nome ?? w.instancia, setup };
   });
 
   return NextResponse.json({

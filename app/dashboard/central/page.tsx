@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
-interface WhatsAppStatus { instancia: string; state: string; nomeEmpresa: string }
+interface EmpresaSetup {
+  vendedores: boolean; informacoes: boolean; nomeIA: boolean;
+  tipoDefinido: boolean; calendly: boolean; qualificacao: boolean;
+  tipoAtendimento: string;
+}
+interface WhatsAppStatus { instancia: string; state: string; nomeEmpresa: string; setup: EmpresaSetup | null }
 interface Ferramenta {
   id: string; nome: string; tipo: string; valor: number | null;
   vencimento: string | null; link: string | null; observacoes: string | null; ativo: boolean;
@@ -389,15 +394,17 @@ export default function CentralPage() {
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{
-                          background: w.state === "open" ? "#34d399" : w.state === "close" ? "#f87171" : "#94a3b8",
-                          boxShadow: w.state === "open" ? "0 0 8px rgba(52,211,153,.6)" : w.state === "close" ? "0 0 8px rgba(248,113,113,.4)" : "none",
+                          background: w.state === "open" ? "#34d399" : w.state === "close" ? "#f87171" : "#fbbf24",
+                          boxShadow: w.state === "open" ? "0 0 8px rgba(52,211,153,.6)" : w.state === "close" ? "0 0 8px rgba(248,113,113,.4)" : "0 0 8px rgba(251,191,36,.4)",
                         }}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-[14px] truncate" style={{ color: "var(--text)" }}>{w.nomeEmpresa}</div>
                         <div className="text-[11px] truncate" style={{ color: "var(--muted-2)" }}>{w.instancia}</div>
-                        <div className="text-[12px] font-medium mt-0.5" style={{ color: w.state === "open" ? "#34d399" : "#f87171" }}>
-                          {w.state === "open" ? "Conectado" : w.state === "close" ? "Desconectado" : w.state}
+                        <div className="text-[12px] font-medium mt-0.5" style={{
+                          color: w.state === "open" ? "#34d399" : w.state === "close" ? "#f87171" : "#fbbf24"
+                        }}>
+                          {w.state === "open" ? "✓ Conectado" : w.state === "close" ? "✗ Desconectado" : "⟳ Conectando..."}
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 items-end">
@@ -428,6 +435,26 @@ export default function CentralPage() {
                           <p>2. Toque em ⋮ → Aparelhos conectados</p>
                           <p>3. Conectar aparelho → Escaneie o QR</p>
                           <p className="font-semibold" style={{ color: "#fb923c" }}>QR expira em ~20s — atualize se necessário</p>
+                        </div>
+                      </div>
+                    )}
+                    {w.setup && (
+                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: "var(--muted-2)" }}>Setup da empresa</p>
+                        <div className="grid grid-cols-2 gap-1">
+                          {[
+                            { ok: w.state === "open", label: "WhatsApp conectado" },
+                            { ok: w.setup.vendedores,  label: "Vendedor cadastrado" },
+                            { ok: w.setup.informacoes, label: "Informações preenchidas" },
+                            { ok: w.setup.nomeIA,      label: "Nome da IA definido" },
+                            { ok: w.setup.calendly,    label: (w.setup.tipoAtendimento === "ORCAMENTO" ? "Tipo configurado" : "Link de agendamento") },
+                            { ok: w.setup.qualificacao, label: "Roteiro de qualificação" },
+                          ].map(({ ok, label }) => (
+                            <div key={label} className="flex items-center gap-1.5 text-[11px]" style={{ color: ok ? "#34d399" : "#f87171" }}>
+                              <span>{ok ? "✓" : "✗"}</span>
+                              <span style={{ color: ok ? "var(--muted)" : "#f87171" }}>{label}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
