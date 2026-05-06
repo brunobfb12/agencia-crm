@@ -18,6 +18,8 @@ export async function PATCH(
       ...(body.googleCredentialId !== undefined && { googleCredentialId: body.googleCredentialId || null }),
       ...(body.calendlyUrl !== undefined && { calendlyUrl: body.calendlyUrl || null }),
       ...(body.perguntasQualificacao !== undefined && { perguntasQualificacao: body.perguntasQualificacao || null }),
+      ...(body.tipoAtendimento !== undefined && { tipoAtendimento: body.tipoAtendimento }),
+      ...(body.nomeIA !== undefined && { nomeIA: body.nomeIA || null }),
     },
   });
   return NextResponse.json(empresa);

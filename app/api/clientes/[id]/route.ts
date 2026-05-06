@@ -22,6 +22,7 @@ export async function PATCH(
     }
   }
   if (body.tags !== undefined) data.tags = body.tags;
+  if (body.memoriaCliente !== undefined) data.memoriaCliente = body.memoriaCliente;
 
   const cliente = await prisma.cliente.update({
     where: { id },

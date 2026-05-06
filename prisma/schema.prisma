@@ -19,6 +19,8 @@ model Empresa {
   googleCredentialId String?
   calendlyUrl              String?
   perguntasQualificacao    String?
+  tipoAtendimento          String   @default("AGENDAMENTO")
+  nomeIA                   String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]
@@ -91,6 +93,8 @@ model Cliente {
   empresaId      String
   tags           String[]
   criadoEm      DateTime  @default(now())
+
+  memoriaCliente String?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]

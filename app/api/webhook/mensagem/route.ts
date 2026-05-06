@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   // When @lid is detected, look for an existing client with the same name in this empresa.
   // If found, reuse that client so iPhone and WhatsApp Web share the same conversation.
   const isLid = !telefone.startsWith("55");
-  let clientePrincipal: { id: string; nome: string | null; telefone: string } | null = null;
+  let clientePrincipal: { id: string; nome: string | null; telefone: string; memoriaCliente: string | null } | null = null;
   let telefonePrincipal = telefone;
 
   if (isLid && nomeContato) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
           telefone: { startsWith: "55" },
         },
         orderBy: { criadoEm: "desc" },
-        select: { id: true, nome: true, telefone: true },
+        select: { id: true, nome: true, telefone: true, memoriaCliente: true },
       });
       if (encontrado) {
         clientePrincipal = encontrado;
@@ -48,6 +48,7 @@ export async function POST(req: Request) {
     where: { telefone_empresaId: { telefone, empresaId: empresa.id } },
     create: { telefone, empresaId: empresa.id, nome: nomeContato || null },
     update: nomeContato ? { nome: nomeContato } : {},
+    select: { id: true, nome: true, telefone: true, memoriaCliente: true },
   });
 
   let lead = await prisma.lead.findFirst({
@@ -132,8 +133,22 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
-    empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp, informacoes: empresa.informacoes, calendlyUrl: empresa.calendlyUrl ?? null, perguntasQualificacao: empresa.perguntasQualificacao ?? null },
-    cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
+    empresa: {
+      id: empresa.id,
+      nome: empresa.nome,
+      instanciaWhatsapp: empresa.instanciaWhatsapp,
+      informacoes: empresa.informacoes,
+      calendlyUrl: empresa.calendlyUrl ?? null,
+      perguntasQualificacao: empresa.perguntasQualificacao ?? null,
+      tipoAtendimento: empresa.tipoAtendimento,
+      nomeIA: empresa.nomeIA ?? null,
+    },
+    cliente: {
+      id: cliente.id,
+      nome: cliente.nome,
+      telefone: cliente.telefone,
+      memoriaCliente: cliente.memoriaCliente ?? null,
+    },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },
     conversa: { id: conversa.id },
     historico,

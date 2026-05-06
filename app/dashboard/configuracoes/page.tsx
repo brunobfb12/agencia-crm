@@ -9,6 +9,7 @@ interface Empresa {
   informacoes: string | null; googleCalendarId: string | null;
   googleCredentialId: string | null; calendlyUrl: string | null;
   perguntasQualificacao: string | null;
+  tipoAtendimento: string; nomeIA: string | null;
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -179,6 +180,8 @@ export default function ConfiguracoesPage() {
   const [infoCampos, setInfoCampos] = useState<Record<string, string>>({});
   const [calendarFields, setCalendarFields] = useState({ googleCalendarId: "", googleCredentialId: "", calendlyUrl: "" });
   const [perguntasQualificacao, setPerguntasQualificacao] = useState("");
+  const [tipoAtendimento, setTipoAtendimento] = useState("AGENDAMENTO");
+  const [nomeIA, setNomeIA] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
@@ -245,6 +248,8 @@ export default function ConfiguracoesPage() {
     setInfoCampos(parseInfo(emp.informacoes));
     setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "", calendlyUrl: emp.calendlyUrl ?? "" });
     setPerguntasQualificacao(emp.perguntasQualificacao ?? "");
+    setTipoAtendimento(emp.tipoAtendimento ?? "AGENDAMENTO");
+    setNomeIA(emp.nomeIA ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -254,9 +259,9 @@ export default function ConfiguracoesPage() {
     await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq } : e));
+    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null } : e));
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
@@ -466,6 +471,29 @@ export default function ConfiguracoesPage() {
                               </div>
 
                               <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                                <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>🤖 Identidade e Modo da IA</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO DE ATENDIMENTO</label>
+                                    <select value={tipoAtendimento} onChange={e => setTipoAtendimento(e.target.value)} className={INPUT}>
+                                      <option value="AGENDAMENTO">Agendamento (salão, clínica, estúdio...)</option>
+                                      <option value="ORCAMENTO">Orçamento (loja, atacado, materiais...)</option>
+                                    </select>
+                                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                                      {tipoAtendimento === "AGENDAMENTO" ? "IA direciona para agendamento via Calendly." : "IA coleta lista de itens e envia orçamento ao vendedor."}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>NOME DA IA (persona)</label>
+                                    <input value={nomeIA} onChange={e => setNomeIA(e.target.value)}
+                                      placeholder="Ex: Sofia, Bella, Ana..." className={INPUT} />
+                                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA vai se apresentar com este nome. Deixe em branco para usar "assistente".</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {tipoAtendimento === "AGENDAMENTO" && (
+                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                                 <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📅 Calendly (opcional)</p>
                                 <div className="mb-3">
                                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>LINK DO CALENDLY</label>
@@ -502,6 +530,7 @@ export default function ConfiguracoesPage() {
                                   </div>
                                 </div>
                               </div>
+                              )}
 
                               <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                                 <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
