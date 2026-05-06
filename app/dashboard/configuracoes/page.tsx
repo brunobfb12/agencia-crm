@@ -478,9 +478,12 @@ export default function ConfiguracoesPage() {
                                     <select value={tipoAtendimento} onChange={e => setTipoAtendimento(e.target.value)} className={INPUT}>
                                       <option value="AGENDAMENTO">Agendamento (salão, clínica, estúdio...)</option>
                                       <option value="ORCAMENTO">Orçamento (loja, atacado, materiais...)</option>
+                                      <option value="AMBOS">Agendamento + Orçamento (petshop, clínica c/ produtos...)</option>
                                     </select>
                                     <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
-                                      {tipoAtendimento === "AGENDAMENTO" ? "IA direciona para agendamento via Calendly." : "IA coleta lista de itens e envia orçamento ao vendedor."}
+                                      {tipoAtendimento === "AGENDAMENTO" && "IA direciona para agendamento via Calendly."}
+                                      {tipoAtendimento === "ORCAMENTO" && "IA coleta lista de itens e envia orçamento ao vendedor."}
+                                      {tipoAtendimento === "AMBOS" && "IA detecta a intenção: agenda serviços e faz orçamento de produtos — tudo para o mesmo vendedor."}
                                     </p>
                                   </div>
                                   <div>
@@ -492,7 +495,7 @@ export default function ConfiguracoesPage() {
                                 </div>
                               </div>
 
-                              {tipoAtendimento === "AGENDAMENTO" && (<>
+                              {(tipoAtendimento === "AGENDAMENTO" || tipoAtendimento === "AMBOS") && (<>
                               <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                                 <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📅 Calendly (opcional)</p>
                                 <div className="mb-3">
