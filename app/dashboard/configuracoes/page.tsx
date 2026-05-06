@@ -186,6 +186,11 @@ export default function ConfiguracoesPage() {
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
 
+  const [modalTransferir, setModalTransferir] = useState<Vendedor | null>(null);
+  const [transferirParaId, setTransferirParaId] = useState("");
+  const [transferindo, setTransferindo] = useState(false);
+  const [transferirResultado, setTransferirResultado] = useState<{ ok: boolean; msg: string } | null>(null);
+
   const [midias, setMidias] = useState<Midia[]>([]);
   const [midiaEmpresaId, setMidiaEmpresaId] = useState("");
   const [novaMidia, setNovaMidia] = useState({ etiqueta: "", descricaoUso: "", tipo: "imagem" });
@@ -295,6 +300,24 @@ export default function ConfiguracoesPage() {
     showMsg("Vendedor excluído.");
   };
 
+  const transferirCarteira = async () => {
+    if (!modalTransferir || !transferirParaId) return;
+    setTransferindo(true);
+    setTransferirResultado(null);
+    const res = await fetch("/api/vendedores/transferir", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deVendedorId: modalTransferir.id, paraVendedorId: transferirParaId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setTransferirResultado({ ok: true, msg: `${data.leadsTransferidos} lead(s) transferido(s) para ${data.para}` });
+    } else {
+      setTransferirResultado({ ok: false, msg: data.error ?? "Erro ao transferir" });
+    }
+    setTransferindo(false);
+  };
+
   const criarMidia = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!midiaEmpresaId || !novaMidiaArquivo) return;
@@ -363,6 +386,7 @@ export default function ConfiguracoesPage() {
       ];
 
   return (
+    <>
     <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-4 md:p-8 max-w-5xl mx-auto">
 
@@ -639,6 +663,11 @@ export default function ConfiguracoesPage() {
                                   : { background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
                                 {v.ativo ? "Desativar" : "Ativar"}
                               </button>
+                              <button onClick={() => { setModalTransferir(v); setTransferirParaId(""); setTransferirResultado(null); }}
+                                className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
+                                style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
+                                Transferir
+                              </button>
                               <button onClick={() => excluirVendedor(v.id, v.nome)}
                                 className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
                                 style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
@@ -848,5 +877,68 @@ export default function ConfiguracoesPage() {
 
       </div>
     </div>
+
+    {/* Modal Transferir Carteira */}
+
+    {modalTransferir && (
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
+        <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
+          style={{ background: "var(--bg)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.4)" }}>
+          <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Transferir Carteira</h3>
+            <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>
+              Todos os leads de <strong>{modalTransferir.nome}</strong> serão reatribuídos ao vendedor selecionado.
+            </p>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            <div>
+              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TRANSFERIR PARA</label>
+              <select
+                value={transferirParaId}
+                onChange={(e) => setTransferirParaId(e.target.value)}
+                className="w-full input-dark px-3 py-2.5 text-[13px]"
+              >
+                <option value="">Selecione o vendedor destino</option>
+                {vendedores
+                  .filter((v) => v.id !== modalTransferir.id && v.empresaId === modalTransferir.empresaId)
+                  .map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.nome} {!v.ativo ? "(inativo)" : ""}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            {transferirResultado && (
+              <div className="rounded-xl px-4 py-3 text-[12px]"
+                style={{
+                  background: transferirResultado.ok ? "rgba(52,211,153,.1)" : "rgba(248,113,113,.1)",
+                  border: `1px solid ${transferirResultado.ok ? "rgba(52,211,153,.2)" : "rgba(248,113,113,.2)"}`,
+                  color: transferirResultado.ok ? "#34d399" : "#f87171",
+                }}>
+                {transferirResultado.msg}
+              </div>
+            )}
+          </div>
+          <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+            <button
+              onClick={() => { setModalTransferir(null); setTransferirResultado(null); }}
+              className="px-4 py-2 rounded-xl text-[13px] font-medium"
+              style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
+              {transferirResultado?.ok ? "Fechar" : "Cancelar"}
+            </button>
+            {!transferirResultado?.ok && (
+              <button
+                onClick={transferirCarteira}
+                disabled={!transferirParaId || transferindo}
+                className="px-5 py-2 rounded-xl text-[13px] font-semibold disabled:opacity-40"
+                style={{ background: "linear-gradient(135deg, rgba(251,146,60,.8), rgba(234,88,12,.8))", color: "white" }}>
+                {transferindo ? "Transferindo..." : "Confirmar Transferência"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
