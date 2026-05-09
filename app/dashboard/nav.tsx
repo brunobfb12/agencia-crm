@@ -31,6 +31,11 @@ const IconSchedule = () => (
     <rect x="3" y="4" width="18" height="18" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
   </svg>
 );
+const IconVendas = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 const IconCampanhas = () => (
   <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -121,6 +126,7 @@ function ThemeToggle({ compact = false }: { compact?: boolean }) {
 const navItemsBase = [
   { href: "/dashboard",               label: "Visão Geral",   Icon: IconOverview  },
   { href: "/dashboard/leads",         label: "Leads",         Icon: IconLeads     },
+  { href: "/dashboard/vendas",        label: "Vendas",         Icon: IconVendas    },
   { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat      },
   { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients   },
   { href: "/dashboard/agendamentos",  label: "Agendamentos",  Icon: IconSchedule  },
