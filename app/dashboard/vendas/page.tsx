@@ -26,35 +26,44 @@ interface VendasData {
   vendasRecentes: VendaRecente[];
 }
 
-type Periodo = "hoje" | "semana" | "mes" | "ano";
+type Periodo = "hoje" | "semana" | "mes" | "ano" | "custom";
 
 const PERIODOS: { key: Periodo; label: string }[] = [
-  { key: "hoje",   label: "Hoje"      },
-  { key: "semana", label: "7 dias"    },
-  { key: "mes",    label: "Este mês"  },
-  { key: "ano",    label: "Este ano"  },
+  { key: "hoje",   label: "Hoje"         },
+  { key: "semana", label: "7 dias"       },
+  { key: "mes",    label: "Este mês"     },
+  { key: "ano",    label: "Este ano"     },
+  { key: "custom", label: "Personalizado" },
 ];
+
+function toInputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
 
 function fmt(v: number) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-function ShimmerBox({ h = "h-8", w = "w-20" }: { h?: string; w?: string }) {
-  return <div className={`shimmer ${h} ${w} rounded-lg`} />;
-}
-
 export default function VendasPage() {
-  const [periodo, setPeriodo] = useState<Periodo>("mes");
-  const [data, setData]       = useState<VendasData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [periodo, setPeriodo]   = useState<Periodo>("mes");
+  const [dataInicio, setInicio] = useState(() => {
+    const d = new Date(); d.setDate(1); return toInputDate(d);
+  });
+  const [dataFim, setFim]       = useState(() => toInputDate(new Date()));
+  const [data, setData]         = useState<VendasData | null>(null);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
+    if (periodo === "custom" && (!dataInicio || !dataFim)) return;
     setLoading(true);
-    fetch(`/api/dashboard/vendas?periodo=${periodo}`)
+    const url = periodo === "custom"
+      ? `/api/dashboard/vendas?de=${dataInicio}&ate=${dataFim}`
+      : `/api/dashboard/vendas?periodo=${periodo}`;
+    fetch(url)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [periodo]);
+  }, [periodo, dataInicio, dataFim]);
 
   const cards = [
     {
@@ -111,6 +120,21 @@ export default function VendasPage() {
     },
   ];
 
+  const btnStyle = (active: boolean) =>
+    active
+      ? { background: "rgba(52,211,153,.15)", color: "#34d399", border: "1px solid rgba(52,211,153,.3)" }
+      : { background: "var(--card)", color: "var(--muted)", border: "1px solid var(--border)" };
+
+  const inputStyle: React.CSSProperties = {
+    background: "var(--card-2)",
+    border: "1px solid var(--border-2)",
+    color: "var(--text)",
+    borderRadius: "8px",
+    padding: "4px 10px",
+    fontSize: "12.5px",
+    outline: "none",
+  };
+
   return (
     <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-8 max-w-5xl mx-auto">
@@ -130,21 +154,39 @@ export default function VendasPage() {
         </div>
 
         {/* Period filter */}
-        <div className="flex gap-2 mb-6 animate-fade-up flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 mb-6 animate-fade-up">
           {PERIODOS.map((p) => (
             <button
               key={p.key}
               onClick={() => setPeriodo(p.key)}
               className="px-4 py-1.5 rounded-full text-[12.5px] font-semibold transition-all"
-              style={
-                periodo === p.key
-                  ? { background: "rgba(52,211,153,.15)", color: "#34d399", border: "1px solid rgba(52,211,153,.3)" }
-                  : { background: "var(--card)", color: "var(--muted)", border: "1px solid var(--border)" }
-              }
+              style={btnStyle(periodo === p.key)}
             >
               {p.label}
             </button>
           ))}
+
+          {/* Date pickers — shown only when "Personalizado" is selected */}
+          {periodo === "custom" && (
+            <div className="flex items-center gap-2 ml-1 animate-fade-up">
+              <input
+                type="date"
+                value={dataInicio}
+                max={dataFim}
+                onChange={(e) => setInicio(e.target.value)}
+                style={inputStyle}
+              />
+              <span className="text-[12px]" style={{ color: "var(--muted-3)" }}>até</span>
+              <input
+                type="date"
+                value={dataFim}
+                min={dataInicio}
+                max={toInputDate(new Date())}
+                onChange={(e) => setFim(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          )}
         </div>
 
         {/* Metric cards */}
@@ -162,12 +204,9 @@ export default function VendasPage() {
                 {card.icon}
               </div>
               {loading ? (
-                <ShimmerBox h="h-8" w="w-20" />
+                <div className="shimmer h-8 w-20 rounded-lg" />
               ) : (
-                <div
-                  className="text-[22px] font-bold tracking-tight leading-none"
-                  style={{ color: card.color }}
-                >
+                <div className="text-[22px] font-bold tracking-tight leading-none" style={{ color: card.color }}>
                   {card.value}
                 </div>
               )}
@@ -186,9 +225,7 @@ export default function VendasPage() {
               Ranking de Vendedores
             </h2>
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <div key={i} className="shimmer h-14 rounded-xl" />)}
-              </div>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="shimmer h-14 rounded-xl" />)}</div>
             ) : !data?.rankingVendedores.length ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--muted-3)" }}>
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
@@ -199,11 +236,7 @@ export default function VendasPage() {
             ) : (
               <div className="space-y-2">
                 {data.rankingVendedores.map((v, i) => (
-                  <div
-                    key={v.nome}
-                    className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{ background: "var(--card-2)" }}
-                  >
+                  <div key={v.nome} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "var(--card-2)" }}>
                     <span
                       className="text-[13px] font-bold w-5 text-center flex-shrink-0"
                       style={{ color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : "var(--muted-3)" }}
@@ -211,9 +244,7 @@ export default function VendasPage() {
                       {i + 1}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>
-                        {v.nome}
-                      </p>
+                      <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>{v.nome}</p>
                       <p className="text-[11px]" style={{ color: "var(--muted-2)" }}>
                         {v.totalVendas} venda{v.totalVendas !== 1 ? "s" : ""}
                       </p>
@@ -233,9 +264,7 @@ export default function VendasPage() {
               Vendas Recentes
             </h2>
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => <div key={i} className="shimmer h-16 rounded-xl" />)}
-              </div>
+              <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="shimmer h-16 rounded-xl" />)}</div>
             ) : !data?.vendasRecentes.length ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2" style={{ color: "var(--muted-3)" }}>
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
@@ -246,11 +275,7 @@ export default function VendasPage() {
             ) : (
               <div className="space-y-2 overflow-y-auto max-h-[360px]">
                 {data.vendasRecentes.map((v) => (
-                  <div
-                    key={v.id}
-                    className="p-3 rounded-xl"
-                    style={{ background: "var(--card-2)" }}
-                  >
+                  <div key={v.id} className="p-3 rounded-xl" style={{ background: "var(--card-2)" }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>

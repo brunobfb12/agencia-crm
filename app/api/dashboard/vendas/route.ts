@@ -8,7 +8,7 @@ function getDesde(periodo: string): Date {
     case "hoje":  { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
     case "semana":{ const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
     case "ano":   return new Date(now.getFullYear(), 0, 1);
-    default:      return new Date(now.getFullYear(), now.getMonth(), 1); // mes
+    default:      return new Date(now.getFullYear(), now.getMonth(), 1);
   }
 }
 
@@ -17,8 +17,20 @@ export async function GET(req: Request) {
   if (!me) return NextResponse.json(null, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const periodo = searchParams.get("periodo") ?? "mes";
-  const desde = getDesde(periodo);
+  const de  = searchParams.get("de");
+  const ate = searchParams.get("ate");
+
+  let desde: Date;
+  let ate_: Date;
+
+  if (de && ate) {
+    desde = new Date(de + "T00:00:00");
+    ate_  = new Date(ate + "T23:59:59");
+  } else {
+    const periodo = searchParams.get("periodo") ?? "mes";
+    desde = getDesde(periodo);
+    ate_  = new Date();
+  }
 
   const empresaFilter = me.perfil === "EMPRESA" && me.empresaId
     ? { lead: { empresaId: me.empresaId } }
@@ -28,17 +40,19 @@ export async function GET(req: Request) {
     ? { empresaId: me.empresaId }
     : {};
 
+  const dataFilter = { gte: desde, lte: ate_ };
+
   const [vendas, totalLeads, leadsConvertidos] = await Promise.all([
     prisma.venda.findMany({
-      where: { criadoEm: { gte: desde }, ...empresaFilter },
+      where: { criadoEm: dataFilter, ...empresaFilter },
       include: {
         lead: { include: { cliente: { select: { nome: true } } } },
         vendedor: { select: { nome: true } },
       },
       orderBy: { criadoEm: "desc" },
     }),
-    prisma.lead.count({ where: { criadoEm: { gte: desde }, ...leadEmpresaFilter } }),
-    prisma.lead.count({ where: { criadoEm: { gte: desde }, status: "VENDA_REALIZADA", ...leadEmpresaFilter } }),
+    prisma.lead.count({ where: { criadoEm: dataFilter, ...leadEmpresaFilter } }),
+    prisma.lead.count({ where: { criadoEm: dataFilter, status: "VENDA_REALIZADA", ...leadEmpresaFilter } }),
   ]);
 
   const totalFaturado = vendas.reduce((s, v) => s + (v.valor ?? 0), 0);
@@ -64,5 +78,5 @@ export async function GET(req: Request) {
     criadoEm:     v.criadoEm,
   }));
 
-  return NextResponse.json({ totalFaturado, totalVendas, ticketMedio, taxaConversao, rankingVendedores, vendasRecentes, periodo });
+  return NextResponse.json({ totalFaturado, totalVendas, ticketMedio, taxaConversao, rankingVendedores, vendasRecentes });
 }
