@@ -71,25 +71,26 @@ export async function POST(req: Request) {
 
   // Create Agendamento — catch P2002 (unique violation) when concurrent Cal.com webhooks race
   const dataAgendadaDate = new Date(dataAgendada);
-  let agendamento;
-  try {
-    agendamento = await prisma.agendamento.create({
-      data: {
-        clienteId: cliente.id,
-        tipo: "CONSULTA",
-        dataAgendada: dataAgendadaDate,
-        hora: hora || null,
-        notas: servico || null,
-        status: "PENDENTE",
-      },
-    });
-  } catch (e: any) {
-    if (e.code !== "P2002") throw e;
-    // Another concurrent webhook already created this slot — reuse it
-    agendamento = await prisma.agendamento.findFirst({
-      where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: hora || null, status: "PENDENTE" },
-    });
-  }
+  const agendamento = await (async () => {
+    try {
+      return await prisma.agendamento.create({
+        data: {
+          clienteId: cliente.id,
+          tipo: "CONSULTA",
+          dataAgendada: dataAgendadaDate,
+          hora: hora || null,
+          notas: servico || null,
+          status: "PENDENTE",
+        },
+      });
+    } catch (e: any) {
+      if (e.code !== "P2002") throw e;
+      return await prisma.agendamento.findFirst({
+        where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: hora || null, status: "PENDENTE" },
+      });
+    }
+  })();
+  if (!agendamento) return NextResponse.json({ ok: false, motivo: "agendamento nao encontrado" }, { status: 500 });
 
   // Round-robin vendor if lead has none
   let vendedor = (lead as any).vendedor;
