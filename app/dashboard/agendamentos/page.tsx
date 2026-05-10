@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Cliente { id: string; nome: string | null; telefone: string }
 interface Agendamento {
@@ -47,6 +47,7 @@ export default function AgendamentosPage() {
   const [buscaCliente, setBuscaCliente] = useState("");
   const [form, setForm] = useState({ clienteId: "", clienteNome: "", tipo: "FOLLOW_UP", data: "", hora: "", notas: "" });
   const [salvando, setSalvando] = useState(false);
+  const salvandoRef = useRef(false);
   const [msg, setMsg] = useState("");
   const [isCentral, setIsCentral] = useState(false);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -100,21 +101,27 @@ export default function AgendamentosPage() {
 
   const criar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (salvandoRef.current) return;
     if (!form.clienteId) { setMsg("Selecione um cliente"); return; }
+    salvandoRef.current = true;
     setSalvando(true);
-    const res = await fetch("/api/agendamentos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clienteId: form.clienteId, tipo: form.tipo, dataAgendada: form.data, hora: form.hora || null, notas: form.notas || null }),
-    });
-    setSalvando(false);
-    if (res.ok) {
-      setMostrarForm(false);
-      setForm({ clienteId: "", clienteNome: "", tipo: "FOLLOW_UP", data: "", hora: "", notas: "" });
-      setBuscaCliente("");
-      carregar();
-      setMsg("Agendamento criado!");
-      setTimeout(() => setMsg(""), 3000);
+    try {
+      const res = await fetch("/api/agendamentos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clienteId: form.clienteId, tipo: form.tipo, dataAgendada: form.data, hora: form.hora || null, notas: form.notas || null }),
+      });
+      if (res.ok) {
+        setMostrarForm(false);
+        setForm({ clienteId: "", clienteNome: "", tipo: "FOLLOW_UP", data: "", hora: "", notas: "" });
+        setBuscaCliente("");
+        carregar();
+        setMsg("Agendamento criado!");
+        setTimeout(() => setMsg(""), 3000);
+      }
+    } finally {
+      salvandoRef.current = false;
+      setSalvando(false);
     }
   };
 
