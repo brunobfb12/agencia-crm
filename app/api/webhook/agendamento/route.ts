@@ -69,17 +69,28 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create Agendamento record
-  const agendamento = await prisma.agendamento.create({
-    data: {
+  // Create Agendamento record — skip if duplicate (Cal.com fires multiple events per booking)
+  const dataAgendadaDate = new Date(dataAgendada);
+  let agendamento = await prisma.agendamento.findFirst({
+    where: {
       clienteId: cliente.id,
-      tipo: "CONSULTA",
-      dataAgendada: new Date(dataAgendada),
-      hora: hora || null,
-      notas: servico || null,
+      dataAgendada: dataAgendadaDate,
       status: "PENDENTE",
+      ...(hora ? { hora } : {}),
     },
   });
+  if (!agendamento) {
+    agendamento = await prisma.agendamento.create({
+      data: {
+        clienteId: cliente.id,
+        tipo: "CONSULTA",
+        dataAgendada: dataAgendadaDate,
+        hora: hora || null,
+        notas: servico || null,
+        status: "PENDENTE",
+      },
+    });
+  }
 
   // Round-robin vendor if lead has none
   let vendedor = (lead as any).vendedor;
