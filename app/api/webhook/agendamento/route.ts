@@ -69,8 +69,14 @@ export async function POST(req: Request) {
     });
   }
 
+  // Normalize: strip time from dataAgendada (Cal.com sends different formats per event type)
+  // "2026-05-11T15:00:00Z" and "2026-05-11" must map to the same DB value
+  const dateOnly = String(dataAgendada).split("T")[0]; // → "2026-05-11"
+  const dataAgendadaDate = new Date(dateOnly + "T00:00:00.000Z");
+  // Normalize hora to "HH:MM" (strip seconds if present: "15:00:00" → "15:00")
+  const horaNorm = hora ? String(hora).substring(0, 5) : null;
+
   // Create Agendamento — catch P2002 (unique violation) when concurrent Cal.com webhooks race
-  const dataAgendadaDate = new Date(dataAgendada);
   const agendamento = await (async () => {
     try {
       return await prisma.agendamento.create({
@@ -78,7 +84,7 @@ export async function POST(req: Request) {
           clienteId: cliente.id,
           tipo: "CONSULTA",
           dataAgendada: dataAgendadaDate,
-          hora: hora || null,
+          hora: horaNorm,
           notas: servico || null,
           status: "PENDENTE",
         },
@@ -86,7 +92,7 @@ export async function POST(req: Request) {
     } catch (e: any) {
       if (e.code !== "P2002") throw e;
       return await prisma.agendamento.findFirst({
-        where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: hora || null, status: "PENDENTE" },
+        where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: horaNorm, status: "PENDENTE" },
       });
     }
   })();
