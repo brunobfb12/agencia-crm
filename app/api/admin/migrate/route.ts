@@ -8,6 +8,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
+  const { querySql } = body;
+  if (querySql) {
+    try {
+      const rows = await prisma.$queryRawUnsafe(querySql);
+      return NextResponse.json({ ok: true, rows });
+    } catch (e: any) {
+      return NextResponse.json({ ok: false, result: e.message });
+    }
+  }
+
   if (customSql) {
     try {
       await prisma.$executeRawUnsafe(customSql);
