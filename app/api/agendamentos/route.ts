@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     data: {
       clienteId: body.clienteId,
       tipo: body.tipo,
-      dataAgendada: new Date(body.dataAgendada),
+      dataAgendada: new Date(String(body.dataAgendada).split("T")[0] + "T03:00:00.000Z"),
       hora: body.hora ?? null,
       notas: body.notas ?? null,
     },

@@ -71,8 +71,9 @@ export async function POST(req: Request) {
 
   // Normalize: strip time from dataAgendada (Cal.com sends different formats per event type)
   // "2026-05-11T15:00:00Z" and "2026-05-11" must map to the same DB value
-  const dateOnly = String(dataAgendada).split("T")[0]; // → "2026-05-11"
-  const dataAgendadaDate = new Date(dateOnly + "T00:00:00.000Z");
+  // "T03:00:00.000Z" = midnight Brazil (UTC-3) so getDate() in browser shows correct day
+  const dateOnly = String(dataAgendada).split("T")[0]; // → "2026-05-14"
+  const dataAgendadaDate = new Date(dateOnly + "T03:00:00.000Z");
   // Normalize hora to "HH:MM" (strip seconds if present: "15:00:00" → "15:00")
   const horaNorm = hora ? String(hora).substring(0, 5) : null;
 
