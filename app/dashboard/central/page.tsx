@@ -513,7 +513,7 @@ export default function CentralPage() {
 
             <div className="p-5 rounded-2xl" style={cardStyle}>
               <h3 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text)" }}>Criar acesso para empresa</h3>
-              <form onSubmit={criarUsuario} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <form onSubmit={criarUsuario} className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
                   <input value={userForm.nome} onChange={e => setUserForm(p => ({...p, nome: e.target.value}))} required placeholder="Maria Silva" className={INPUT} />
@@ -638,16 +638,27 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   };
 
   const criar = async (e: React.FormEvent) => {
-    e.preventDefault(); setCriando(true); setErro(""); setQrcode(null);
-    const res = await fetch("/api/central/instancia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    const data = await res.json();
-    setCriando(false);
-    if (!data.ok) { setErro(data.erro ?? "Erro ao criar instância"); return; }
-    setQrcode(data.qrcode);
-    setInstanciaCriada(data.instancia);
-    setSucesso(`Empresa "${data.empresa?.nome}" salva no CRM!`);
-    setForm({ instanciaNome: "", empresaNome: "" });
-    onCriada();
+    e.preventDefault(); setCriando(true); setErro(""); setQrcode(null); setSucesso("");
+    try {
+      const res = await fetch("/api/central/instancia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data.ok) { setErro(data.erro ?? "Erro ao criar instância"); return; }
+      setInstanciaCriada(data.instancia);
+      setForm({ instanciaNome: "", empresaNome: "" });
+      if (data.qrcode) {
+        setQrcode(data.qrcode);
+        setSucesso(`Empresa "${data.empresa?.nome}" salva! Escaneie o QR Code abaixo.`);
+      } else {
+        setSucesso(`Empresa "${data.empresa?.nome}" salva no CRM! Clique em "Ver QR Code" para conectar o WhatsApp.`);
+      }
+      onCriada();
+    } catch (err) {
+      setErro("Erro de conexão. Verifique o servidor e tente novamente.");
+      console.error(err);
+    } finally {
+      setCriando(false);
+    }
   };
 
   const atualizarQr = async () => {
@@ -684,6 +695,13 @@ function NovaInstancia({ onCriada }: { onCriada: () => void }) {
           style={{ background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)", color: "#34d399" }}>
           {sucesso}
         </p>
+      )}
+      {instanciaCriada && !qrcode && (
+        <div className="mb-3">
+          <button onClick={atualizarQr} className="btn-primary px-4 py-2 text-[13px]">
+            Gerar QR Code
+          </button>
+        </div>
       )}
       {qrcode && (
         <div className="flex flex-col sm:flex-row gap-4 items-start">

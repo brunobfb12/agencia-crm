@@ -133,7 +133,7 @@ export default function AgendamentosPage() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
-      <div className="p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
@@ -143,7 +143,7 @@ export default function AgendamentosPage() {
           >
             Agenda
           </span>
-          <div className="flex items-end justify-between">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Agendamentos</h1>
               <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
@@ -185,7 +185,7 @@ export default function AgendamentosPage() {
           >
             <h3 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text)" }}>Novo Agendamento</h3>
             <form onSubmit={criar} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CLIENTE *</label>
                   {form.clienteId ? (
@@ -285,7 +285,7 @@ export default function AgendamentosPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {([
             { id: "hoje", label: `Hoje${hoje > 0 ? ` (${hoje})` : ""}` },
             { id: "semana", label: `Esta semana${semana > 0 ? ` (${semana})` : ""}` },

@@ -447,9 +447,9 @@ export default function ClientesPage() {
           <div
             className="w-full max-w-lg rounded-2xl overflow-hidden animate-fade-up"
             style={{
-              background: "linear-gradient(145deg, var(--border), var(--card))",
+              background: "var(--modal)",
               border: "1px solid var(--border-2)",
-              boxShadow: "0 32px 80px var(--overlay)",
+              boxShadow: "0 24px 60px var(--shadow), 0 8px 20px var(--shadow)",
             }}
           >
             {/* Header */}
@@ -585,7 +585,7 @@ export default function ClientesPage() {
       {/* Modal Iniciar Conversa */}
       {modalAtivar && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up" style={{ background: "linear-gradient(145deg, var(--border), var(--card))", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px var(--overlay)" }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up" style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 24px 60px var(--shadow), 0 8px 20px var(--shadow)" }}>
             <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
               <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Iniciar Conversa</h3>
               <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>

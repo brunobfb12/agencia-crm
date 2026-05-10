@@ -19,39 +19,49 @@ export async function POST(req: Request) {
   });
 
   let qrcode: string | null = null;
-  const createRes = await fetch(`${EVO_URL}/instance/create`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-    body: JSON.stringify({ instanceName: instanciaNome, integration: "WHATSAPP-BAILEYS", qrcode: true }),
-  });
 
-  await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-    body: JSON.stringify({
-      webhook: {
-        enabled: true,
-        url: WEBHOOK_URL,
-        events: ["MESSAGES_UPSERT"],
-        webhook_by_events: false,
-        webhook_base64: false,
-      },
-    }),
-  });
+  try {
+    const createRes = await fetch(`${EVO_URL}/instance/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({ instanceName: instanciaNome, integration: "WHATSAPP-BAILEYS", qrcode: true }),
+      signal: AbortSignal.timeout(10000),
+    });
 
-  if (createRes.ok) {
-    const createData = await createRes.json();
-    qrcode = createData?.qrcode?.base64 ?? null;
-  }
+    if (createRes.ok) {
+      const createData = await createRes.json();
+      qrcode = createData?.qrcode?.base64 ?? null;
+    }
+  } catch { /* Evolution API indisponível — empresa salva no CRM */ }
+
+  try {
+    await fetch(`${EVO_URL}/webhook/set/${instanciaNome}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({
+        webhook: {
+          enabled: true,
+          url: WEBHOOK_URL,
+          events: ["MESSAGES_UPSERT"],
+          webhook_by_events: false,
+          webhook_base64: false,
+        },
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* ignora falha no webhook */ }
 
   if (!qrcode) {
-    const qrRes = await fetch(`${EVO_URL}/instance/connect/${instanciaNome}`, {
-      headers: { apikey: EVO_KEY },
-    });
-    if (qrRes.ok) {
-      const qrData = await qrRes.json();
-      qrcode = qrData?.base64 ?? null;
-    }
+    try {
+      const qrRes = await fetch(`${EVO_URL}/instance/connect/${instanciaNome}`, {
+        headers: { apikey: EVO_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (qrRes.ok) {
+        const qrData = await qrRes.json();
+        qrcode = qrData?.base64 ?? null;
+      }
+    } catch { /* sem QR — usuário pode gerar depois */ }
   }
 
   return NextResponse.json({ ok: true, empresa, qrcode, instancia: instanciaNome });

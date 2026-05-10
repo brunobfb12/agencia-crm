@@ -15,6 +15,7 @@
   --muted-2: rgba(148,163,184,.45);
   --muted-3: rgba(148,163,184,.35);
   --overlay: rgba(0,0,0,.70);
+  --shadow:  rgba(0,0,0,.55);
   --fade-edge: rgba(8,8,14,.95);
   --modal:   #13131f;
 }
@@ -33,6 +34,7 @@ html[data-theme="light"] {
   --muted-2: rgba(71,85,105,.55);
   --muted-3: rgba(71,85,105,.42);
   --overlay: rgba(0,0,0,.50);
+  --shadow:  rgba(0,0,0,.10);
   --fade-edge: rgba(241,245,249,.95);
   --modal:   #ffffff;
 }

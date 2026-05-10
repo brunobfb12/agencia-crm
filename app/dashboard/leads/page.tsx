@@ -434,7 +434,7 @@ export default function LeadsPage() {
             style={{
               background: "var(--modal)",
               border: "1px solid var(--border-2)",
-              boxShadow: "0 24px 80px var(--overlay)",
+              boxShadow: "0 24px 60px var(--shadow), 0 8px 20px var(--shadow)",
             }}
           >
             <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -514,7 +514,7 @@ export default function LeadsPage() {
             style={{
               background: "var(--modal)",
               border: "1px solid var(--border-2)",
-              boxShadow: "0 24px 80px var(--overlay)",
+              boxShadow: "0 24px 60px var(--shadow), 0 8px 20px var(--shadow)",
               maxHeight: "calc(100vh - 2rem)",
             }}
           >
