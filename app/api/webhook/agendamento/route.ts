@@ -69,17 +69,10 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create Agendamento record — skip if duplicate (Cal.com fires multiple events per booking)
+  // Create Agendamento — catch P2002 (unique violation) when concurrent Cal.com webhooks race
   const dataAgendadaDate = new Date(dataAgendada);
-  let agendamento = await prisma.agendamento.findFirst({
-    where: {
-      clienteId: cliente.id,
-      dataAgendada: dataAgendadaDate,
-      status: "PENDENTE",
-      ...(hora ? { hora } : {}),
-    },
-  });
-  if (!agendamento) {
+  let agendamento;
+  try {
     agendamento = await prisma.agendamento.create({
       data: {
         clienteId: cliente.id,
@@ -89,6 +82,12 @@ export async function POST(req: Request) {
         notas: servico || null,
         status: "PENDENTE",
       },
+    });
+  } catch (e: any) {
+    if (e.code !== "P2002") throw e;
+    // Another concurrent webhook already created this slot — reuse it
+    agendamento = await prisma.agendamento.findFirst({
+      where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: hora || null, status: "PENDENTE" },
     });
   }
 
