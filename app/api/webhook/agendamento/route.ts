@@ -23,7 +23,9 @@ export async function POST(req: Request) {
   let cliente = null;
 
   if (telefone) {
-    const tel = telefone.replace(/\D/g, "");
+    // Strip non-digits; then fix "55+55..." double-country-code (Calendly sends "55+5562..." for some event types)
+    let tel = telefone.replace(/\D/g, "");
+    while (tel.startsWith("5555") && tel.length > 13) tel = tel.slice(2);
     cliente = await prisma.cliente.findFirst({
       where: { empresaId: empresa.id, telefone: { endsWith: tel.slice(-9) } },
       orderBy: { criadoEm: "desc" },
@@ -114,15 +116,19 @@ export async function POST(req: Request) {
     }
   }
 
-  const dataFormatada = new Date(dataAgendada).toLocaleDateString("pt-BR");
+  const dataFormatada = new Date(dateOnly + "T12:00:00Z").toLocaleDateString("pt-BR");
+  const nomeCliente = cliente.nome ? cliente.nome.split(" ")[0] : "cliente";
+  // Normalize stored phone before returning (DB may have "555562..." from old bookings)
+  const telefoneLimpo = (cliente.telefone || "").replace(/\D/g, "").replace(/^5555(\d+)$/, "55$1");
 
   return NextResponse.json({
     ok: true,
     lead: { id: lead.id, status: "AGENDADO" },
     agendamento: { id: agendamento.id, dataAgendada, hora },
-    cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
+    cliente: { id: cliente.id, nome: cliente.nome, telefone: telefoneLimpo },
     vendedor,
     empresa: { instanciaWhatsapp: empresa.instanciaWhatsapp },
-    mensagemVendedor: `AGENDAMENTO CONFIRMADO via Cal.com\nCliente: ${cliente.nome || "desconhecido"}\nServiço: ${servico || "não informado"}\nData: ${dataFormatada}${hora ? " às " + hora : ""}\nTelefone: ${cliente.telefone}`,
+    mensagemVendedor: `AGENDAMENTO CONFIRMADO via Cal.com\nCliente: ${cliente.nome || "desconhecido"}\nServiço: ${servico || "não informado"}\nData: ${dataFormatada}${hora ? " às " + hora : ""}\nTelefone: ${telefoneLimpo}`,
+    mensagemCliente: `Olá, ${nomeCliente}! ✅ Seu agendamento foi confirmado.\n📅 Data: ${dataFormatada}${hora ? " às " + hora : ""}\n💼 Serviço: ${servico || "a confirmar"}\nTe esperamos! 😊`,
   });
 }

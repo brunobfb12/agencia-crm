@@ -209,6 +209,19 @@ END $$`,
     `CREATE INDEX IF NOT EXISTS "Campanha_empresaId_idx" ON "Campanha"("empresaId")`,
     `CREATE INDEX IF NOT EXISTS "CampanhaItem_campanhaId_idx" ON "CampanhaItem"("campanhaId")`,
     `CREATE INDEX IF NOT EXISTS "CampanhaItem_status_idx" ON "CampanhaItem"("status")`,
+
+    // --- dedup agendamentos: normalizar datas para meia-noite Brasil (T03:00:00Z) ---
+    `UPDATE "Agendamento" SET "dataAgendada" = DATE_TRUNC('day', "dataAgendada" - INTERVAL '3 hours') + INTERVAL '3 hours'`,
+
+    // --- dedup agendamentos: remover constraint antiga se existir ---
+    `ALTER TABLE "Agendamento" DROP CONSTRAINT IF EXISTS "Agendamento_clienteId_dataAgendada_hora_key"`,
+    `DROP INDEX IF EXISTS "Agendamento_clienteId_dataAgendada_hora_key"`,
+
+    // --- dedup agendamentos: deletar duplicatas mantendo o mais antigo ---
+    `DELETE FROM "Agendamento" WHERE id NOT IN (SELECT id FROM (SELECT DISTINCT ON ("clienteId", "dataAgendada", COALESCE("hora", '')) id FROM "Agendamento" ORDER BY "clienteId", "dataAgendada", "hora", "criadoEm" ASC) sub)`,
+
+    // --- dedup agendamentos: criar índice único definitivo ---
+    `CREATE UNIQUE INDEX IF NOT EXISTS "Agendamento_clienteId_dataAgendada_hora_key" ON "Agendamento" ("clienteId", "dataAgendada", COALESCE("hora", ''))`,
   ];
 
   for (const sql of migrations) {

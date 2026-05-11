@@ -130,6 +130,10 @@ export async function POST(req: Request) {
     take: 3,
   });
 
+  // Normalize phone before returning — DB may store "55+55..." or "5555..." from old bookings
+  let tpNorm = telefonePrincipal.replace(/\D/g, "");
+  while (tpNorm.startsWith("5555") && tpNorm.length > 13) tpNorm = tpNorm.slice(2);
+
   return NextResponse.json({
     ok: true,
     modoHumano: conversa.modoHumano,
@@ -153,7 +157,7 @@ export async function POST(req: Request) {
     conversa: { id: conversa.id },
     historico,
     vendedor,
-    telefonePrincipal,
+    telefonePrincipal: tpNorm,
     midias,
     agendamentos,
   });
