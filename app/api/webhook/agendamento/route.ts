@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     cliente: { id: cliente.id, nome: cliente.nome, telefone: telefoneLimpo },
     vendedor,
     empresa: { instanciaWhatsapp: empresa.instanciaWhatsapp },
-    mensagemVendedor: `AGENDAMENTO CONFIRMADO via Cal.com\nCliente: ${cliente.nome || "desconhecido"}\nServiço: ${servico || "não informado"}\nData: ${dataFormatada}${hora ? " às " + hora : ""}\nTelefone: ${telefoneLimpo}`,
+    mensagemVendedor: `🔔 *AGENDAMENTO CONFIRMADO*\n\n👤 *Cliente:* ${cliente.nome || "desconhecido"}\n💼 *Serviço:* ${servico || "não informado"}\n📅 *Data:* ${dataFormatada}${hora ? " às " + hora : ""}\n\n📱 *Iniciar conversa:*\nhttps://wa.me/${telefoneLimpo}\n\n📋 *Briefing p/ abordagem:* O cliente agendou interesse em "${servico || "serviço a confirmar"}". Use isso como gancho ao entrar em contato.`,
     mensagemCliente: `Olá, ${nomeCliente}! ✅ Seu agendamento foi confirmado.\n📅 Data: ${dataFormatada}${hora ? " às " + hora : ""}\n💼 Serviço: ${servico || "a confirmar"}\nTe esperamos! 😊`,
   });
 }
