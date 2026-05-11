@@ -21,6 +21,7 @@ model Empresa {
   perguntasQualificacao    String?
   tipoAtendimento          String   @default("AGENDAMENTO")
   nomeIA                   String?
+  mensagemPosVenda         String?
 
   vendedores   Vendedor[]
   clientes     Cliente[]

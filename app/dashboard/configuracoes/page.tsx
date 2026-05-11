@@ -10,6 +10,7 @@ interface Empresa {
   googleCredentialId: string | null; calendlyUrl: string | null;
   perguntasQualificacao: string | null;
   tipoAtendimento: string; nomeIA: string | null;
+  mensagemPosVenda: string | null;
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -182,6 +183,7 @@ export default function ConfiguracoesPage() {
   const [perguntasQualificacao, setPerguntasQualificacao] = useState("");
   const [tipoAtendimento, setTipoAtendimento] = useState("AGENDAMENTO");
   const [nomeIA, setNomeIA] = useState("");
+  const [mensagemPosVenda, setMensagemPosVenda] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
@@ -274,18 +276,20 @@ export default function ConfiguracoesPage() {
     setPerguntasQualificacao(emp.perguntasQualificacao ?? "");
     setTipoAtendimento(emp.tipoAtendimento ?? "AGENDAMENTO");
     setNomeIA(emp.nomeIA ?? "");
+    setMensagemPosVenda(emp.mensagemPosVenda ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
     setSalvando(true);
     const informacoes = composeInfo(infoCampos);
     const pq = perguntasQualificacao.trim() || null;
+    const mpv = mensagemPosVenda.trim() || null;
     await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null } : e));
+    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv } : e));
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
@@ -597,6 +601,22 @@ export default function ConfiguracoesPage() {
                                 <textarea rows={5} value={perguntasQualificacao}
                                   onChange={(e) => setPerguntasQualificacao(e.target.value)}
                                   placeholder={"Ex:\nQual é o seu orçamento?\nVocê já conhece nossos produtos?\nQual é o prazo para a compra?"}
+                                  className={`${INPUT} resize-none`} />
+                              </div>
+
+                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                                  MENSAGEM DE PÓS-VENDA (automática 2 dias após venda)
+                                </label>
+                                <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                                  Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code> para o primeiro nome do cliente,{" "}
+                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> para o nome da IA e{" "}
+                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{empresa}"}</code> para o nome da empresa.
+                                  Deixe vazio para usar a mensagem padrão.
+                                </p>
+                                <textarea rows={3} value={mensagemPosVenda}
+                                  onChange={(e) => setMensagemPosVenda(e.target.value)}
+                                  placeholder={`Ex: Oi {nome}! 😊 {ia} aqui, do Studio. Como ficou o design da sua sobrancelha? Gostou do resultado?`}
                                   className={`${INPUT} resize-none`} />
                               </div>
 

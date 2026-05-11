@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
   const include = {
     cliente: { select: { nome: true, telefone: true } },
-    empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
+    empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true } },
     vendedor: { select: { nome: true } },
   };
 
@@ -85,11 +85,13 @@ export async function GET(req: Request) {
     ...posVenda
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
-        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
+        const nome = primeiroNome ? ` ${primeiroNome}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
-        return buildItem(l, "pos_venda",
-          `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Tudo certo com seu pedido? Se tiver qualquer dúvida ou precisar de algo, estou à disposição!`
-        );
+        const mensagem = l.empresa.mensagemPosVenda
+          ? l.empresa.mensagemPosVenda.replace(/\{nome\}/g, primeiroNome).replace(/\{ia\}/g, ia).replace(/\{empresa\}/g, l.empresa.nome)
+          : `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Tudo certo com seu pedido? Se tiver qualquer dúvida ou precisar de algo, estou à disposição!`;
+        return buildItem(l, "pos_venda", mensagem);
       }),
 
     ...reativacao15d

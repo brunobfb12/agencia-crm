@@ -20,6 +20,7 @@ export async function PATCH(
       ...(body.perguntasQualificacao !== undefined && { perguntasQualificacao: body.perguntasQualificacao || null }),
       ...(body.tipoAtendimento !== undefined && { tipoAtendimento: body.tipoAtendimento }),
       ...(body.nomeIA !== undefined && { nomeIA: body.nomeIA || null }),
+      ...(body.mensagemPosVenda !== undefined && { mensagemPosVenda: body.mensagemPosVenda || null }),
     },
   });
   return NextResponse.json(empresa);
