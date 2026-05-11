@@ -23,13 +23,13 @@ export async function GET(req: Request) {
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
 
-  const include = {
+  const baseInclude = {
     cliente: { select: { nome: true, telefone: true } },
     empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true } },
     vendedor: { select: { nome: true } },
   };
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos] = await Promise.all([
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include,
+      include: baseInclude,
     }),
     prisma.lead.findMany({
       where: {
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include,
+      include: baseInclude,
     }),
     prisma.lead.findMany({
       where: {
@@ -57,9 +57,8 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include,
+      include: baseInclude,
     }),
-    // Leads with a scheduled recontact date that has arrived
     prisma.lead.findMany({
       where: {
         status: "FOLLOW_UP",
@@ -67,21 +66,53 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include,
+      include: baseInclude,
+    }),
+    // Birthday: leads with dataNascimento set, not lost
+    prisma.lead.findMany({
+      where: {
+        status: { notIn: ["PERDIDO", "SEM_INTERESSE", "SEM_RESPOSTA"] },
+        empresa: { ativa: true },
+        cliente: { dataNascimento: { not: null }, telefone: { not: "" } },
+      },
+      include: {
+        cliente: { select: { nome: true, telefone: true, dataNascimento: true } },
+        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true } },
+        vendedor: { select: { nome: true, telefone: true } },
+      },
     }),
   ]);
 
-  const buildItem = (lead: typeof posVenda[0], tipo: string, mensagem: string) => ({
+  // Filter birthday leads for today (month + day match)
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+  const aniversarios = allAniversarios.filter(l => {
+    if (!l.cliente.dataNascimento || !l.empresa.instanciaWhatsapp) return false;
+    const d = new Date(l.cliente.dataNascimento);
+    return (d.getMonth() + 1) === todayMonth && d.getDate() === todayDay;
+  });
+
+  type Item = {
+    tipo: string;
+    leadId: string;
+    clienteTelefone: string;
+    clienteNome: string;
+    instancia: string;
+    empresaNome: string;
+    mensagem: string;
+  };
+
+  const buildItem = (lead: typeof posVenda[0], tipo: string, mensagem: string): Item => ({
     tipo,
     leadId: lead.id,
     clienteTelefone: lead.cliente.telefone,
     clienteNome: lead.cliente.nome ?? lead.cliente.telefone,
-    instancia: lead.empresa.instanciaWhatsapp,
+    instancia: lead.empresa.instanciaWhatsapp!,
     empresaNome: lead.empresa.nome,
     mensagem,
   });
 
-  const items = [
+  const items: Item[] = [
     ...posVenda
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
@@ -89,7 +120,10 @@ export async function GET(req: Request) {
         const nome = primeiroNome ? ` ${primeiroNome}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         const mensagem = l.empresa.mensagemPosVenda
-          ? l.empresa.mensagemPosVenda.replace(/\{nome\}/g, primeiroNome).replace(/\{ia\}/g, ia).replace(/\{empresa\}/g, l.empresa.nome)
+          ? l.empresa.mensagemPosVenda
+              .replace(/\{nome\}/g, primeiroNome)
+              .replace(/\{ia\}/g, ia)
+              .replace(/\{empresa\}/g, l.empresa.nome)
           : `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Tudo certo com seu pedido? Se tiver qualquer dúvida ou precisar de algo, estou à disposição!`;
         return buildItem(l, "pos_venda", mensagem);
       }),
@@ -124,6 +158,44 @@ export async function GET(req: Request) {
         );
       }),
   ];
+
+  // Birthday items
+  for (const l of aniversarios) {
+    if (!l.empresa.instanciaWhatsapp) continue;
+
+    const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
+    const nome = primeiroNome ? ` ${primeiroNome}` : "";
+    const ia = l.empresa.nomeIA ?? "Eu";
+    const idade = l.cliente.dataNascimento
+      ? now.getFullYear() - new Date(l.cliente.dataNascimento).getFullYear()
+      : null;
+
+    // Message to the client
+    items.push({
+      tipo: "aniversario",
+      leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! 🎂 ${ia} aqui, da ${l.empresa.nome}. Hoje é um dia muito especial — feliz aniversário! Que seja um dia incrível! 🥳`,
+    });
+
+    // Notification to the vendor (if assigned and has phone)
+    if (l.vendedor?.telefone) {
+      const nomeCliente = l.cliente.nome || "o cliente";
+      const idadeStr = idade ? ` Ele(a) faz ${idade} anos.` : "";
+      items.push({
+        tipo: "aniversario_vendedor",
+        leadId: l.id,
+        clienteTelefone: l.vendedor.telefone,
+        clienteNome: l.vendedor.nome,
+        instancia: l.empresa.instanciaWhatsapp,
+        empresaNome: l.empresa.nome,
+        mensagem: `🎂 Hoje é aniversário de *${nomeCliente}*!${idadeStr} Ligue ou mande uma mensagem especial para ele(a). 😊`,
+      });
+    }
+  }
 
   return NextResponse.json({ total: items.length, items });
 }
