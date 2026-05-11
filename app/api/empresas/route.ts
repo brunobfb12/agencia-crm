@@ -30,6 +30,7 @@ export async function POST(req: Request) {
       nome: body.nome,
       instanciaWhatsapp: body.instanciaWhatsapp,
     },
+    include: { _count: { select: { clientes: true, leads: true } } },
   });
   return NextResponse.json(empresa, { status: 201 });
 }

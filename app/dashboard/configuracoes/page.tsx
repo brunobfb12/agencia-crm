@@ -199,6 +199,8 @@ export default function ConfiguracoesPage() {
 
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState("");
+  const [deletandoEmpresa, setDeletandoEmpresa] = useState<Empresa | null>(null);
+  const [confirmNomeEmpresa, setConfirmNomeEmpresa] = useState("");
 
   const isCentral = me?.perfil === "CENTRAL";
 
@@ -237,6 +239,15 @@ export default function ConfiguracoesPage() {
     setEmpresas((prev) => [...prev, emp]);
     setNovaEmpresa({ nome: "", instanciaWhatsapp: "" });
     showMsg("Empresa criada!");
+  };
+
+  const excluirEmpresa = async () => {
+    if (!deletandoEmpresa) return;
+    await fetch(`/api/empresas/${deletandoEmpresa.id}`, { method: "DELETE" });
+    setEmpresas((prev) => prev.filter((e) => e.id !== deletandoEmpresa.id));
+    setDeletandoEmpresa(null);
+    setConfirmNomeEmpresa("");
+    showMsg("Empresa excluída.");
   };
 
   const criarVendedor = async (e: React.FormEvent) => {
@@ -470,11 +481,20 @@ export default function ConfiguracoesPage() {
                             }
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <button onClick={() => editEmpresa === emp.id ? setEditEmpresa(null) : abrirEditEmpresa(emp)}
-                              className="text-[12px] px-3 py-1 rounded-lg font-semibold transition-all"
-                              style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)" }}>
-                              {editEmpresa === emp.id ? "Fechar" : "Editar Info"}
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button onClick={() => editEmpresa === emp.id ? setEditEmpresa(null) : abrirEditEmpresa(emp)}
+                                className="text-[12px] px-3 py-1 rounded-lg font-semibold transition-all"
+                                style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)" }}>
+                                {editEmpresa === emp.id ? "Fechar" : "Editar Info"}
+                              </button>
+                              {isCentral && (
+                                <button onClick={() => { setDeletandoEmpresa(emp); setConfirmNomeEmpresa(""); }}
+                                  className="text-[12px] px-3 py-1 rounded-lg font-semibold transition-all"
+                                  style={{ background: "rgba(239,68,68,.08)", color: "#f87171", border: "1px solid rgba(239,68,68,.2)" }}>
+                                  Excluir
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                         {editEmpresa === emp.id && (
@@ -593,6 +613,64 @@ export default function ConfiguracoesPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL EXCLUIR EMPRESA ── */}
+        {deletandoEmpresa && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,.7)", backdropFilter: "blur(4px)" }}>
+            <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: "var(--card)", border: "1px solid rgba(239,68,68,.3)" }}>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(239,68,68,.1)" }}>
+                  <svg className="w-5 h-5" fill="none" stroke="#f87171" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[15px] font-bold" style={{ color: "#f87171" }}>Excluir empresa permanentemente</p>
+                  <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>Esta ação <strong>não pode ser desfeita</strong>.</p>
+                </div>
+              </div>
+
+              <div className="rounded-xl p-3 text-[12px] space-y-1" style={{ background: "rgba(239,68,68,.06)", border: "1px solid rgba(239,68,68,.15)" }}>
+                <p style={{ color: "var(--muted)" }}>Ao excluir <strong style={{ color: "var(--text)" }}>{deletandoEmpresa.nome}</strong>, serão apagados permanentemente:</p>
+                <ul className="mt-2 space-y-0.5" style={{ color: "#f87171" }}>
+                  <li>• {deletandoEmpresa._count.clientes} cliente(s) e todo o histórico de conversas</li>
+                  <li>• {deletandoEmpresa._count.leads} lead(s) e vendas registradas</li>
+                  <li>• Todos os vendedores, mídias e agendamentos</li>
+                  <li>• Configurações da IA e do Cal.com</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>
+                  CONFIRME DIGITANDO O NOME DA EMPRESA
+                </label>
+                <input
+                  value={confirmNomeEmpresa}
+                  onChange={(e) => setConfirmNomeEmpresa(e.target.value)}
+                  placeholder={deletandoEmpresa.nome}
+                  className={INPUT}
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={excluirEmpresa}
+                  disabled={confirmNomeEmpresa !== deletandoEmpresa.nome}
+                  className="flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all disabled:opacity-30"
+                  style={{ background: confirmNomeEmpresa === deletandoEmpresa.nome ? "#dc2626" : "rgba(239,68,68,.1)", color: "white" }}>
+                  Excluir tudo permanentemente
+                </button>
+                <button
+                  onClick={() => { setDeletandoEmpresa(null); setConfirmNomeEmpresa(""); }}
+                  className="px-4 py-2.5 rounded-xl text-[13px] font-medium transition-all"
+                  style={{ background: "var(--card-2)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>

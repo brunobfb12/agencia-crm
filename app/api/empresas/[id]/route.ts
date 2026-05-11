@@ -30,6 +30,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  // Collect IDs before deleting (FK constraints require ordered cascade)
+  const clientes = await prisma.cliente.findMany({ where: { empresaId: id }, select: { id: true } });
+  const clienteIds = clientes.map((c) => c.id);
+  const leads = await prisma.lead.findMany({ where: { empresaId: id }, select: { id: true } });
+  const leadIds = leads.map((l) => l.id);
+  const vendedores = await prisma.vendedor.findMany({ where: { empresaId: id }, select: { id: true } });
+  const vendedorIds = vendedores.map((v) => v.id);
+
+  await prisma.campanhaItem.deleteMany({ where: { leadId: { in: leadIds } } });
+  await prisma.campanha.deleteMany({ where: { empresaId: id } });
+  await prisma.venda.deleteMany({ where: { leadId: { in: leadIds } } });
+  await prisma.notificacao.deleteMany({ where: { vendedorId: { in: vendedorIds } } });
+  await prisma.mensagem.deleteMany({ where: { conversa: { clienteId: { in: clienteIds } } } });
+  await prisma.conversa.deleteMany({ where: { clienteId: { in: clienteIds } } });
+  await prisma.agendamento.deleteMany({ where: { clienteId: { in: clienteIds } } });
+  await prisma.lead.deleteMany({ where: { empresaId: id } });
+  await prisma.cliente.deleteMany({ where: { empresaId: id } });
+  await prisma.vendedor.deleteMany({ where: { empresaId: id } });
+  await prisma.midia.deleteMany({ where: { empresaId: id } });
   await prisma.empresa.delete({ where: { id } });
+
   return NextResponse.json({ ok: true });
 }
