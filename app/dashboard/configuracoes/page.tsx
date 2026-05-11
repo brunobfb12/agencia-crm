@@ -227,18 +227,26 @@ export default function ConfiguracoesPage() {
     setCarregandoMidias(false);
   }
 
-  function showMsg(texto: string) {
-    setMsg(texto);
-    setTimeout(() => setMsg(""), 3000);
+  function showMsg(texto: string, erro = false) {
+    setMsg(erro ? `⚠ ${texto}` : texto);
+    setTimeout(() => setMsg(""), 4000);
   }
 
   const criarEmpresa = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("/api/empresas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(novaEmpresa) });
-    const emp = await res.json();
-    setEmpresas((prev) => [...prev, emp]);
-    setNovaEmpresa({ nome: "", instanciaWhatsapp: "" });
-    showMsg("Empresa criada!");
+    setSalvando(true);
+    try {
+      const res = await fetch("/api/empresas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(novaEmpresa) });
+      const emp = await res.json();
+      if (!res.ok) { showMsg(emp?.error ?? emp?.message ?? "Erro ao criar empresa", true); return; }
+      setEmpresas((prev) => [...prev, emp]);
+      setNovaEmpresa({ nome: "", instanciaWhatsapp: "" });
+      showMsg("Empresa criada!");
+    } catch {
+      showMsg("Erro de conexão. Tente novamente.", true);
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const excluirEmpresa = async () => {
@@ -447,7 +455,7 @@ export default function ConfiguracoesPage() {
                 <input required placeholder="Instância WhatsApp (ex: ph_intima)" value={novaEmpresa.instanciaWhatsapp}
                   onChange={(e) => setNovaEmpresa((p) => ({ ...p, instanciaWhatsapp: e.target.value }))}
                   className={`flex-1 ${INPUT}`} />
-                <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
+                <button type="submit" disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">{salvando ? "Salvando..." : "Adicionar"}</button>
               </form>
             )}
 
