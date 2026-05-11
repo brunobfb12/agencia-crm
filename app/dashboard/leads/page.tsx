@@ -10,6 +10,7 @@ interface Lead {
   vendedorId: string | null;
   empresaId: string;
   atualizadoEm: string;
+  dataRecontato: string | null;
   cliente: { nome: string | null; telefone: string; email: string | null; dataNascimento: string | null };
   empresa: { nome: string; instanciaWhatsapp: string };
 }
@@ -76,7 +77,7 @@ export default function LeadsPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [editLead, setEditLead] = useState<Lead | null>(null);
-  const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "" });
+  const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "", dataRecontato: "" });
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [modoSelecao, setModoSelecao] = useState(false);
@@ -126,7 +127,7 @@ export default function LeadsPage() {
   const abrirEdit = (lead: Lead) => {
     setEditLead(lead);
     setConfirmandoExclusao(false);
-    setEditForm({ status: lead.status, observacoes: lead.observacoes ?? "", score: lead.score, vendedorId: lead.vendedorId ?? "" });
+    setEditForm({ status: lead.status, observacoes: lead.observacoes ?? "", score: lead.score, vendedorId: lead.vendedorId ?? "", dataRecontato: lead.dataRecontato ? lead.dataRecontato.split("T")[0] : "" });
   };
 
   const salvarEdit = async () => {
@@ -135,7 +136,7 @@ export default function LeadsPage() {
     const res = await fetch(`/api/leads/${editLead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: editForm.status, observacoes: editForm.observacoes, score: Number(editForm.score), vendedorId: editForm.vendedorId || null }),
+      body: JSON.stringify({ status: editForm.status, observacoes: editForm.observacoes, score: Number(editForm.score), vendedorId: editForm.vendedorId || null, dataRecontato: editForm.dataRecontato || null }),
     });
     const updated = await res.json();
     setLeads((prev) => prev.map((l) => (l.id === editLead.id ? { ...l, ...updated } : l)));
@@ -812,6 +813,22 @@ export default function LeadsPage() {
                     <option key={v.id} value={v.id}>{v.nome} ({v.empresa.nome})</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Data de recontato */}
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                  RECONTATO AGENDADO
+                </label>
+                <input
+                  type="date"
+                  value={editForm.dataRecontato}
+                  onChange={(e) => setEditForm((p) => ({ ...p, dataRecontato: e.target.value }))}
+                  className="w-full input-dark px-3 py-2.5 text-[13px]"
+                />
+                <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                  IA liga nesta data automaticamente. Deixe vazio para não agendar.
+                </p>
               </div>
             </div>
 

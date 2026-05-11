@@ -14,6 +14,9 @@ export async function PATCH(
       ...(body.score !== undefined && { score: body.score }),
       ...(body.observacoes !== undefined && { observacoes: body.observacoes }),
       ...(body.vendedorId !== undefined && { vendedorId: body.vendedorId }),
+      ...(body.dataRecontato !== undefined && {
+        dataRecontato: body.dataRecontato ? new Date(body.dataRecontato) : null,
+      }),
     },
     include: { cliente: true },
   });

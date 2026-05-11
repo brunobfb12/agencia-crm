@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Returns leads due for automated follow-up messages.
-// Called daily by N8N cron at 9am.
-// Secret protects the endpoint from unauthorized access.
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   if (searchParams.get("secret") !== "crm2026migra") {
@@ -23,8 +20,16 @@ export async function GET(req: Request) {
     return d;
   };
 
-  const [posVenda, reativacao15d, reativacao30d] = await Promise.all([
-    // VENDA_REALIZADA updated exactly 2 days ago — satisfaction check
+  const todayEnd = new Date(now);
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const include = {
+    cliente: { select: { nome: true, telefone: true } },
+    empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
+    vendedor: { select: { nome: true } },
+  };
+
+  const [posVenda, reativacao15d, reativacao30d, recontatos] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -32,41 +37,37 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include: {
-        cliente: { select: { nome: true, telefone: true } },
-        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
-        vendedor: { select: { nome: true } },
-      },
+      include,
     }),
-
-    // FOLLOW_UP updated exactly 15 days ago — first reactivation
     prisma.lead.findMany({
       where: {
         status: "FOLLOW_UP",
+        dataRecontato: null,
         atualizadoEm: { gte: windowStart(15), lt: windowEnd(15) },
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include: {
-        cliente: { select: { nome: true, telefone: true } },
-        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
-        vendedor: { select: { nome: true } },
-      },
+      include,
     }),
-
-    // FOLLOW_UP updated exactly 30 days ago — second reactivation
     prisma.lead.findMany({
       where: {
         status: "FOLLOW_UP",
+        dataRecontato: null,
         atualizadoEm: { gte: windowStart(30), lt: windowEnd(30) },
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
-      include: {
-        cliente: { select: { nome: true, telefone: true } },
-        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
-        vendedor: { select: { nome: true } },
+      include,
+    }),
+    // Leads with a scheduled recontact date that has arrived
+    prisma.lead.findMany({
+      where: {
+        status: "FOLLOW_UP",
+        dataRecontato: { lte: todayEnd },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
       },
+      include,
     }),
   ]);
 
@@ -108,6 +109,16 @@ export async function GET(req: Request) {
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "reativacao_30d",
           `Oi${nome}! Sentimos sua falta por aqui! 🙏 Preparamos uma condição especial pensando em você. Posso te contar?`
+        );
+      }),
+
+    ...recontatos
+      .filter(l => l.empresa.instanciaWhatsapp)
+      .map(l => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "recontato_agendado",
+          `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Conforme combinamos, estou passando pra saber se posso te ajudar agora! Como posso te atender?`
         );
       }),
   ];

@@ -111,9 +111,10 @@ model Lead {
   vendedorId   String?
   status       LeadStatus @default(LEAD)
   score        Int        @default(0)
-  observacoes  String?
-  criadoEm     DateTime   @default(now())
-  atualizadoEm DateTime   @updatedAt
+  observacoes   String?
+  dataRecontato DateTime?
+  criadoEm      DateTime   @default(now())
+  atualizadoEm  DateTime   @updatedAt
 
   cliente       Cliente        @relation(fields: [clienteId], references: [id])
   empresa       Empresa        @relation(fields: [empresaId], references: [id])

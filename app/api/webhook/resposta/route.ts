@@ -4,7 +4,7 @@ import { LeadStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor } = body;
+  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, dataRecontato } = body;
 
   if (!conversaId || !resposta) {
     return NextResponse.json({ ok: false, motivo: "campos obrigatorios ausentes" });
@@ -43,6 +43,9 @@ export async function POST(req: Request) {
       data: {
         ...(statusToApply && { status: statusToApply }),
         ...(observacoes && { observacoes }),
+        ...(dataRecontato !== undefined && {
+          dataRecontato: dataRecontato ? new Date(dataRecontato) : null,
+        }),
       },
     });
   }
