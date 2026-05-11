@@ -85,6 +85,10 @@ export default function LeadsPage() {
   const [mensagemCampanha, setMensagemCampanha] = useState("");
   const [disparando, setDisparando] = useState(false);
   const [campanhaOk, setCampanhaOk] = useState(false);
+  const [modalVenda, setModalVenda] = useState<Lead | null>(null);
+  const [vendaForm, setVendaForm] = useState({ valor: "", descricao: "", vendedorId: "" });
+  const [registrandoVenda, setRegistrandoVenda] = useState(false);
+  const [vendaRegistrada, setVendaRegistrada] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -169,6 +173,40 @@ export default function LeadsPage() {
     }
   };
 
+  const abrirModalVenda = (lead: Lead) => {
+    setVendaForm({ valor: "", descricao: "", vendedorId: lead.vendedorId ?? "" });
+    setModalVenda(lead);
+    setEditLead(null);
+  };
+
+  const registrarVenda = async () => {
+    if (!modalVenda || !vendaForm.vendedorId) return;
+    setRegistrandoVenda(true);
+    const res = await fetch("/api/vendas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        leadId: modalVenda.id,
+        vendedorId: vendaForm.vendedorId,
+        valor: vendaForm.valor ? Number(vendaForm.valor.replace(",", ".")) : null,
+        descricao: vendaForm.descricao || null,
+      }),
+    });
+    if (res.ok) {
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === modalVenda.id
+            ? { ...l, status: "VENDA_REALIZADA", vendedorId: vendaForm.vendedorId }
+            : l
+        )
+      );
+      setModalVenda(null);
+      setVendaRegistrada(true);
+      setTimeout(() => setVendaRegistrada(false), 4000);
+    }
+    setRegistrandoVenda(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full" style={{ background: "var(--bg)", color: "#64748b" }}>
@@ -195,6 +233,18 @@ export default function LeadsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            {vendaRegistrada && (
+              <span
+                className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
+                style={{
+                  background: "rgba(52,211,153,.1)",
+                  color: "#34d399",
+                  border: "1px solid rgba(52,211,153,.2)",
+                }}
+              >
+                Venda registrada!
+              </span>
+            )}
             {campanhaOk && (
               <span
                 className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
@@ -503,6 +553,106 @@ export default function LeadsPage() {
         </div>
       )}
 
+      {/* Venda modal */}
+      {modalVenda && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: "rgba(0,0,0,.75)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden animate-fade-up"
+            style={{
+              background: "var(--modal)",
+              border: "1px solid var(--border-2)",
+              boxShadow: "0 24px 60px var(--shadow), 0 8px 20px var(--shadow)",
+            }}
+          >
+            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="font-bold text-[15px]" style={{ color: "#34d399" }}>Registrar Venda</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
+                {modalVenda.cliente.nome ?? modalVenda.cliente.telefone} · {modalVenda.empresa.nome}
+              </p>
+            </div>
+
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                  VALOR DA VENDA (R$)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={vendaForm.valor}
+                  onChange={(e) => setVendaForm((p) => ({ ...p, valor: e.target.value }))}
+                  placeholder="0,00"
+                  className="w-full input-dark px-3 py-2.5 text-[13px]"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                  VENDEDOR RESPONSÁVEL
+                </label>
+                <select
+                  value={vendaForm.vendedorId}
+                  onChange={(e) => setVendaForm((p) => ({ ...p, vendedorId: e.target.value }))}
+                  className="w-full input-dark px-3 py-2.5 text-[13px]"
+                >
+                  <option value="">Selecione um vendedor</option>
+                  {vendedores.map((v) => (
+                    <option key={v.id} value={v.id}>{v.nome} ({v.empresa.nome})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                  DESCRIÇÃO (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={vendaForm.descricao}
+                  onChange={(e) => setVendaForm((p) => ({ ...p, descricao: e.target.value }))}
+                  placeholder="Ex: 2x produto A + frete"
+                  className="w-full input-dark px-3 py-2.5 text-[13px]"
+                />
+              </div>
+            </div>
+
+            <div
+              className="px-5 py-4 flex gap-2 justify-end"
+              style={{ borderTop: "1px solid var(--border)" }}
+            >
+              <button
+                onClick={() => setModalVenda(null)}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                style={{
+                  background: "var(--card-2)",
+                  border: "1px solid var(--border-2)",
+                  color: "#94a3b8",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={registrarVenda}
+                disabled={registrandoVenda || !vendaForm.vendedorId}
+                className="px-5 py-2 rounded-xl text-[13px] font-semibold disabled:opacity-50 transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #34d399, #059669)",
+                  color: "white",
+                  border: "none",
+                }}
+              >
+                {registrandoVenda ? "Registrando..." : "Confirmar Venda"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit modal */}
       {editLead && (
         <div
@@ -703,7 +853,20 @@ export default function LeadsPage() {
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {["PRONTO_PARA_COMPRAR", "NEGOCIACAO", "AGENDADO"].includes(editForm.status) && editLead && (
+                  <button
+                    onClick={() => abrirModalVenda(editLead!)}
+                    className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+                    style={{
+                      background: "rgba(52,211,153,.12)",
+                      border: "1px solid rgba(52,211,153,.3)",
+                      color: "#34d399",
+                    }}
+                  >
+                    Registrar Venda
+                  </button>
+                )}
                 <button
                   onClick={() => { setEditLead(null); setConfirmandoExclusao(false); }}
                   className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
