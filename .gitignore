@@ -43,3 +43,6 @@ next-env.d.ts
 /app/generated/prisma
 scripts/wf_check.json
 scripts/wf_fix_body.json
+
+# Backups locais — contêm chaves de API, não subir para o GitHub
+/backups/
