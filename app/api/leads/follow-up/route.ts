@@ -197,5 +197,25 @@ export async function GET(req: Request) {
     }
   }
 
+  if (searchParams.get("debug") === "1") {
+    return NextResponse.json({
+      serverNow: now.toISOString(),
+      todayUTCMonth: todayMonth,
+      todayUTCDay: todayDay,
+      allAniversariosCount: allAniversarios.length,
+      allAniversariosRaw: allAniversarios.map(l => ({
+        leadId: l.id,
+        status: l.status,
+        clienteNome: l.cliente.nome,
+        dataNascimento: l.cliente.dataNascimento,
+        instanciaWhatsapp: l.empresa.instanciaWhatsapp,
+        empresaAtiva: (l.empresa as unknown as { ativa?: boolean }).ativa,
+      })),
+      aniversariosCount: aniversarios.length,
+      total: items.length,
+      items,
+    });
+  }
+
   return NextResponse.json({ total: items.length, items });
 }
