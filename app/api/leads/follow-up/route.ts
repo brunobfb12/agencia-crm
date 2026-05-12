@@ -83,13 +83,13 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  // Filter birthday leads for today (month + day match)
-  const todayMonth = now.getMonth() + 1;
-  const todayDay = now.getDate();
+  // Filter birthday leads for today (month + day match) — use UTC to match stored dates
+  const todayMonth = now.getUTCMonth() + 1;
+  const todayDay = now.getUTCDate();
   const aniversarios = allAniversarios.filter(l => {
     if (!l.cliente.dataNascimento || !l.empresa.instanciaWhatsapp) return false;
     const d = new Date(l.cliente.dataNascimento);
-    return (d.getMonth() + 1) === todayMonth && d.getDate() === todayDay;
+    return (d.getUTCMonth() + 1) === todayMonth && d.getUTCDate() === todayDay;
   });
 
   type Item = {
