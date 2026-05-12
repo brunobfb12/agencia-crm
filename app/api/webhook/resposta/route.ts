@@ -4,7 +4,7 @@ import { LeadStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, dataRecontato } = body;
+  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, notificarGerente, dataRecontato } = body;
 
   if (!conversaId || !resposta) {
     return NextResponse.json({ ok: false, motivo: "campos obrigatorios ausentes" });
@@ -62,5 +62,16 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, vendedor });
+  let gerente = null;
+  if (notificarGerente && leadId) {
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    if (lead) {
+      gerente = await prisma.vendedor.findFirst({
+        where: { empresaId: lead.empresaId, ativo: true, cargo: "GERENTE" },
+        select: { id: true, nome: true, telefone: true },
+      });
+    }
+  }
+
+  return NextResponse.json({ ok: true, vendedor, gerente });
 }

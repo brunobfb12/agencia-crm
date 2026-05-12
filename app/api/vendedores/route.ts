@@ -40,6 +40,7 @@ export async function POST(req: Request) {
       telefone: body.telefone,
       empresaId: body.empresaId,
       ordemChamada: (ultimaOrdem?.ordemChamada ?? 0) + 1,
+      ...(body.cargo && { cargo: body.cargo }),
     },
   });
   return NextResponse.json(vendedor, { status: 201 });

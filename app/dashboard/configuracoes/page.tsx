@@ -15,7 +15,7 @@ interface Empresa {
 }
 interface Vendedor {
   id: string; nome: string; telefone: string; ordemChamada: number;
-  ativo: boolean; empresaId: string;
+  ativo: boolean; empresaId: string; cargo: string;
   empresa: { nome: string }; _count: { vendas: number };
 }
 interface Midia {
@@ -175,7 +175,7 @@ export default function ConfiguracoesPage() {
   const [aba, setAba] = useState<"empresas" | "vendedores" | "midias" | "whatsapp">("empresas");
 
   const [novaEmpresa, setNovaEmpresa] = useState({ nome: "", instanciaWhatsapp: "" });
-  const [novoVendedor, setNovoVendedor] = useState({ nome: "", telefone: "", empresaId: "" });
+  const [novoVendedor, setNovoVendedor] = useState({ nome: "", telefone: "", empresaId: "", cargo: "VENDEDOR" });
 
   const [editEmpresa, setEditEmpresa] = useState<string | null>(null);
   const [infoCampos, setInfoCampos] = useState<Record<string, string>>({});
@@ -186,7 +186,7 @@ export default function ConfiguracoesPage() {
   const [mensagemPosVenda, setMensagemPosVenda] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
-  const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1 });
+  const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1, cargo: "VENDEDOR" });
 
   const [modalTransferir, setModalTransferir] = useState<Vendedor | null>(null);
   const [transferirParaId, setTransferirParaId] = useState("");
@@ -297,7 +297,7 @@ export default function ConfiguracoesPage() {
 
   function abrirEditVendedor(v: Vendedor) {
     setEditVendedor(v.id);
-    setEditVendedorData({ nome: v.nome, telefone: v.telefone, ordemChamada: v.ordemChamada });
+    setEditVendedorData({ nome: v.nome, telefone: v.telefone, ordemChamada: v.ordemChamada, cargo: v.cargo ?? "VENDEDOR" });
   }
 
   const salvarVendedor = async (id: string) => {
@@ -722,6 +722,12 @@ export default function ConfiguracoesPage() {
                   {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
                 </select>
               )}
+              <select value={novoVendedor.cargo}
+                onChange={(e) => setNovoVendedor((p) => ({ ...p, cargo: e.target.value }))}
+                className={`flex-1 ${INPUT}`}>
+                <option value="VENDEDOR">Vendedor</option>
+                <option value="GERENTE">Gerente</option>
+              </select>
               <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
             </form>
 
@@ -748,12 +754,20 @@ export default function ConfiguracoesPage() {
                           {isCentral && <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{v.empresa.nome}</td>}
                           <td className="px-4 py-3" style={{ color: "var(--muted-2)" }}>#{v.ordemChamada}</td>
                           <td className="px-4 py-3">
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                              style={v.ativo
-                                ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                                : { background: "var(--card-2)", color: "var(--muted-2)" }}>
-                              {v.ativo ? "Ativo" : "Inativo"}
-                            </span>
+                            <div className="flex gap-1.5 flex-wrap">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                                style={v.ativo
+                                  ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                                  : { background: "var(--card-2)", color: "var(--muted-2)" }}>
+                                {v.ativo ? "Ativo" : "Inativo"}
+                              </span>
+                              {(v.cargo ?? "VENDEDOR") === "GERENTE" && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                                  style={{ background: "rgba(168,85,247,.1)", color: "#c084fc" }}>
+                                  Gerente
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex gap-2 justify-end">
@@ -801,6 +815,15 @@ export default function ConfiguracoesPage() {
                                   <input type="number" min={1} value={editVendedorData.ordemChamada}
                                     onChange={(e) => setEditVendedorData((p) => ({ ...p, ordemChamada: Number(e.target.value) }))}
                                     className="input-dark px-3 py-2 text-[13px] w-20" />
+                                </div>
+                                <div>
+                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CARGO</label>
+                                  <select value={editVendedorData.cargo}
+                                    onChange={(e) => setEditVendedorData((p) => ({ ...p, cargo: e.target.value }))}
+                                    className="input-dark px-3 py-2 text-[13px]">
+                                    <option value="VENDEDOR">Vendedor</option>
+                                    <option value="GERENTE">Gerente</option>
+                                  </select>
                                 </div>
                                 <button onClick={() => salvarVendedor(v.id)} disabled={salvando}
                                   className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>

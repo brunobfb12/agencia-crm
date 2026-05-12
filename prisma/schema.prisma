@@ -76,6 +76,7 @@ model Vendedor {
   empresaId           String
   ordemChamada        Int
   ativo               Boolean   @default(true)
+  cargo               String    @default("VENDEDOR")
   criadoEm            DateTime  @default(now())
   ultimaAtribuicaoEm  DateTime?
 

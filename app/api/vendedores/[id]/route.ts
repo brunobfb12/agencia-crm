@@ -14,6 +14,7 @@ export async function PATCH(
       ...(body.telefone && { telefone: body.telefone }),
       ...(body.ordemChamada !== undefined && { ordemChamada: Number(body.ordemChamada) }),
       ...(body.ativo !== undefined && { ativo: body.ativo }),
+      ...(body.cargo && { cargo: body.cargo }),
     },
   });
   return NextResponse.json(vendedor);
