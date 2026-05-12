@@ -11,6 +11,7 @@ interface Empresa {
   perguntasQualificacao: string | null;
   tipoAtendimento: string; nomeIA: string | null;
   mensagemPosVenda: string | null;
+  mensagemAniversario: string | null;
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -184,6 +185,7 @@ export default function ConfiguracoesPage() {
   const [tipoAtendimento, setTipoAtendimento] = useState("AGENDAMENTO");
   const [nomeIA, setNomeIA] = useState("");
   const [mensagemPosVenda, setMensagemPosVenda] = useState("");
+  const [mensagemAniversario, setMensagemAniversario] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1, cargo: "VENDEDOR" });
@@ -277,6 +279,7 @@ export default function ConfiguracoesPage() {
     setTipoAtendimento(emp.tipoAtendimento ?? "AGENDAMENTO");
     setNomeIA(emp.nomeIA ?? "");
     setMensagemPosVenda(emp.mensagemPosVenda ?? "");
+    setMensagemAniversario(emp.mensagemAniversario ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -284,12 +287,13 @@ export default function ConfiguracoesPage() {
     const informacoes = composeInfo(infoCampos);
     const pq = perguntasQualificacao.trim() || null;
     const mpv = mensagemPosVenda.trim() || null;
+    const maniv = mensagemAniversario.trim() || null;
     await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv } : e));
+    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv } : e));
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
@@ -617,6 +621,22 @@ export default function ConfiguracoesPage() {
                                 <textarea rows={3} value={mensagemPosVenda}
                                   onChange={(e) => setMensagemPosVenda(e.target.value)}
                                   placeholder={`Ex: Oi {nome}! 😊 {ia} aqui, do Studio. Como ficou o design da sua sobrancelha? Gostou do resultado?`}
+                                  className={`${INPUT} resize-none`} />
+                              </div>
+
+                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                                  MENSAGEM DE ANIVERSÁRIO (automática no dia do aniversário do cliente)
+                                </label>
+                                <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                                  Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code> para o primeiro nome do cliente,{" "}
+                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> para o nome da IA e{" "}
+                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{empresa}"}</code> para o nome da empresa.
+                                  Deixe vazio para usar a mensagem padrão.
+                                </p>
+                                <textarea rows={3} value={mensagemAniversario}
+                                  onChange={(e) => setMensagemAniversario(e.target.value)}
+                                  placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
                                   className={`${INPUT} resize-none`} />
                               </div>
 

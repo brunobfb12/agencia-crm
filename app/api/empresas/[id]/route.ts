@@ -21,6 +21,7 @@ export async function PATCH(
       ...(body.tipoAtendimento !== undefined && { tipoAtendimento: body.tipoAtendimento }),
       ...(body.nomeIA !== undefined && { nomeIA: body.nomeIA || null }),
       ...(body.mensagemPosVenda !== undefined && { mensagemPosVenda: body.mensagemPosVenda || null }),
+      ...(body.mensagemAniversario !== undefined && { mensagemAniversario: body.mensagemAniversario || null }),
     },
   });
   return NextResponse.json(empresa);
