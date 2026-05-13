@@ -9,6 +9,8 @@ export interface JwtPayload {
   email: string;
   perfil: string;
   empresaId: string | null;
+  planStatus: string | null;
+  trialFim: string | null;
 }
 
 export function signToken(payload: JwtPayload): string {

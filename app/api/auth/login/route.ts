@@ -16,12 +16,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email ou senha inválidos" }, { status: 401 });
   }
 
+  let planStatus: string | null = null;
+  let trialFim: string | null = null;
+  if (usuario.empresaId) {
+    const empresa = await prisma.empresa.findUnique({
+      where: { id: usuario.empresaId },
+      select: { planStatus: true, trialFim: true },
+    });
+    planStatus = empresa?.planStatus ?? null;
+    trialFim = empresa?.trialFim?.toISOString() ?? null;
+  }
+
   const token = signToken({
     id: usuario.id,
     nome: usuario.nome,
     email: usuario.email,
     perfil: usuario.perfil,
     empresaId: usuario.empresaId,
+    planStatus,
+    trialFim,
   });
 
   const response = NextResponse.json({ ok: true, perfil: usuario.perfil });

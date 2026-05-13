@@ -25,6 +25,12 @@ model Empresa {
   mensagemAniversario      String?
   aprendizados             String?
 
+  // Monetização
+  planStatus   PlanStatus @default(TRIAL)
+  plano        PlanoTipo  @default(STARTER)
+  trialFim     DateTime?
+  assinaturaId String?
+
   vendedores   Vendedor[]
   clientes     Cliente[]
   leads        Lead[]
@@ -252,6 +258,19 @@ model Campanha {
   criadoEm DateTime       @default(now())
   empresa   Empresa        @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   itens     CampanhaItem[]
+}
+
+enum PlanStatus {
+  TRIAL
+  ATIVO
+  BLOQUEADO
+  CANCELADO
+}
+
+enum PlanoTipo {
+  STARTER
+  PRO
+  AGENCY
 }
 
 model CampanhaItem {
