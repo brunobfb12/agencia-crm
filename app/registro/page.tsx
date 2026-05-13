@@ -101,6 +101,7 @@ export default function RegistroPage() {
                 required
                 placeholder="Ex: Minha Loja"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
             </div>
 
@@ -115,6 +116,7 @@ export default function RegistroPage() {
                 required
                 placeholder="Seu nome completo"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
             </div>
 
@@ -129,6 +131,7 @@ export default function RegistroPage() {
                 required
                 placeholder="seu@email.com"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
             </div>
 
@@ -144,6 +147,7 @@ export default function RegistroPage() {
                 minLength={8}
                 placeholder="Mínimo 8 caracteres"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
             </div>
 
@@ -158,6 +162,7 @@ export default function RegistroPage() {
                 required
                 placeholder="Repita a senha"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
             </div>
 
