@@ -46,3 +46,7 @@ scripts/wf_fix_body.json
 
 # Backups locais — contêm chaves de API, não subir para o GitHub
 /backups/
+
+# Workflows N8N — contêm chaves de API embutidas, deploy via script separado
+workflow_current.json
+workflow_followup.json

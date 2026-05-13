@@ -51,27 +51,31 @@ export async function POST(req: Request) {
   }
 
   let vendedor = null;
-  if (notificarVendedor && leadId) {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (lead) {
-      vendedor = await prisma.vendedor.findFirst({
-        where: { empresaId: lead.empresaId, ativo: true },
-        orderBy: { ordemChamada: "asc" },
-        select: { id: true, nome: true, telefone: true },
-      });
-    }
-  }
-
   let gerente = null;
-  if (notificarGerente && leadId) {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+  let aprendizados: string | null = null;
+
+  if (leadId) {
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      include: { empresa: { select: { aprendizados: true } } },
+    });
     if (lead) {
-      gerente = await prisma.vendedor.findFirst({
-        where: { empresaId: lead.empresaId, ativo: true, cargo: "GERENTE" },
-        select: { id: true, nome: true, telefone: true },
-      });
+      aprendizados = lead.empresa.aprendizados ?? null;
+      if (notificarVendedor) {
+        vendedor = await prisma.vendedor.findFirst({
+          where: { empresaId: lead.empresaId, ativo: true },
+          orderBy: { ordemChamada: "asc" },
+          select: { id: true, nome: true, telefone: true },
+        });
+      }
+      if (notificarGerente) {
+        gerente = await prisma.vendedor.findFirst({
+          where: { empresaId: lead.empresaId, ativo: true, cargo: "GERENTE" },
+          select: { id: true, nome: true, telefone: true },
+        });
+      }
     }
   }
 
-  return NextResponse.json({ ok: true, vendedor, gerente });
+  return NextResponse.json({ ok: true, vendedor, gerente, aprendizados });
 }

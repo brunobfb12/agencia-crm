@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
   const baseInclude = {
     cliente: { select: { nome: true, telefone: true } },
-    empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true } },
+    empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true, mensagemAniversario: true } },
     vendedor: { select: { nome: true } },
   };
 
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       },
       include: {
         cliente: { select: { nome: true, telefone: true, dataNascimento: true } },
-        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true } },
+        empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true, mensagemAniversario: true } },
         vendedor: { select: { nome: true, telefone: true } },
       },
     }),
@@ -171,6 +171,12 @@ export async function GET(req: Request) {
       : null;
 
     // Message to the client
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tmplAniv: string | null | undefined = (l.empresa as any).mensagemAniversario;
+    const mensagemAniv = tmplAniv
+      ? tmplAniv.replace(/\{nome\}/g, primeiroNome).replace(/\{ia\}/g, ia).replace(/\{empresa\}/g, l.empresa.nome)
+      : `Oi${nome}! 🎂 ${ia} aqui, da ${l.empresa.nome}. Hoje é um dia muito especial — feliz aniversário! Que seja um dia incrível! 🥳`;
+
     items.push({
       tipo: "aniversario",
       leadId: l.id,
@@ -178,7 +184,7 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! 🎂 ${ia} aqui, da ${l.empresa.nome}. Hoje é um dia muito especial — feliz aniversário! Que seja um dia incrível! 🥳`,
+      mensagem: mensagemAniv,
     });
 
     // Notification to the vendor (if assigned and has phone)

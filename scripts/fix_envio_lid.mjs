@@ -1,4 +1,4 @@
-const N8N_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTRkZGMyZC02YTAwLTRkM2MtOTYxMy1mZTkwNjNhNmExMzIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZDFmODE0ZDUtM2RjMy00NzZjLThiNmItYTEyYTdlMDI2YTUxIiwiaWF0IjoxNzc3MzQ0MzUxfQ.T4pxcvcNtJd__4hLVtDfVDQeNyFK3NoshfihSAPnDS4";
+const N8N_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4NThiY2U4Ny0yYTdkLTQxMDItYjU1Ni0wMWExZjJhYWVkOWEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiY2JlMWNkOGUtODIxYi00MmEyLWIzZjYtYjgzZGYwMDUzN2YwIiwiaWF0IjoxNzc4NDczNjMxfQ.qerSQqMlIUjev6-VH_g2gl1PqE28hRm_LzLGyj-UZ6Y";
 const BASE = "https://n8n-n8n.6jgzku.easypanel.host/api/v1";
 const headers = { "X-N8N-API-KEY": N8N_KEY, "Content-Type": "application/json" };
 

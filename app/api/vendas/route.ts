@@ -29,6 +29,14 @@ export async function POST(req: Request) {
     }),
   ]);
 
+  // Dispara análise de aprendizado em background (não bloqueia resposta)
+  const baseUrl = process.env.NEXT_PUBLIC_URL ?? "https://ocrmfacil.com.br";
+  fetch(`${baseUrl}/api/webhook/vitoria`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ leadId, secret: "crm2026migra" }),
+  }).catch(() => {});
+
   return NextResponse.json({ venda, lead }, { status: 201 });
 }
 
