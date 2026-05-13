@@ -535,9 +535,6 @@ export default function ConfiguracoesPage() {
           </div>
         </div>
 
-        {/* Setup checklist — só EMPRESA */}
-        {!isCentral && <SetupChecklist />}
-
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           {tabs.map((tab) => (
@@ -615,6 +612,55 @@ export default function ConfiguracoesPage() {
                         {editEmpresa === emp.id && (
                           <tr key={`${emp.id}-edit`}>
                             <td colSpan={isCentral ? 5 : 4} className="px-5 py-5" style={editRowStyle}>
+
+                              {/* ── Checklist de configuração ── */}
+                              {(() => {
+                                const vendedoresEmpresa = vendedores.filter(v => v.empresaId === emp.id && v.ativo);
+                                const items = [
+                                  { ok: !!emp.informacoes?.trim(),          label: "Informações da empresa preenchidas" },
+                                  { ok: vendedoresEmpresa.length > 0,       label: "Pelo menos 1 vendedor cadastrado" },
+                                  { ok: emp._count.clientes > 0,            label: "Primeiros clientes adicionados" },
+                                  { ok: !!emp.nomeIA?.trim(),               label: "Nome da IA configurado" },
+                                  { ok: !!emp.perguntasQualificacao?.trim(), label: "Roteiro de qualificação preenchido" },
+                                  { ok: !!emp.mensagemPosVenda?.trim(),     label: "Mensagem de pós-venda personalizada" },
+                                  { ok: !!emp.mensagemAniversario?.trim(),  label: "Mensagem de aniversário personalizada" },
+                                ];
+                                const done = items.filter(i => i.ok).length;
+                                const pct = Math.round((done / items.length) * 100);
+                                const allOk = done === items.length;
+                                return (
+                                  <div className="mb-5 rounded-xl p-4"
+                                    style={{ background: allOk ? "rgba(52,211,153,.06)" : "rgba(99,102,241,.06)", border: `1px solid ${allOk ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.15)"}` }}>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                                        {allOk ? "✅ Empresa 100% configurada!" : `Setup — ${done}/${items.length} etapas`}
+                                      </p>
+                                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                        style={{ background: allOk ? "rgba(52,211,153,.15)" : "rgba(99,102,241,.15)", color: allOk ? "#34d399" : "#a5b4fc" }}>
+                                        {pct}%
+                                      </span>
+                                    </div>
+                                    <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: "var(--border)" }}>
+                                      <div className="h-full rounded-full transition-all duration-700"
+                                        style={{ width: `${pct}%`, background: allOk ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                      {items.map((item, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                                            style={item.ok ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" } : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
+                                            {item.ok && <svg className="w-2 h-2" fill="none" stroke="#34d399" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                          </div>
+                                          <span className="text-[12px]" style={{ color: item.ok ? "var(--muted)" : "var(--text-2)", textDecoration: item.ok ? "line-through" : "none" }}>
+                                            {item.label}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 {SECOES.map((sec) => (
                                   <div key={sec}>
