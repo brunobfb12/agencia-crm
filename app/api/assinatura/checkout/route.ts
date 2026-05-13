@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { getUsuarioLogado } from "@/lib/auth";
 
 const LINKS: Record<string, string | undefined> = {
-  STARTER: process.env.HOTMART_CHECKOUT_STARTER,
-  PRO:     process.env.HOTMART_CHECKOUT_PRO,
-  AGENCY:  process.env.HOTMART_CHECKOUT_AGENCY,
+  STARTER_MENSAL: process.env.HOTMART_CHECKOUT_STARTER_MENSAL,
+  STARTER_ANUAL:  process.env.HOTMART_CHECKOUT_STARTER_ANUAL,
+  PRO_MENSAL:     process.env.HOTMART_CHECKOUT_PRO_MENSAL,
+  PRO_ANUAL:      process.env.HOTMART_CHECKOUT_PRO_ANUAL,
+  AGENCY_MENSAL:  process.env.HOTMART_CHECKOUT_AGENCY_MENSAL,
+  AGENCY_ANUAL:   process.env.HOTMART_CHECKOUT_AGENCY_ANUAL,
 };
 
 export async function GET(req: Request) {
@@ -12,7 +15,7 @@ export async function GET(req: Request) {
   if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const plano = (searchParams.get("plano") ?? "STARTER").toUpperCase();
+  const plano = (searchParams.get("plano") ?? "STARTER_ANUAL").toUpperCase();
 
   const base = LINKS[plano];
   if (!base) {
