@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps --ignore-scripts
 COPY . .
-RUN npx prisma generate
+RUN rm -rf node_modules/.prisma && npx prisma generate
 RUN npm run build
 
 FROM base AS runner
