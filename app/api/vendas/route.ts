@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  const me = await getUsuarioLogado();
+  if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
   const body = await req.json();
   const { leadId, vendedorId, valor, descricao } = body;
 

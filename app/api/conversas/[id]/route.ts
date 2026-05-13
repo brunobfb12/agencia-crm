@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const me = await getUsuarioLogado();
+  if (!me) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
   const { id } = await params;
 
   const conversa = await prisma.conversa.findUnique({
@@ -40,6 +44,11 @@ export async function GET(
   });
 
   if (!conversa) return NextResponse.json({ erro: "não encontrada" }, { status: 404 });
+
+  if (me.perfil !== "CENTRAL" && me.empresaId && conversa.cliente.empresa.id !== me.empresaId) {
+    return NextResponse.json({ erro: "Não autorizado" }, { status: 403 });
+  }
+
   return NextResponse.json(conversa);
 }
 
@@ -47,7 +56,21 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const me = await getUsuarioLogado();
+  if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
   const { id } = await params;
+
+  if (me.perfil !== "CENTRAL" && me.empresaId) {
+    const conversa = await prisma.conversa.findUnique({
+      where: { id },
+      select: { cliente: { select: { empresaId: true } } },
+    });
+    if (!conversa || conversa.cliente.empresaId !== me.empresaId) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    }
+  }
+
   const { modoHumano } = await req.json();
   const conversa = await prisma.conversa.update({
     where: { id },

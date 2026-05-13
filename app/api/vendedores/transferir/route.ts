@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUsuarioLogado } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  const me = await getUsuarioLogado();
+  if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { deVendedorId, paraVendedorId } = await req.json();
   if (!deVendedorId || !paraVendedorId) {
     return NextResponse.json({ error: "deVendedorId e paraVendedorId são obrigatórios" }, { status: 400 });
