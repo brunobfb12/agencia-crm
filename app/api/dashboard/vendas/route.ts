@@ -32,11 +32,11 @@ export async function GET(req: Request) {
     ate_  = new Date();
   }
 
-  const empresaFilter = me.perfil === "EMPRESA" && me.empresaId
+  const empresaFilter = me.perfil !== "CENTRAL" && me.empresaId
     ? { lead: { empresaId: me.empresaId } }
     : {};
 
-  const leadEmpresaFilter = me.perfil === "EMPRESA" && me.empresaId
+  const leadEmpresaFilter = me.perfil !== "CENTRAL" && me.empresaId
     ? { empresaId: me.empresaId }
     : {};
 

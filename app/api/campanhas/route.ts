@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const empresaId = searchParams.get("empresaId");
 
   const where: Record<string, unknown> = {};
-  if (usuario.perfil === "EMPRESA" && usuario.empresaId) {
+  if (usuario.perfil !== "CENTRAL" && usuario.empresaId) {
     where.empresaId = usuario.empresaId;
   } else if (empresaId) {
     where.empresaId = empresaId;
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "empresaId, mensagem e leadIds são obrigatórios" }, { status: 400 });
   }
 
-  if (usuario.perfil === "EMPRESA" && usuario.empresaId !== empresaId) {
+  if (usuario.perfil !== "CENTRAL" && usuario.empresaId !== empresaId) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
   }
 
