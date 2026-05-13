@@ -387,11 +387,14 @@ export default function ClientesPage() {
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TELEFONE *</label>
                   <input
                     type="text"
-                    placeholder="5511999998888"
+                    placeholder="5562999998888 (55 + DDD + número)"
                     value={novoForm.telefone}
                     onChange={(e) => setNovoForm((f) => ({ ...f, telefone: e.target.value }))}
                     className="w-full input-dark px-3 py-2.5 text-[13px] font-mono"
                   />
+                  <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                    55 = Brasil · DDD (2 dígitos) · número (8 ou 9 dígitos)
+                  </p>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>E-MAIL</label>

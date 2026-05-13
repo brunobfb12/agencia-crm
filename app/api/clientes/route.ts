@@ -65,11 +65,20 @@ export async function GET(req: Request) {
   return NextResponse.json(clientes);
 }
 
+function normalizarTelefone(tel: string): string {
+  // Strip spaces, dashes, parentheses, leading +
+  let t = tel.replace(/[\s\-().+]/g, "");
+  // Remove double Brazil code (5555DDXXXXX → 55DDXXXXX)
+  if (t.startsWith("5555") && t.length > 13) t = t.slice(2);
+  return t;
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   if (!body.telefone || !body.empresaId) {
     return NextResponse.json({ error: "telefone e empresaId são obrigatórios" }, { status: 400 });
   }
+  body.telefone = normalizarTelefone(String(body.telefone));
   const extra = {
     ...(body.email    !== undefined && body.email    !== "" && { email: body.email }),
     ...(body.dataNascimento && { dataNascimento: new Date(body.dataNascimento) }),
