@@ -41,6 +41,11 @@ const IconCampanhas = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
   </svg>
 );
+const IconAnalytics = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8M12 11v5M8 14v2M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+  </svg>
+);
 const IconSettings = () => (
   <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
@@ -130,7 +135,8 @@ const navItemsBase = [
   { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat      },
   { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients   },
   { href: "/dashboard/agendamentos",  label: "Agendamentos",  Icon: IconSchedule  },
-  { href: "/dashboard/campanhas",     label: "Campanhas",     Icon: IconCampanhas },
+  { href: "/dashboard/campanhas",     label: "Campanhas",     Icon: IconCampanhas  },
+  { href: "/dashboard/analytics",    label: "Analytics",     Icon: IconAnalytics  },
   { href: "/dashboard/configuracoes", label: "Configurações", Icon: IconSettings  },
 ];
 const navItemsCentral = [
