@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 
 const planos = [
@@ -54,6 +55,25 @@ const planos = [
 ];
 
 export default function AssinarPage() {
+  const [loadingPlano, setLoadingPlano] = useState<string | null>(null);
+
+  async function irParaCheckout(plano: string) {
+    setLoadingPlano(plano);
+    try {
+      const res = await fetch(`/api/assinatura/checkout?plano=${plano}`);
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        // Plano ainda não configurado — fallback WhatsApp
+        window.open("https://wa.me/5562985974090?text=" + encodeURIComponent(`Quero assinar o plano ${plano} do FácilCRM`), "_blank");
+      }
+    } catch {
+      window.open("https://wa.me/5562985974090", "_blank");
+    } finally {
+      setLoadingPlano(null);
+    }
+  }
   return (
     <div className="min-h-full flex flex-col items-center justify-center p-6 py-12" style={{ background: "#08080e" }}>
 
@@ -134,11 +154,10 @@ export default function AssinarPage() {
               ))}
             </ul>
 
-            <a
-              href={`https://wa.me/5562985974090?text=${encodeURIComponent(`Olá! Quero assinar o plano ${p.nome} do FácilCRM.`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={p.destaque ? "btn-primary w-full py-3 text-[14px] text-center block" : "btn-secondary w-full py-3 text-[14px] text-center block"}
+            <button
+              onClick={() => irParaCheckout(p.nome.toUpperCase())}
+              disabled={loadingPlano === p.nome.toUpperCase()}
+              className={p.destaque ? "btn-primary w-full py-3 text-[14px]" : "w-full py-3 text-[14px]"}
               style={!p.destaque ? {
                 background: "rgba(255,255,255,.06)",
                 border: "1px solid rgba(255,255,255,.12)",
@@ -148,8 +167,13 @@ export default function AssinarPage() {
                 cursor: "pointer",
               } : {}}
             >
-              {p.cta}
-            </a>
+              {loadingPlano === p.nome.toUpperCase() ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Redirecionando...
+                </span>
+              ) : p.cta}
+            </button>
           </div>
         ))}
       </div>
