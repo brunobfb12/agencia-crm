@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
                       dataKey="count" nameKey="label" paddingAngle={2} strokeWidth={0}>
                       {data.funil.map((f, i) => <Cell key={i} fill={f.hex} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => [fmt(v), ""]} contentStyle={{
+                    <Tooltip formatter={(v) => [fmt(Number(v ?? 0)), ""]} contentStyle={{
                       background: "rgba(15,15,25,.95)", border: "1px solid rgba(255,255,255,.1)",
                       borderRadius: 12, fontSize: 12,
                     }} />
