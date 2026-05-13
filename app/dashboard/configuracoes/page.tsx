@@ -3,6 +3,102 @@
 import { useEffect, useState, useRef } from "react";
 import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
+/* ── Setup Checklist ─────────────────────────────────────────────────── */
+interface SetupStatus {
+  informacoesOk: boolean; whatsappOk: boolean; vendedoresOk: boolean;
+  clientesOk: boolean; nomeIAOk: boolean; posVendaOk: boolean;
+  aniversarioOk: boolean; qualificacaoOk: boolean;
+}
+
+function SetupChecklist() {
+  const [status, setStatus] = useState<SetupStatus | null>(null);
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard/setup").then(r => r.json()).then(d => { if (d) setStatus(d); });
+  }, []);
+
+  if (!status) return null;
+
+  const steps = [
+    { ok: true,                   label: "Conta criada e login realizado",             href: null },
+    { ok: status.informacoesOk,   label: "Informações da empresa preenchidas",         href: "#empresas" },
+    { ok: status.whatsappOk,      label: "WhatsApp conectado",                         href: "#whatsapp" },
+    { ok: status.vendedoresOk,    label: "Pelo menos 1 vendedor cadastrado",           href: "#vendedores" },
+    { ok: status.clientesOk,      label: "Primeiros clientes adicionados",             href: "/dashboard/clientes" },
+    { ok: status.nomeIAOk,        label: "Nome da IA configurado",                     href: "#empresas" },
+    { ok: status.qualificacaoOk,  label: "Roteiro de qualificação da IA preenchido",   href: "#empresas" },
+    { ok: status.posVendaOk,      label: "Mensagem de pós-venda personalizada",        href: "#empresas" },
+    { ok: status.aniversarioOk,   label: "Mensagem de aniversário personalizada",      href: "#empresas" },
+  ];
+
+  const done = steps.filter(s => s.ok).length;
+  const total = steps.length;
+  const allDone = done === total;
+  const pct = Math.round((done / total) * 100);
+
+  if (allDone && !open) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl overflow-hidden animate-fade-up"
+      style={{
+        background: allDone ? "linear-gradient(135deg,rgba(52,211,153,.08),rgba(16,185,129,.04))" : "linear-gradient(135deg,rgba(99,102,241,.08),rgba(79,70,229,.03))",
+        border: `1px solid ${allDone ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.18)"}`,
+      }}>
+      {/* Header */}
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between p-4 md:p-5 text-left">
+        <div className="flex items-center gap-3">
+          {allDone
+            ? <span className="text-[18px]">🎉</span>
+            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+                style={{ background: "rgba(99,102,241,.15)", color: "#a5b4fc" }}>{pct}%</div>
+          }
+          <div>
+            <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>
+              {allDone ? "Tudo configurado! CRM 100% pronto." : "Complete a configuração do seu CRM"}
+            </p>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
+              {allDone ? "Todas as etapas concluídas." : `${done} de ${total} etapas concluídas`}
+            </p>
+          </div>
+        </div>
+        <svg className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: "var(--muted-3)" }}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-4 md:px-5 pb-5">
+          {/* Progress bar */}
+          <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: "var(--border)" }}>
+            <div className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${pct}%`, background: allDone ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+          </div>
+          {/* Steps grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {steps.map((step, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={step.ok
+                    ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" }
+                    : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
+                  {step.ok && <svg className="w-2.5 h-2.5" fill="none" stroke="#34d399" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                {step.href && !step.ok ? (
+                  <a href={step.href} className="text-[12.5px] hover:underline" style={{ color: "#a5b4fc" }}>{step.label}</a>
+                ) : (
+                  <span className="text-[12.5px]" style={{ color: step.ok ? "var(--muted)" : "var(--muted-2)", textDecoration: step.ok ? "line-through" : "none" }}>{step.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Me { perfil: string; empresaId: string | null; nome: string }
 interface Empresa {
   id: string; nome: string; instanciaWhatsapp: string; ativa: boolean;
@@ -438,6 +534,9 @@ export default function ConfiguracoesPage() {
             )}
           </div>
         </div>
+
+        {/* Setup checklist — só EMPRESA */}
+        {!isCentral && <SetupChecklist />}
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">

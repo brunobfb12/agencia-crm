@@ -16,6 +16,10 @@ export async function GET() {
     select: {
       informacoes: true,
       instanciaWhatsapp: true,
+      nomeIA: true,
+      mensagemPosVenda: true,
+      mensagemAniversario: true,
+      perguntasQualificacao: true,
       _count: { select: { clientes: true } },
     },
   });
@@ -35,9 +39,13 @@ export async function GET() {
   } catch { /* offline */ }
 
   return NextResponse.json({
-    informacoesOk: !!empresa.informacoes?.trim(),
+    informacoesOk:    !!empresa.informacoes?.trim(),
     whatsappOk,
-    vendedoresOk: vendedoresCount > 0,
-    clientesOk: empresa._count.clientes > 0,
+    vendedoresOk:     vendedoresCount > 0,
+    clientesOk:       empresa._count.clientes > 0,
+    nomeIAOk:         !!empresa.nomeIA?.trim(),
+    posVendaOk:       !!empresa.mensagemPosVenda?.trim(),
+    aniversarioOk:    !!empresa.mensagemAniversario?.trim(),
+    qualificacaoOk:   !!empresa.perguntasQualificacao?.trim(),
   });
 }
