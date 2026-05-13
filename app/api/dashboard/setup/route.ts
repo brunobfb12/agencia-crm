@@ -7,7 +7,7 @@ const EVO_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
 export async function GET() {
   const me = await getUsuarioLogado();
-  if (!me || me.perfil !== "EMPRESA" || !me.empresaId) {
+  if (!me || me.perfil === "CENTRAL" || !me.empresaId) {
     return NextResponse.json(null);
   }
 
