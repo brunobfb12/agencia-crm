@@ -222,6 +222,48 @@ END $$`,
 
     // --- dedup agendamentos: criar índice único definitivo ---
     `CREATE UNIQUE INDEX IF NOT EXISTS "Agendamento_clienteId_dataAgendada_hora_key" ON "Agendamento" ("clienteId", "dataAgendada", COALESCE("hora", ''))`,
+
+    // --- empresa: tipo de atendimento e IA ---
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "tipoAtendimento" TEXT NOT NULL DEFAULT 'AGENDAMENTO'`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "nomeIA" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "mensagemPosVenda" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "mensagemAniversario" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "aprendizados" TEXT`,
+
+    // --- empresa: monetização ---
+    `DO $$ BEGIN CREATE TYPE "PlanStatus" AS ENUM ('TRIAL', 'ATIVO', 'BLOQUEADO', 'CANCELADO'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+    `DO $$ BEGIN CREATE TYPE "PlanoTipo" AS ENUM ('STARTER', 'PRO', 'AGENCY'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "planStatus" "PlanStatus" NOT NULL DEFAULT 'TRIAL'`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "plano" "PlanoTipo" NOT NULL DEFAULT 'STARTER'`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "trialFim" TIMESTAMP`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "assinaturaId" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "isenta" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "valorMensal" DOUBLE PRECISION`,
+
+    // --- vendedor: cargo ---
+    `ALTER TABLE "Vendedor" ADD COLUMN IF NOT EXISTS "cargo" TEXT NOT NULL DEFAULT 'VENDEDOR'`,
+
+    // --- lead: campos novos ---
+    `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "score" INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "observacoes" TEXT`,
+    `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "dataRecontato" TIMESTAMP`,
+    `ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "atualizadoEm" TIMESTAMP NOT NULL DEFAULT NOW()`,
+
+    // --- cliente: memória e tags ---
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "memoriaCliente" TEXT`,
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "tags" TEXT[] DEFAULT ARRAY[]::TEXT[]`,
+
+    // --- midia: campos novos ---
+    `ALTER TABLE "Midia" ADD COLUMN IF NOT EXISTS "base64" TEXT`,
+    `ALTER TABLE "Midia" ADD COLUMN IF NOT EXISTS "mimeType" TEXT`,
+    `ALTER TABLE "Midia" ALTER COLUMN "url" DROP NOT NULL`,
+
+    // --- perfil: novos valores do enum ---
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'DONO'`,
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'VENDEDOR'`,
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'FINANCEIRO'`,
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'COMPRAS'`,
+    `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'LOGISTICA'`,
   ];
 
   for (const sql of migrations) {
