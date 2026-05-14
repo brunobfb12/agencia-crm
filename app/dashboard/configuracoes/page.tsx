@@ -519,20 +519,18 @@ export default function ConfiguracoesPage() {
             style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.18)" }}>
             Sistema
           </span>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Configurações</h1>
-              <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
-                {isCentral ? "Empresas, vendedores e mídias da IA" : "Configure sua empresa e equipe"}
-              </p>
-            </div>
-            {msg && (
-              <span className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
-                style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
-                {msg}
-              </span>
-            )}
+          <div>
+            <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Configurações</h1>
+            <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
+              {isCentral ? "Empresas, vendedores e mídias da IA" : "Configure sua empresa e equipe"}
+            </p>
           </div>
+          {msg && (
+            <div className="mt-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-center"
+              style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+              {msg}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -559,254 +557,243 @@ export default function ConfiguracoesPage() {
                 <input required placeholder="Instância WhatsApp (ex: ph_intima)" value={novaEmpresa.instanciaWhatsapp}
                   onChange={(e) => setNovaEmpresa((p) => ({ ...p, instanciaWhatsapp: e.target.value }))}
                   className={`flex-1 ${INPUT}`} />
-                <button type="submit" disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">{salvando ? "Salvando..." : "Adicionar"}</button>
+                <button type="submit" disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50 sm:w-auto w-full">{salvando ? "Salvando..." : "Adicionar"}</button>
               </form>
             )}
 
-            <ScrollHint />
-            <div className="relative">
-              <GradientFade />
-              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-                <table className="w-full text-[13px] min-w-[520px]">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                      <TH>Empresa</TH>
-                      {isCentral && <TH>Instância</TH>}
-                      <TH>Clientes</TH><TH>Info</TH><TH></TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {empresas.map((emp) => (
-                      <>
-                        <tr key={emp.id} style={{ borderBottom: "1px solid var(--card)" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                          <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{emp.nome}</td>
-                          {isCentral && (
-                            <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "var(--muted-2)" }}>{emp.instanciaWhatsapp}</td>
-                          )}
-                          <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{emp._count.clientes}</td>
-                          <td className="px-4 py-3">
-                            {emp.informacoes
-                              ? <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(52,211,153,.1)", color: "#34d399" }}>Preenchida</span>
-                              : <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(251,191,36,.1)", color: "#fbbf24" }}>Vazia</span>
-                            }
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button onClick={() => editEmpresa === emp.id ? setEditEmpresa(null) : abrirEditEmpresa(emp)}
-                                className="text-[12px] px-3 py-1 rounded-lg font-semibold transition-all"
-                                style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)" }}>
-                                {editEmpresa === emp.id ? "Fechar" : "Editar Info"}
-                              </button>
-                              {isCentral && (
-                                <button onClick={() => { setDeletandoEmpresa(emp); setConfirmNomeEmpresa(""); }}
-                                  className="text-[12px] px-3 py-1 rounded-lg font-semibold transition-all"
-                                  style={{ background: "rgba(239,68,68,.08)", color: "#f87171", border: "1px solid rgba(239,68,68,.2)" }}>
-                                  Excluir
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        {editEmpresa === emp.id && (
-                          <tr key={`${emp.id}-edit`}>
-                            <td colSpan={isCentral ? 5 : 4} className="px-5 py-5" style={editRowStyle}>
+            {/* Lista de empresas como cards */}
+            <div className="space-y-3">
+              {empresas.map((emp) => (
+                <div key={emp.id} className="rounded-2xl overflow-hidden" style={cardStyle}>
 
-                              {/* ── Checklist de configuração ── */}
-                              {(() => {
-                                const vendedoresEmpresa = vendedores.filter(v => v.empresaId === emp.id && v.ativo);
-                                const items = [
-                                  { ok: !!emp.informacoes?.trim(),          label: "Informações da empresa preenchidas" },
-                                  { ok: vendedoresEmpresa.length > 0,       label: "Pelo menos 1 vendedor cadastrado" },
-                                  { ok: emp._count.clientes > 0,            label: "Primeiros clientes adicionados" },
-                                  { ok: !!emp.nomeIA?.trim(),               label: "Nome da IA configurado" },
-                                  { ok: !!emp.perguntasQualificacao?.trim(), label: "Roteiro de qualificação preenchido" },
-                                  { ok: !!emp.mensagemPosVenda?.trim(),     label: "Mensagem de pós-venda personalizada" },
-                                  { ok: !!emp.mensagemAniversario?.trim(),  label: "Mensagem de aniversário personalizada" },
-                                ];
-                                const done = items.filter(i => i.ok).length;
-                                const pct = Math.round((done / items.length) * 100);
-                                const allOk = done === items.length;
-                                return (
-                                  <div className="mb-5 rounded-xl p-4"
-                                    style={{ background: allOk ? "rgba(52,211,153,.06)" : "rgba(99,102,241,.06)", border: `1px solid ${allOk ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.15)"}` }}>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
-                                        {allOk ? "✅ Empresa 100% configurada!" : `Setup — ${done}/${items.length} etapas`}
-                                      </p>
-                                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                                        style={{ background: allOk ? "rgba(52,211,153,.15)" : "rgba(99,102,241,.15)", color: allOk ? "#34d399" : "#a5b4fc" }}>
-                                        {pct}%
-                                      </span>
-                                    </div>
-                                    <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: "var(--border)" }}>
-                                      <div className="h-full rounded-full transition-all duration-700"
-                                        style={{ width: `${pct}%`, background: allOk ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                      {items.map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-2">
-                                          <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                                            style={item.ok ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" } : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
-                                            {item.ok && <svg className="w-2 h-2" fill="none" stroke="#34d399" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                          </div>
-                                          <span className="text-[12px]" style={{ color: item.ok ? "var(--muted)" : "var(--text-2)", textDecoration: item.ok ? "line-through" : "none" }}>
-                                            {item.label}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              })()}
+                  {/* Cabeçalho do card */}
+                  <div className="p-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] font-bold leading-tight truncate" style={{ color: "var(--text)" }}>{emp.nome}</p>
+                      {isCentral && (
+                        <p className="text-[11px] font-mono mt-0.5 truncate" style={{ color: "var(--muted-2)" }}>{emp.instanciaWhatsapp}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="text-[11px]" style={{ color: "var(--muted-2)" }}>
+                          {emp._count.clientes} clientes · {emp._count.leads} leads
+                        </span>
+                        {emp.informacoes
+                          ? <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(52,211,153,.1)", color: "#34d399" }}>Info preenchida</span>
+                          : <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(251,191,36,.1)", color: "#fbbf24" }}>Info vazia</span>
+                        }
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button onClick={() => editEmpresa === emp.id ? setEditEmpresa(null) : abrirEditEmpresa(emp)}
+                        className="text-[13px] px-3 py-2 rounded-xl font-semibold transition-all"
+                        style={editEmpresa === emp.id
+                          ? { background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--muted)" }
+                          : { background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)" }}>
+                        {editEmpresa === emp.id ? "Fechar" : "Editar"}
+                      </button>
+                      {isCentral && (
+                        <button onClick={() => { setDeletandoEmpresa(emp); setConfirmNomeEmpresa(""); }}
+                          className="text-[13px] px-3 py-2 rounded-xl font-semibold"
+                          style={{ background: "rgba(239,68,68,.08)", color: "#f87171", border: "1px solid rgba(239,68,68,.2)" }}>
+                          Excluir
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                {SECOES.map((sec) => (
-                                  <div key={sec}>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                                      {LABELS[sec].toUpperCase()}
-                                    </label>
-                                    <textarea rows={3} value={infoCampos[sec] ?? ""}
-                                      onChange={(e) => setInfoCampos((p) => ({ ...p, [sec]: e.target.value }))}
-                                      placeholder={`Ex: ${sec === "PRODUTOS" ? "camisetas, calças, vestidos" : sec === "PRECOS" ? "camiseta R$29,90" : sec === "PAGAMENTO" ? "PIX, cartão 12x" : sec === "ENTREGA" ? "frete grátis acima de R$200" : sec === "DIFERENCIAIS" ? "atacado a partir de 10 peças" : "seg-sex 9h-18h"}`}
-                                      className={`${INPUT} resize-none`} />
+                  {/* Formulário de edição inline — sem tabela, sem scroll horizontal */}
+                  {editEmpresa === emp.id && (
+                    <div className="px-4 pb-5" style={{ borderTop: "1px solid var(--border)", background: "rgba(99,102,241,.02)" }}>
+                      <div className="pt-4">
+
+                        {/* Checklist de configuração */}
+                        {(() => {
+                          const vendedoresEmpresa = vendedores.filter(v => v.empresaId === emp.id && v.ativo);
+                          const items = [
+                            { ok: !!emp.informacoes?.trim(),           label: "Informações da empresa preenchidas" },
+                            { ok: vendedoresEmpresa.length > 0,        label: "Pelo menos 1 vendedor cadastrado" },
+                            { ok: emp._count.clientes > 0,             label: "Primeiros clientes adicionados" },
+                            { ok: !!emp.nomeIA?.trim(),                label: "Nome da IA configurado" },
+                            { ok: !!emp.perguntasQualificacao?.trim(), label: "Roteiro de qualificação preenchido" },
+                            { ok: !!emp.mensagemPosVenda?.trim(),      label: "Mensagem de pós-venda personalizada" },
+                            { ok: !!emp.mensagemAniversario?.trim(),   label: "Mensagem de aniversário personalizada" },
+                          ];
+                          const done = items.filter(i => i.ok).length;
+                          const pct = Math.round((done / items.length) * 100);
+                          const allOk = done === items.length;
+                          return (
+                            <div className="mb-5 rounded-xl p-4"
+                              style={{ background: allOk ? "rgba(52,211,153,.06)" : "rgba(99,102,241,.06)", border: `1px solid ${allOk ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.15)"}` }}>
+                              <div className="flex items-center justify-between mb-3">
+                                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                                  {allOk ? "✅ Empresa 100% configurada!" : `Setup — ${done}/${items.length} etapas`}
+                                </p>
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                  style={{ background: allOk ? "rgba(52,211,153,.15)" : "rgba(99,102,241,.15)", color: allOk ? "#34d399" : "#a5b4fc" }}>
+                                  {pct}%
+                                </span>
+                              </div>
+                              <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: "var(--border)" }}>
+                                <div className="h-full rounded-full transition-all duration-700"
+                                  style={{ width: `${pct}%`, background: allOk ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {items.map((item, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                                      style={item.ok ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" } : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
+                                      {item.ok && <svg className="w-2 h-2" fill="none" stroke="#34d399" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                    <span className="text-[12px]" style={{ color: item.ok ? "var(--muted)" : "var(--text-2)", textDecoration: item.ok ? "line-through" : "none" }}>
+                                      {item.label}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
+                            </div>
+                          );
+                        })()}
 
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>🤖 Identidade e Modo da IA</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO DE ATENDIMENTO</label>
-                                    <select value={tipoAtendimento} onChange={e => setTipoAtendimento(e.target.value)} className={INPUT}>
-                                      <option value="AGENDAMENTO">Agendamento (salão, clínica, estúdio...)</option>
-                                      <option value="ORCAMENTO">Orçamento (loja, atacado, materiais...)</option>
-                                      <option value="AMBOS">Agendamento + Orçamento (petshop, clínica c/ produtos...)</option>
-                                    </select>
-                                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
-                                      {tipoAtendimento === "AGENDAMENTO" && "IA direciona para agendamento via Calendly."}
-                                      {tipoAtendimento === "ORCAMENTO" && "IA coleta lista de itens e envia orçamento ao vendedor."}
-                                      {tipoAtendimento === "AMBOS" && "IA detecta a intenção: agenda serviços e faz orçamento de produtos — tudo para o mesmo vendedor."}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>NOME DA IA (persona)</label>
-                                    <input value={nomeIA} onChange={e => setNomeIA(e.target.value)}
-                                      placeholder="Ex: Sofia, Bella, Ana..." className={INPUT} />
-                                    <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA vai se apresentar com este nome. Deixe em branco para usar "assistente".</p>
-                                  </div>
-                                </div>
-                              </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                          {SECOES.map((sec) => (
+                            <div key={sec}>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                                {LABELS[sec].toUpperCase()}
+                              </label>
+                              <textarea rows={3} value={infoCampos[sec] ?? ""}
+                                onChange={(e) => setInfoCampos((p) => ({ ...p, [sec]: e.target.value }))}
+                                placeholder={`Ex: ${sec === "PRODUTOS" ? "camisetas, calças, vestidos" : sec === "PRECOS" ? "camiseta R$29,90" : sec === "PAGAMENTO" ? "PIX, cartão 12x" : sec === "ENTREGA" ? "frete grátis acima de R$200" : sec === "DIFERENCIAIS" ? "atacado a partir de 10 peças" : "seg-sex 9h-18h"}`}
+                                className={`${INPUT} resize-none`} />
+                            </div>
+                          ))}
+                        </div>
 
-                              {(tipoAtendimento === "AGENDAMENTO" || tipoAtendimento === "AMBOS") && (<>
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📅 Calendly (opcional)</p>
-                                <div className="mb-3">
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>LINK DO CALENDLY</label>
-                                  <input value={calendarFields.calendlyUrl} onChange={e => setCalendarFields(p => ({ ...p, calendlyUrl: e.target.value }))}
-                                    placeholder="https://calendly.com/studio-thaisy/consulta" className={INPUT} />
-                                  <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA envia este link quando o cliente pedir para agendar.</p>
-                                </div>
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>URL DO WEBHOOK</label>
-                                  <div className="flex gap-2">
-                                    <input readOnly value={`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`}
-                                      className={`flex-1 ${INPUT}`} style={{ opacity: 0.6 }} />
-                                    <button type="button" onClick={() => navigator.clipboard.writeText(`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`)}
-                                      className="px-3 py-2 rounded-xl text-[12px] font-medium transition-all"
-                                      style={{ background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
-                                      Copiar
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>🤖 Identidade e Modo da IA</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO DE ATENDIMENTO</label>
+                              <select value={tipoAtendimento} onChange={e => setTipoAtendimento(e.target.value)} className={INPUT}>
+                                <option value="AGENDAMENTO">Agendamento (salão, clínica, estúdio...)</option>
+                                <option value="ORCAMENTO">Orçamento (loja, atacado, materiais...)</option>
+                                <option value="AMBOS">Agendamento + Orçamento (petshop, clínica c/ produtos...)</option>
+                              </select>
+                              <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
+                                {tipoAtendimento === "AGENDAMENTO" && "IA direciona para agendamento via Calendly."}
+                                {tipoAtendimento === "ORCAMENTO" && "IA coleta lista de itens e envia orçamento ao vendedor."}
+                                {tipoAtendimento === "AMBOS" && "IA detecta a intenção: agenda serviços e faz orçamento de produtos."}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>NOME DA IA (persona)</label>
+                              <input value={nomeIA} onChange={e => setNomeIA(e.target.value)}
+                                placeholder="Ex: Sofia, Bella, Ana..." className={INPUT} />
+                              <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA vai se apresentar com este nome. Deixe em branco para usar "assistente".</p>
+                            </div>
+                          </div>
+                        </div>
 
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📆 Google Calendar (opcional)</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DO CALENDÁRIO</label>
-                                    <input value={calendarFields.googleCalendarId} onChange={e => setCalendarFields(p => ({ ...p, googleCalendarId: e.target.value }))}
-                                      placeholder="abc123@group.calendar.google.com" className={INPUT} />
-                                  </div>
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DA CREDENCIAL N8N</label>
-                                    <input value={calendarFields.googleCredentialId} onChange={e => setCalendarFields(p => ({ ...p, googleCredentialId: e.target.value }))}
-                                      placeholder="ex: 5" className={INPUT} />
-                                  </div>
-                                </div>
-                              </div>
-                              </>)}
+                        {(tipoAtendimento === "AGENDAMENTO" || tipoAtendimento === "AMBOS") && (<>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📅 Calendly (opcional)</p>
+                          <div className="mb-3">
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>LINK DO CALENDLY</label>
+                            <input value={calendarFields.calendlyUrl} onChange={e => setCalendarFields(p => ({ ...p, calendlyUrl: e.target.value }))}
+                              placeholder="https://calendly.com/studio-thaisy/consulta" className={INPUT} />
+                            <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA envia este link quando o cliente pedir para agendar.</p>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>URL DO WEBHOOK</label>
+                            <div className="flex gap-2">
+                              <input readOnly value={`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`}
+                                className={`flex-1 ${INPUT} min-w-0`} style={{ opacity: 0.6 }} />
+                              <button type="button" onClick={() => navigator.clipboard.writeText(`https://n8n-n8n.6jgzku.easypanel.host/webhook/calendly?instancia=${emp.instanciaWhatsapp}`)}
+                                className="px-3 py-2 rounded-xl text-[12px] font-medium flex-shrink-0"
+                                style={{ background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
+                                Copiar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
 
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                                  ROTEIRO DE QUALIFICAÇÃO DA IA
-                                </label>
-                                <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
-                                  Perguntas que a IA deve fazer para qualificar leads (uma por linha)
-                                </p>
-                                <textarea rows={5} value={perguntasQualificacao}
-                                  onChange={(e) => setPerguntasQualificacao(e.target.value)}
-                                  placeholder={"Ex:\nQual é o seu orçamento?\nVocê já conhece nossos produtos?\nQual é o prazo para a compra?"}
-                                  className={`${INPUT} resize-none`} />
-                              </div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>📆 Google Calendar (opcional)</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DO CALENDÁRIO</label>
+                              <input value={calendarFields.googleCalendarId} onChange={e => setCalendarFields(p => ({ ...p, googleCalendarId: e.target.value }))}
+                                placeholder="abc123@group.calendar.google.com" className={INPUT} />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ID DA CREDENCIAL N8N</label>
+                              <input value={calendarFields.googleCredentialId} onChange={e => setCalendarFields(p => ({ ...p, googleCredentialId: e.target.value }))}
+                                placeholder="ex: 5" className={INPUT} />
+                            </div>
+                          </div>
+                        </div>
+                        </>)}
 
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                                  MENSAGEM DE PÓS-VENDA (automática 2 dias após venda)
-                                </label>
-                                <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
-                                  Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code> para o primeiro nome do cliente,{" "}
-                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> para o nome da IA e{" "}
-                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{empresa}"}</code> para o nome da empresa.
-                                  Deixe vazio para usar a mensagem padrão.
-                                </p>
-                                <textarea rows={3} value={mensagemPosVenda}
-                                  onChange={(e) => setMensagemPosVenda(e.target.value)}
-                                  placeholder={`Ex: Oi {nome}! 😊 {ia} aqui, do Studio. Como ficou o design da sua sobrancelha? Gostou do resultado?`}
-                                  className={`${INPUT} resize-none`} />
-                              </div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                            ROTEIRO DE QUALIFICAÇÃO DA IA
+                          </label>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Perguntas que a IA deve fazer para qualificar leads (uma por linha)
+                          </p>
+                          <textarea rows={5} value={perguntasQualificacao}
+                            onChange={(e) => setPerguntasQualificacao(e.target.value)}
+                            placeholder={"Ex:\nQual é o seu orçamento?\nVocê já conhece nossos produtos?\nQual é o prazo para a compra?"}
+                            className={`${INPUT} resize-none`} />
+                        </div>
 
-                              <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                                  MENSAGEM DE ANIVERSÁRIO (automática no dia do aniversário do cliente)
-                                </label>
-                                <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
-                                  Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code> para o primeiro nome do cliente,{" "}
-                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> para o nome da IA e{" "}
-                                  <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{empresa}"}</code> para o nome da empresa.
-                                  Deixe vazio para usar a mensagem padrão.
-                                </p>
-                                <textarea rows={3} value={mensagemAniversario}
-                                  onChange={(e) => setMensagemAniversario(e.target.value)}
-                                  placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
-                                  className={`${INPUT} resize-none`} />
-                              </div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                            MENSAGEM DE PÓS-VENDA (automática 2 dias após venda)
+                          </label>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code>,{" "}
+                            <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> e{" "}
+                            <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{empresa}"}</code>.
+                            Deixe vazio para usar a mensagem padrão.
+                          </p>
+                          <textarea rows={3} value={mensagemPosVenda}
+                            onChange={(e) => setMensagemPosVenda(e.target.value)}
+                            placeholder={`Ex: Oi {nome}! 😊 {ia} aqui, do Studio. Como ficou o design da sua sobrancelha? Gostou do resultado?`}
+                            className={`${INPUT} resize-none`} />
+                        </div>
 
-                              <div className="flex gap-2">
-                                <button onClick={() => salvarInfoEmpresa(emp.id)} disabled={salvando}
-                                  className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
-                                  {salvando ? "Salvando..." : "Salvar Informações"}
-                                </button>
-                                <button onClick={() => setEditEmpresa(null)}
-                                  className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                                  Cancelar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    ))}
-                    {empresas.length === 0 && (
-                      <tr><td colSpan={isCentral ? 5 : 4} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
+                            MENSAGEM DE ANIVERSÁRIO (automática no dia do aniversário do cliente)
+                          </label>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Mesmas variáveis disponíveis. Deixe vazio para usar a mensagem padrão.
+                          </p>
+                          <textarea rows={3} value={mensagemAniversario}
+                            onChange={(e) => setMensagemAniversario(e.target.value)}
+                            placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
+                            className={`${INPUT} resize-none`} />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                          <button onClick={() => salvarInfoEmpresa(emp.id)} disabled={salvando}
+                            className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50 sm:w-auto w-full">
+                            {salvando ? "Salvando..." : "Salvar Informações"}
+                          </button>
+                          <button onClick={() => setEditEmpresa(null)}
+                            className="px-4 py-2.5 rounded-xl text-[13px] font-medium transition-all sm:w-auto w-full"
+                            style={{ background: "var(--card-2)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {empresas.length === 0 && (
+                <div className="py-10 text-center text-[13px] rounded-2xl" style={cardStyle}>Nenhuma empresa cadastrada.</div>
+              )}
             </div>
           </div>
         )}
