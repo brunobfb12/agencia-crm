@@ -99,7 +99,7 @@ export async function POST(req: Request) {
   if (!lead) {
     return NextResponse.json({
       ok: true,
-      isVendedor: true,
+      isVendedor: true, vendedorTelefone: vendedor.telefone,
       resposta: `Oi ${vendedor.nome}! Não encontrei nenhum lead ativo em negociação no seu nome agora. Se fechar uma venda, me avisa! 😊`,
     });
   }
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
         data: { observacoes: setEstado(lead.observacoes, ESTADO_VALOR) },
       });
       return NextResponse.json({
-        ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_VALOR",
         resposta: `Que ótimo, ${vendedor.nome}! Parabéns pela venda com ${nomeCliente}! 🎉 Qual foi o valor?`,
       });
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
         data: { observacoes: setEstado(lead.observacoes, ESTADO_MOTIVO) },
       });
       return NextResponse.json({
-        ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_MOTIVO",
         resposta: `Entendido ${vendedor.nome}. Qual foi o motivo da perda com ${nomeCliente}? Vou registrar aqui.`,
       });
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
       data: { observacoes: setEstado(lead.observacoes, ESTADO_CONFIRMACAO) },
     });
     return NextResponse.json({
-      ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+      ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "AGUARDANDO_CONFIRMACAO",
       resposta: `Oi ${vendedor.nome}! Tenho o cliente *${nomeCliente}* no seu funil em negociação. A venda aconteceu?`,
     });
@@ -154,7 +154,7 @@ export async function POST(req: Request) {
         data: { observacoes: setEstado(lead.observacoes, ESTADO_VALOR) },
       });
       return NextResponse.json({
-        ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_VALOR",
         resposta: `Arrasou ${vendedor.nome}! 🎉 Qual foi o valor da venda com ${nomeCliente}?`,
       });
@@ -165,13 +165,13 @@ export async function POST(req: Request) {
         data: { observacoes: setEstado(lead.observacoes, ESTADO_MOTIVO) },
       });
       return NextResponse.json({
-        ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_MOTIVO",
         resposta: `Tudo bem ${vendedor.nome}, acontece! Qual foi o motivo da perda com ${nomeCliente}?`,
       });
     }
     return NextResponse.json({
-      ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+      ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "AGUARDANDO_CONFIRMACAO",
       resposta: `${vendedor.nome}, a venda com *${nomeCliente}* aconteceu? Responda sim ou não 😊`,
     });
@@ -200,13 +200,13 @@ export async function POST(req: Request) {
       }).catch(() => null);
 
       return NextResponse.json({
-        ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "VENDA_REGISTRADA", valor,
         resposta: `Perfeito! ✅ Venda de *R$ ${valor.toFixed(2).replace(".", ",")}* com *${nomeCliente}* registrada! Vou cuidar do pós-venda com ele agora. Bora pras próximas! 🚀`,
       });
     }
     return NextResponse.json({
-      ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+      ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "AGUARDANDO_VALOR",
       resposta: `Qual foi o valor exato da venda com ${nomeCliente}? Me manda só o número, ex: 1500`,
     });
@@ -222,11 +222,11 @@ export async function POST(req: Request) {
       },
     });
     return NextResponse.json({
-      ok: true, isVendedor: true, leadId: lead.id, clienteNome: nomeCliente,
+      ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "PERDA_REGISTRADA",
       resposta: `Anotado, ${vendedor.nome}. Registrei *${nomeCliente}* como perdido. Obrigado pelo feedback — vou usar isso pra melhorar o próximo atendimento! 💪`,
     });
   }
 
-  return NextResponse.json({ ok: true, isVendedor: true });
+  return NextResponse.json({ ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone });
 }
