@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   // When @lid is detected, look for an existing client with the same name in this empresa.
   // If found, reuse that client so iPhone and WhatsApp Web share the same conversation.
   const isLid = !telefone.startsWith("55");
-  let clientePrincipal: { id: string; nome: string | null; telefone: string; memoriaCliente: string | null } | null = null;
+  let clientePrincipal: { id: string; nome: string | null; telefone: string; email: string | null; dataNascimento: Date | null; memoriaCliente: string | null } | null = null;
   let telefonePrincipal = telefone;
 
   if (isLid && nomeContato) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
           telefone: { startsWith: "55" },
         },
         orderBy: { criadoEm: "desc" },
-        select: { id: true, nome: true, telefone: true, memoriaCliente: true },
+        select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true },
       });
       if (encontrado) {
         clientePrincipal = encontrado;
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     where: { telefone_empresaId: { telefone, empresaId: empresa.id } },
     create: { telefone, empresaId: empresa.id, nome: nomeContato || null },
     update: nomeContato ? { nome: nomeContato } : {},
-    select: { id: true, nome: true, telefone: true, memoriaCliente: true },
+    select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true },
   });
 
   let lead = await prisma.lead.findFirst({
@@ -117,6 +117,13 @@ export async function POST(req: Request) {
     }
   }
 
+  const vendas = await prisma.venda.findMany({
+    where: { lead: { clienteId: cliente.id, empresaId: empresa.id } },
+    orderBy: { criadoEm: "desc" },
+    take: 5,
+    select: { valor: true, criadoEm: true },
+  });
+
   const midias = await prisma.midia.findMany({
     where: { empresaId: empresa.id, ativo: true },
     select: { id: true, etiqueta: true, mimeType: true, descricaoUso: true, tipo: true },
@@ -151,6 +158,8 @@ export async function POST(req: Request) {
       id: cliente.id,
       nome: cliente.nome,
       telefone: cliente.telefone,
+      email: cliente.email ?? null,
+      dataNascimento: cliente.dataNascimento ?? null,
       memoriaCliente: cliente.memoriaCliente ?? null,
     },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },
@@ -160,5 +169,6 @@ export async function POST(req: Request) {
     telefonePrincipal: tpNorm,
     midias,
     agendamentos,
+    vendas,
   });
 }
