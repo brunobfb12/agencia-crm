@@ -49,16 +49,25 @@ function VencimentoBadge({ vencimento }: { vencimento: string | null }) {
 }
 
 interface Empresa { id: string; nome: string; instanciaWhatsapp: string }
+interface EmpresaPlano {
+  id: string; nome: string; instanciaWhatsapp: string;
+  planStatus: string; plano: string; trialFim: string | null;
+  valorMensal: number | null; isenta: boolean;
+}
 interface Usuario { id: string; nome: string; email: string; ativo: boolean; empresaId: string | null; empresa: { nome: string } | null }
 
 const INPUT = "w-full input-dark px-3 py-2.5 text-[13px]";
 
 export default function CentralPage() {
   const [data, setData] = useState<StatusData | null>(null);
-  const [aba, setAba] = useState<"ferramentas" | "whatsapp" | "atividade" | "usuarios">("ferramentas");
+  const [aba, setAba] = useState<"ferramentas" | "whatsapp" | "atividade" | "usuarios" | "planos">("ferramentas");
   const [loading, setLoading] = useState(true);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [empresasPlano, setEmpresasPlano] = useState<EmpresaPlano[]>([]);
+  const [editPlanoId, setEditPlanoId] = useState<string | null>(null);
+  const [editPlanoForm, setEditPlanoForm] = useState<{ planStatus: string; plano: string; trialFim: string; valorMensal: string; isenta: boolean }>({ planStatus: "TRIAL", plano: "STARTER", trialFim: "", valorMensal: "", isenta: false });
+  const [salvandoPlano, setSalvandoPlano] = useState(false);
   const [userForm, setUserForm] = useState({ nome: "", email: "", senha: "", empresaId: "" });
   const [salvandoUser, setSalvandoUser] = useState(false);
   const [msgUser, setMsgUser] = useState("");
@@ -93,7 +102,52 @@ export default function CentralPage() {
   const carregarUsuarios = async () => {
     const [uRes, eRes] = await Promise.all([fetch("/api/usuarios"), fetch("/api/empresas")]);
     if (uRes.ok) setUsuarios(await uRes.json());
-    if (eRes.ok) setEmpresas(await eRes.json());
+    if (eRes.ok) {
+      const lista = await eRes.json();
+      setEmpresas(lista);
+      setEmpresasPlano(lista);
+    }
+  };
+
+  const abrirEditPlano = (e: EmpresaPlano) => {
+    setEditPlanoId(e.id);
+    setEditPlanoForm({
+      planStatus: e.planStatus,
+      plano: e.plano,
+      trialFim: e.trialFim ? e.trialFim.split("T")[0] : "",
+      valorMensal: e.valorMensal != null ? String(e.valorMensal) : "",
+      isenta: e.isenta,
+    });
+  };
+
+  const salvarPlano = async (id: string) => {
+    setSalvandoPlano(true);
+    await fetch(`/api/empresas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        planStatus: editPlanoForm.planStatus,
+        plano: editPlanoForm.plano,
+        trialFim: editPlanoForm.trialFim || null,
+        valorMensal: editPlanoForm.valorMensal !== "" ? editPlanoForm.valorMensal : null,
+        isenta: editPlanoForm.isenta,
+      }),
+    });
+    setSalvandoPlano(false);
+    setEditPlanoId(null);
+    carregarUsuarios();
+    showMsg("Plano atualizado!");
+  };
+
+  const ativarTrial = async (id: string, dias = 30) => {
+    const trialFim = new Date(Date.now() + dias * 86400000).toISOString().split("T")[0];
+    await fetch(`/api/empresas/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planStatus: "TRIAL", trialFim }),
+    });
+    carregarUsuarios();
+    showMsg(`Trial de ${dias} dias ativado!`);
   };
 
   useEffect(() => { carregar(); carregarUsuarios(); }, []);
@@ -235,14 +289,155 @@ export default function CentralPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(["ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
+          {(["planos", "ferramentas", "whatsapp", "atividade", "usuarios"] as const).map((tab) => (
             <button key={tab} onClick={() => setAba(tab)}
               className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
               style={tabStyle(tab)}>
-              {tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : tab === "atividade" ? "Atividade" : "Usuários"}
+              {tab === "planos" ? "Planos" : tab === "ferramentas" ? "Ferramentas" : tab === "whatsapp" ? "WhatsApp" : tab === "atividade" ? "Atividade" : "Usuários"}
             </button>
           ))}
         </div>
+
+        {/* ── PLANOS ── */}
+        {aba === "planos" && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="px-4 py-3 rounded-xl text-[12px]" style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.15)", color: "#a5b4fc" }}>
+              Gerencie planos manualmente — isento, valor personalizado, Hotmart ou trial. Empresas isentas nunca são bloqueadas.
+            </div>
+            <ScrollHint />
+            <div className="relative">
+              <GradientFade />
+              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+                <table className="w-full text-[13px] min-w-[700px]">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+                      <TH>Empresa</TH><TH>Status</TH><TH>Plano</TH><TH>Trial até</TH><TH>Valor/mês</TH><TH>Isenta</TH><TH></TH>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empresasPlano.map((e) => {
+                      const statusColor: Record<string, string> = { TRIAL: "#fbbf24", ATIVO: "#34d399", BLOQUEADO: "#fb923c", CANCELADO: "#f87171" };
+                      const statusBg: Record<string, string> = { TRIAL: "rgba(251,191,36,.1)", ATIVO: "rgba(52,211,153,.1)", BLOQUEADO: "rgba(251,146,60,.1)", CANCELADO: "rgba(248,113,113,.1)" };
+                      const cor = statusColor[e.planStatus] ?? "#94a3b8";
+                      const bg = statusBg[e.planStatus] ?? "rgba(148,163,184,.08)";
+                      return (
+                        <>
+                          <tr key={e.id} style={{ borderBottom: "1px solid var(--card)" }}
+                            onMouseEnter={ev => ev.currentTarget.style.background = "var(--card)"}
+                            onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
+                            <td className="px-4 py-3">
+                              <div className="font-semibold" style={{ color: "var(--text)" }}>{e.nome}</div>
+                              <div className="text-[11px]" style={{ color: "var(--muted-3)" }}>{e.instanciaWhatsapp}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: bg, color: cor }}>{e.planStatus}</span>
+                            </td>
+                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>{e.plano}</td>
+                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
+                              {e.trialFim ? new Date(e.trialFim).toLocaleDateString("pt-BR") : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>
+                              {e.valorMensal != null ? `R$ ${e.valorMensal.toFixed(2)}` : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              {e.isenta && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc" }}>Isenta</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1.5 justify-end flex-wrap">
+                                <button onClick={() => editPlanoId === e.id ? setEditPlanoId(null) : abrirEditPlano(e)}
+                                  className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                  style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                                  {editPlanoId === e.id ? "Fechar" : "Editar"}
+                                </button>
+                                {e.planStatus !== "ATIVO" && (
+                                  <button onClick={async () => {
+                                    await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "ATIVO", trialFim: null }) });
+                                    carregarUsuarios(); showMsg("Ativado!");
+                                  }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                    style={{ background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
+                                    Ativar
+                                  </button>
+                                )}
+                                {e.planStatus !== "BLOQUEADO" && (
+                                  <button onClick={async () => {
+                                    if (!confirm(`Bloquear "${e.nome}"?`)) return;
+                                    await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "BLOQUEADO" }) });
+                                    carregarUsuarios(); showMsg("Bloqueado.");
+                                  }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                    style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
+                                    Bloquear
+                                  </button>
+                                )}
+                                <button onClick={() => ativarTrial(e.id, 30)}
+                                  className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                  style={{ background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }}>
+                                  +30d trial
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {editPlanoId === e.id && (
+                            <tr key={`${e.id}-edit`}>
+                              <td colSpan={7} className="px-4 py-4" style={{ background: "rgba(99,102,241,.04)", borderBottom: "1px solid rgba(99,102,241,.12)" }}>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-3">
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>STATUS</label>
+                                    <select value={editPlanoForm.planStatus} onChange={ev => setEditPlanoForm(p => ({ ...p, planStatus: ev.target.value }))} className={INPUT}>
+                                      {["TRIAL", "ATIVO", "BLOQUEADO", "CANCELADO"].map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>PLANO</label>
+                                    <select value={editPlanoForm.plano} onChange={ev => setEditPlanoForm(p => ({ ...p, plano: ev.target.value }))} className={INPUT}>
+                                      {["STARTER", "PRO", "AGENCY"].map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TRIAL ATÉ</label>
+                                    <input type="date" value={editPlanoForm.trialFim} onChange={ev => setEditPlanoForm(p => ({ ...p, trialFim: ev.target.value }))} className={INPUT} />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>VALOR REAL (R$)</label>
+                                    <input type="number" step="0.01" placeholder="0,00" value={editPlanoForm.valorMensal} onChange={ev => setEditPlanoForm(p => ({ ...p, valorMensal: ev.target.value }))} className={INPUT} />
+                                  </div>
+                                  <div className="flex flex-col justify-end">
+                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ISENTA</label>
+                                    <button type="button" onClick={() => setEditPlanoForm(p => ({ ...p, isenta: !p.isenta }))}
+                                      className="w-full py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+                                      style={editPlanoForm.isenta
+                                        ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
+                                        : { background: "var(--input)", color: "var(--muted)", border: "1px solid var(--border-2)" }}>
+                                      {editPlanoForm.isenta ? "Sim — Isenta" : "Não"}
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button onClick={() => salvarPlano(e.id)} disabled={salvandoPlano} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
+                                    {salvandoPlano ? "Salvando..." : "Salvar"}
+                                  </button>
+                                  <button onClick={() => setEditPlanoId(null)}
+                                    className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                                    style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                                    Cancelar
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
+                    {!empresasPlano.length && (
+                      <tr><td colSpan={7} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── FERRAMENTAS ── */}
         {aba === "ferramentas" && (

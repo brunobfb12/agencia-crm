@@ -15,19 +15,39 @@ export default async function DashboardLayout({
   let nomeEmpresa: string | undefined;
   let diasTrial: number | null = null;
 
-  if (usuario.empresaId) {
+  if (usuario.empresaId && usuario.perfil !== "CENTRAL") {
     const empresa = await prisma.empresa.findUnique({
       where: { id: usuario.empresaId },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      select: { nome: true, planStatus: true as any, trialFim: true },
+      select: {
+        nome: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        planStatus: true as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        trialFim: true as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        isenta: true as any,
+      },
     });
+
     if (empresa) {
       nomeEmpresa = empresa.nome;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((empresa as any).planStatus === "TRIAL" && (empresa as any).trialFim) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const diff = new Date((empresa as any).trialFim).getTime() - Date.now();
-        diasTrial = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+      const status = (empresa as any).planStatus as string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const isenta = (empresa as any).isenta as boolean;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const trialFim = (empresa as any).trialFim as Date | null;
+
+      if (!isenta) {
+        if (status === "TRIAL") {
+          if (!trialFim || new Date(trialFim) < new Date()) {
+            redirect("/assinar");
+          }
+          const diff = new Date(trialFim).getTime() - Date.now();
+          diasTrial = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        } else if (status === "BLOQUEADO" || status === "CANCELADO") {
+          redirect("/assinar");
+        }
       }
     }
   }
@@ -46,10 +66,7 @@ export default async function DashboardLayout({
           {diasTrial === 0
             ? "Seu teste expira hoje!"
             : `Seu teste expira em ${diasTrial} dia${diasTrial > 1 ? "s" : ""}.`}
-          <Link
-            href="/assinar"
-            className="font-bold underline"
-          >
+          <Link href="/assinar" className="font-bold underline">
             Assinar agora
           </Link>
         </div>

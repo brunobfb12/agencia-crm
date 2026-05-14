@@ -22,6 +22,14 @@ export async function PATCH(
       ...(body.nomeIA !== undefined && { nomeIA: body.nomeIA || null }),
       ...(body.mensagemPosVenda !== undefined && { mensagemPosVenda: body.mensagemPosVenda || null }),
       ...(body.mensagemAniversario !== undefined && { mensagemAniversario: body.mensagemAniversario || null }),
+      // Campos de monetização — só CENTRAL pode alterar
+      ...(body.planStatus !== undefined && { planStatus: body.planStatus }),
+      ...(body.plano !== undefined && { plano: body.plano }),
+      ...(body.trialFim !== undefined && { trialFim: body.trialFim ? new Date(body.trialFim) : null }),
+      ...(body.isenta !== undefined && { isenta: Boolean(body.isenta) }),
+      ...(body.valorMensal !== undefined && {
+        valorMensal: body.valorMensal !== null && body.valorMensal !== "" ? parseFloat(body.valorMensal) : null,
+      }),
     },
   });
   return NextResponse.json(empresa);

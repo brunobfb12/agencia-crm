@@ -30,6 +30,8 @@ model Empresa {
   plano        PlanoTipo  @default(STARTER)
   trialFim     DateTime?
   assinaturaId String?
+  isenta       Boolean    @default(false)
+  valorMensal  Float?
 
   vendedores   Vendedor[]
   clientes     Cliente[]
