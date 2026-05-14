@@ -153,6 +153,7 @@ export async function POST(req: Request) {
       perguntasQualificacao: empresa.perguntasQualificacao ?? null,
       tipoAtendimento: empresa.tipoAtendimento,
       nomeIA: empresa.nomeIA ?? null,
+      aprendizados: empresa.aprendizados ?? null,
     },
     cliente: {
       id: cliente.id,

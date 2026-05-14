@@ -83,6 +83,39 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  const pressaoInclude = {
+    cliente: { select: { nome: true, telefone: true } },
+    empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
+    vendedor: { select: { nome: true, telefone: true } },
+  };
+  const h24 = new Date(now); h24.setHours(h24.getHours() - 24);
+  const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
+  const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
+
+  const [pressao24h, pressao48h, pressao72h] = await Promise.all([
+    prisma.lead.findMany({
+      where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR", "AGENDADO"] }, vendedorId: { not: null }, atualizadoEm: { gte: h48, lt: h24 }, empresa: { ativa: true } },
+      include: pressaoInclude,
+    }),
+    prisma.lead.findMany({
+      where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR", "AGENDADO"] }, vendedorId: { not: null }, atualizadoEm: { gte: h72, lt: h48 }, empresa: { ativa: true } },
+      include: pressaoInclude,
+    }),
+    prisma.lead.findMany({
+      where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR", "AGENDADO"] }, vendedorId: { not: null }, atualizadoEm: { lt: h72 }, empresa: { ativa: true } },
+      include: pressaoInclude,
+    }),
+  ]);
+
+  const empresaIds72h = [...new Set(pressao72h.map(l => l.empresa.id))];
+  const gerentes72h = empresaIds72h.length > 0
+    ? await prisma.vendedor.findMany({
+        where: { empresaId: { in: empresaIds72h }, cargo: "GERENTE", ativo: true },
+        select: { empresaId: true, nome: true, telefone: true },
+      })
+    : [];
+  const gerenteMap = new Map(gerentes72h.map(g => [g.empresaId, g]));
+
   // Auto-transição: VENDA_REALIZADA → POS_VENDA ao detectar para envio
   if (posVenda.length > 0) {
     await prisma.lead.updateMany({
@@ -215,6 +248,50 @@ export async function GET(req: Request) {
         instancia: l.empresa.instanciaWhatsapp,
         empresaNome: l.empresa.nome,
         mensagem: `🎂 Hoje é aniversário de *${nomeCliente}*!${idadeStr} Ligue ou mande uma mensagem especial para ele(a). 😊`,
+      });
+    }
+  }
+
+  for (const l of pressao24h) {
+    if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+    const nc = l.cliente.nome || l.cliente.telefone;
+    items.push({
+      tipo: "pressao_vendedor_24h", leadId: l.id,
+      clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
+      instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+      mensagem: `Oi ${l.vendedor.nome}! 👋 Lembrete rápido: o cliente *${nc}* está no seu funil há mais de 24h sem atualização. Conseguiu falar com ele? Me avisa como foi! 😊`,
+    });
+  }
+
+  for (const l of pressao48h) {
+    if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+    const nc = l.cliente.nome || l.cliente.telefone;
+    items.push({
+      tipo: "pressao_vendedor_48h", leadId: l.id,
+      clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
+      instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+      mensagem: `⏰ ${l.vendedor.nome}, o cliente *${nc}* está sem resposta há mais de 48h! Uma mensagem certeira agora pode salvar essa venda! 💪`,
+    });
+  }
+
+  for (const l of pressao72h) {
+    if (!l.empresa.instanciaWhatsapp) continue;
+    const nc = l.cliente.nome || l.cliente.telefone;
+    if (l.vendedor?.telefone) {
+      items.push({
+        tipo: "pressao_vendedor_72h", leadId: l.id,
+        clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
+        instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+        mensagem: `⚠️ ${l.vendedor.nome}, o cliente *${nc}* está parado há mais de 72h! Atualize o status ou entre em contato hoje. Não deixe essa oportunidade esfriar!`,
+      });
+    }
+    const gerente = gerenteMap.get(l.empresa.id);
+    if (gerente?.telefone) {
+      items.push({
+        tipo: "pressao_gerente_72h", leadId: l.id,
+        clienteTelefone: gerente.telefone, clienteNome: gerente.nome,
+        instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+        mensagem: `🚨 Lead *${nc}* (vendedor: ${l.vendedor?.nome ?? "não atribuído"}) sem atualização há +72h. Verifique antes de perder essa oportunidade.`,
       });
     }
   }

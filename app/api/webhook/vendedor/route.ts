@@ -221,6 +221,11 @@ export async function POST(req: Request) {
         observacoes: setEstado(lead.observacoes, null) + `\nMotivo perda: ${mensagem}`.trim(),
       },
     });
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://ocrmfacil.com.br"}/api/webhook/derrota`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadId: lead.id, secret: "crm2026migra" }),
+    }).catch(() => null);
     return NextResponse.json({
       ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "PERDA_REGISTRADA",
