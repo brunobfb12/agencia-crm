@@ -83,6 +83,22 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // Auto-transição: VENDA_REALIZADA → POS_VENDA ao detectar para envio
+  if (posVenda.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: posVenda.map(l => l.id) } },
+      data: { status: "POS_VENDA" },
+    });
+  }
+
+  // Auto-transição: FOLLOW_UP sem resposta há 30 dias → SEM_RESPOSTA (limite de tentativas)
+  if (reativacao30d.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: reativacao30d.map(l => l.id) } },
+      data: { status: "SEM_RESPOSTA" },
+    });
+  }
+
   // Filter birthday leads for today (month + day match) — use UTC to match stored dates
   const todayMonth = now.getUTCMonth() + 1;
   const todayDay = now.getUTCDate();

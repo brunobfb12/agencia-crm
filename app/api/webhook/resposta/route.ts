@@ -4,7 +4,7 @@ import { LeadStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, notificarGerente, dataRecontato } = body;
+  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, notificarGerente, dataRecontato, score, memoriaCliente, clienteId } = body;
 
   if (!conversaId || !resposta) {
     return NextResponse.json({ ok: false, motivo: "campos obrigatorios ausentes" });
@@ -43,11 +43,20 @@ export async function POST(req: Request) {
       data: {
         ...(statusToApply && { status: statusToApply }),
         ...(observacoes && { observacoes }),
+        ...(score !== undefined && { score: Number(score) }),
         ...(dataRecontato !== undefined && {
           dataRecontato: dataRecontato ? new Date(dataRecontato) : null,
         }),
       },
     });
+  }
+
+  // Atualizar memória do cliente se informada
+  if (clienteId && memoriaCliente) {
+    await prisma.cliente.update({
+      where: { id: clienteId },
+      data: { memoriaCliente },
+    }).catch(() => null);
   }
 
   let vendedor = null;

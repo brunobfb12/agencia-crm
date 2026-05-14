@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 // para que a IA veja o histórico completo quando o cliente responder
 export async function POST(req: Request) {
   const body = await req.json();
-  const { instancia, telefone, mensagem, secret } = body;
+  const { instancia, telefone, mensagem, secret, leadId, novoStatus, score, memoriaCliente } = body;
 
   if (secret !== "crm2026migra") {
     return NextResponse.json({ ok: false, motivo: "unauthorized" }, { status: 401 });
@@ -44,6 +44,25 @@ export async function POST(req: Request) {
     where: { id: conversa.id },
     data: { ultimaMensagem: mensagem, ultimaAtividade: new Date() },
   });
+
+  // Atualizar lead (status, score) se informado
+  if (leadId && (novoStatus || score !== undefined)) {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        ...(novoStatus && { status: novoStatus }),
+        ...(score !== undefined && { score: Number(score) }),
+      },
+    }).catch(() => null);
+  }
+
+  // Atualizar memória do cliente se informada
+  if (memoriaCliente && cliente) {
+    await prisma.cliente.update({
+      where: { id: cliente.id },
+      data: { memoriaCliente },
+    }).catch(() => null);
+  }
 
   return NextResponse.json({ ok: true, conversaId: conversa.id, clienteNome: cliente.nome });
 }
