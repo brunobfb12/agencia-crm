@@ -43,7 +43,7 @@ function parseValor(msg: string): number | null {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { instancia, telefone, mensagem } = body;
+  const { instancia, telefone, mensagem, nomeContato } = body;
 
   if (!instancia || !telefone || !mensagem) {
     return NextResponse.json({ ok: false, motivo: "campos obrigatorios ausentes" });
@@ -52,16 +52,31 @@ export async function POST(req: Request) {
   const empresa = await prisma.empresa.findUnique({ where: { instanciaWhatsapp: instancia } });
   if (!empresa) return NextResponse.json({ ok: false, motivo: "empresa nao encontrada" });
 
-  // Normalize phone
+  // Normalize phone — @lid JIDs (iPhones) come as numeric IDs, not real phone numbers
   const telNorm = telefone.replace(/\D/g, "");
+  const isLid = !telefone.startsWith("55") && telNorm.length > 13;
 
-  const vendedor = await prisma.vendedor.findFirst({
+  let vendedor = await prisma.vendedor.findFirst({
     where: {
       empresaId: empresa.id,
       ativo: true,
       telefone: { contains: telNorm.slice(-9) },
     },
   });
+
+  // @lid fallback: match by name when phone is a numeric JID
+  if (!vendedor && isLid && nomeContato) {
+    const nomeLimpo = nomeContato.replace(/[^\p{L}\p{N}\s]/gu, "").trim().split(/\s+/)[0];
+    if (nomeLimpo) {
+      vendedor = await prisma.vendedor.findFirst({
+        where: {
+          empresaId: empresa.id,
+          ativo: true,
+          nome: { contains: nomeLimpo, mode: "insensitive" },
+        },
+      });
+    }
+  }
 
   if (!vendedor) {
     return NextResponse.json({ ok: false, motivo: "nao e vendedor desta empresa" });
