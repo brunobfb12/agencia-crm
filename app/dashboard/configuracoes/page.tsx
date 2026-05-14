@@ -880,122 +880,120 @@ export default function ConfiguracoesPage() {
                 <option value="VENDEDOR">Vendedor</option>
                 <option value="GERENTE">Gerente</option>
               </select>
-              <button type="submit" className="btn-primary px-4 py-2 text-[13px]">Adicionar</button>
+              <button type="submit" className="btn-primary px-4 py-2 text-[13px] sm:w-auto w-full">Adicionar</button>
             </form>
 
-            <ScrollHint />
-            <div className="relative">
-              <GradientFade />
-              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-                <table className="w-full text-[13px] min-w-[600px]">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                      <TH>Vendedor</TH><TH>Telefone</TH>
-                      {isCentral && <TH>Empresa</TH>}
-                      <TH>Ordem</TH><TH>Status</TH><TH></TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vendedores.map((v) => (
-                      <>
-                        <tr key={v.id} style={{ borderBottom: "1px solid var(--card)", opacity: v.ativo ? 1 : 0.45 }}
-                          onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                          <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{v.nome}</td>
-                          <td className="px-4 py-3 font-mono text-[12px]" style={{ color: "var(--muted-2)" }}>{v.telefone}</td>
-                          {isCentral && <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{v.empresa.nome}</td>}
-                          <td className="px-4 py-3" style={{ color: "var(--muted-2)" }}>#{v.ordemChamada}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-1.5 flex-wrap">
-                              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                                style={v.ativo
-                                  ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                                  : { background: "var(--card-2)", color: "var(--muted-2)" }}>
-                                {v.ativo ? "Ativo" : "Inativo"}
-                              </span>
-                              {(v.cargo ?? "VENDEDOR") === "GERENTE" && (
-                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                                  style={{ background: "rgba(168,85,247,.1)", color: "#c084fc" }}>
-                                  Gerente
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={() => editVendedor === v.id ? setEditVendedor(null) : abrirEditVendedor(v)}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
-                                style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
-                                {editVendedor === v.id ? "Fechar" : "Editar"}
-                              </button>
-                              <button onClick={() => toggleAtivo(v)}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
-                                style={v.ativo
-                                  ? { background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }
-                                  : { background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
-                                {v.ativo ? "Desativar" : "Ativar"}
-                              </button>
-                              <button onClick={() => { setModalTransferir(v); setTransferirParaId(""); setTransferirResultado(null); }}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
-                                style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
-                                Transferir
-                              </button>
-                              <button onClick={() => excluirVendedor(v.id, v.nome)}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold transition-all"
-                                style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
-                                Excluir
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        {editVendedor === v.id && (
-                          <tr key={`${v.id}-edit`}>
-                            <td colSpan={isCentral ? 6 : 5} className="px-4 py-4" style={editRowStyle}>
-                              <div className="flex gap-3 items-end flex-wrap">
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
-                                  <input value={editVendedorData.nome} onChange={(e) => setEditVendedorData((p) => ({ ...p, nome: e.target.value }))}
-                                    className="input-dark px-3 py-2 text-[13px]" />
-                                </div>
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TELEFONE</label>
-                                  <input value={editVendedorData.telefone} onChange={(e) => setEditVendedorData((p) => ({ ...p, telefone: e.target.value }))}
-                                    className="input-dark px-3 py-2 text-[13px]" />
-                                </div>
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>ORDEM</label>
-                                  <input type="number" min={1} value={editVendedorData.ordemChamada}
-                                    onChange={(e) => setEditVendedorData((p) => ({ ...p, ordemChamada: Number(e.target.value) }))}
-                                    className="input-dark px-3 py-2 text-[13px] w-20" />
-                                </div>
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CARGO</label>
-                                  <select value={editVendedorData.cargo}
-                                    onChange={(e) => setEditVendedorData((p) => ({ ...p, cargo: e.target.value }))}
-                                    className="input-dark px-3 py-2 text-[13px]">
-                                    <option value="VENDEDOR">Vendedor</option>
-                                    <option value="GERENTE">Gerente</option>
-                                  </select>
-                                </div>
-                                <button onClick={() => salvarVendedor(v.id)} disabled={salvando}
-                                  className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
-                                <button onClick={() => setEditVendedor(null)}
-                                  className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                                  Cancelar
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    ))}
-                    {vendedores.length === 0 && (
-                      <tr><td colSpan={isCentral ? 6 : 5} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhum vendedor cadastrado.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            {/* Lista de vendedores como cards */}
+            <div className="space-y-3">
+              {vendedores.map((v) => (
+                <div key={v.id} className="rounded-2xl overflow-hidden" style={{ ...cardStyle, opacity: v.ativo ? 1 : 0.6 }}>
+
+                  {/* Cabeçalho do card */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[15px] font-bold leading-tight" style={{ color: "var(--text)" }}>{v.nome}</p>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                            style={v.ativo
+                              ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                              : { background: "var(--card-2)", color: "var(--muted-2)" }}>
+                            {v.ativo ? "Ativo" : "Inativo"}
+                          </span>
+                          {(v.cargo ?? "VENDEDOR") === "GERENTE" && (
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                              style={{ background: "rgba(168,85,247,.1)", color: "#c084fc" }}>
+                              Gerente
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] font-mono mt-1" style={{ color: "var(--muted-2)" }}>{v.telefone}</p>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap text-[11px]" style={{ color: "var(--muted-3)" }}>
+                          {isCentral && <span>{v.empresa.nome}</span>}
+                          <span>Ordem #{v.ordemChamada}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões de ação em grade 2×2 no mobile */}
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                      <button onClick={() => editVendedor === v.id ? setEditVendedor(null) : abrirEditVendedor(v)}
+                        className="text-[12px] px-3 py-2 rounded-xl font-semibold transition-all text-center"
+                        style={editVendedor === v.id
+                          ? { background: "var(--card-2)", border: "1px solid var(--border-2)", color: "var(--muted)" }
+                          : { background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                        {editVendedor === v.id ? "Fechar" : "Editar"}
+                      </button>
+                      <button onClick={() => toggleAtivo(v)}
+                        className="text-[12px] px-3 py-2 rounded-xl font-semibold transition-all text-center"
+                        style={v.ativo
+                          ? { background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }
+                          : { background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
+                        {v.ativo ? "Desativar" : "Ativar"}
+                      </button>
+                      <button onClick={() => { setModalTransferir(v); setTransferirParaId(""); setTransferirResultado(null); }}
+                        className="text-[12px] px-3 py-2 rounded-xl font-semibold transition-all text-center"
+                        style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
+                        Transferir
+                      </button>
+                      <button onClick={() => excluirVendedor(v.id, v.nome)}
+                        className="text-[12px] px-3 py-2 rounded-xl font-semibold transition-all text-center"
+                        style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Formulário de edição inline */}
+                  {editVendedor === v.id && (
+                    <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--border)", background: "rgba(99,102,241,.02)" }}>
+                      <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME</label>
+                          <input value={editVendedorData.nome}
+                            onChange={(e) => setEditVendedorData((p) => ({ ...p, nome: e.target.value }))}
+                            className={INPUT} />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>TELEFONE</label>
+                          <input value={editVendedorData.telefone}
+                            onChange={(e) => setEditVendedorData((p) => ({ ...p, telefone: e.target.value }))}
+                            className={INPUT} />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>ORDEM</label>
+                          <input type="number" min={1} value={editVendedorData.ordemChamada}
+                            onChange={(e) => setEditVendedorData((p) => ({ ...p, ordemChamada: Number(e.target.value) }))}
+                            className={INPUT} />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CARGO</label>
+                          <select value={editVendedorData.cargo}
+                            onChange={(e) => setEditVendedorData((p) => ({ ...p, cargo: e.target.value }))}
+                            className={INPUT}>
+                            <option value="VENDEDOR">Vendedor</option>
+                            <option value="GERENTE">Gerente</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                        <button onClick={() => salvarVendedor(v.id)} disabled={salvando}
+                          className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50 sm:w-auto w-full">
+                          {salvando ? "Salvando..." : "Salvar"}
+                        </button>
+                        <button onClick={() => setEditVendedor(null)}
+                          className="px-4 py-2.5 rounded-xl text-[13px] font-medium transition-all sm:w-auto w-full"
+                          style={{ background: "var(--card-2)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {vendedores.length === 0 && (
+                <div className="py-10 text-center text-[13px] rounded-2xl" style={cardStyle}>Nenhum vendedor cadastrado.</div>
+              )}
             </div>
           </div>
         )}
