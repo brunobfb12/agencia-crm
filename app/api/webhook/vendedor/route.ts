@@ -64,17 +64,20 @@ export async function POST(req: Request) {
     },
   });
 
-  // @lid fallback: match by name when phone is a numeric JID
+  // @lid fallback: match by name in JS to handle diacritics (e.g. "Thaisy" matches "Thaísy")
   if (!vendedor && isLid && nomeContato) {
-    const nomeLimpo = nomeContato.replace(/[^\p{L}\p{N}\s]/gu, "").trim().split(/\s+/)[0];
-    if (nomeLimpo) {
-      vendedor = await prisma.vendedor.findFirst({
-        where: {
-          empresaId: empresa.id,
-          ativo: true,
-          nome: { contains: nomeLimpo, mode: "insensitive" },
-        },
+    // eslint-disable-next-line no-misleading-character-class
+    const normalizar = (s: string) =>
+      s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+    const primeiroNomeBusca = normalizar(nomeContato).split(/\s+/)[0];
+    if (primeiroNomeBusca.length >= 3) {
+      const todosVendedores = await prisma.vendedor.findMany({
+        where: { empresaId: empresa.id, ativo: true },
       });
+      vendedor = todosVendedores.find(v => {
+        const primeiroNomeVend = normalizar(v.nome).split(/\s+/)[0];
+        return primeiroNomeVend === primeiroNomeBusca || primeiroNomeVend.startsWith(primeiroNomeBusca) || primeiroNomeBusca.startsWith(primeiroNomeVend);
+      }) ?? null;
     }
   }
 
