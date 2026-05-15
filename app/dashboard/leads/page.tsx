@@ -22,16 +22,16 @@ interface Vendedor {
 }
 
 const colunas = [
-  { status: "LEAD",                label: "Novos Leads",      hex: "#9ca3af" },
-  { status: "AQUECIMENTO",         label: "Aquecimento",      hex: "#fb923c" },
-  { status: "PRONTO_PARA_COMPRAR", label: "Pronto p/ Comprar",hex: "#fbbf24" },
-  { status: "AGENDADO",            label: "Agendado / Orçamento", hex: "#a78bfa" },
-  { status: "NEGOCIACAO",          label: "Em Negociação",    hex: "#60a5fa" },
-  { status: "VENDA_REALIZADA",     label: "Venda Realizada",  hex: "#34d399" },
-  { status: "POS_VENDA",           label: "Pós-Venda",        hex: "#c084fc" },
-  { status: "FOLLOW_UP",           label: "Follow-up",        hex: "#22d3ee" },
-  { status: "SEM_RESPOSTA",        label: "Sem Resposta",     hex: "#fbbf24" },
-  { status: "SEM_INTERESSE",       label: "Sem Interesse",    hex: "#fb7185" },
+  { status: "LEAD",                label: "Novos Leads",          short: "Novos",       hex: "#9ca3af" },
+  { status: "AQUECIMENTO",         label: "Aquecimento",          short: "Aquecimento", hex: "#fb923c" },
+  { status: "PRONTO_PARA_COMPRAR", label: "Pronto p/ Comprar",    short: "Pronto",      hex: "#fbbf24" },
+  { status: "AGENDADO",            label: "Agendado / Orçamento", short: "Agendado",    hex: "#a78bfa" },
+  { status: "NEGOCIACAO",          label: "Em Negociação",        short: "Negociação",  hex: "#60a5fa" },
+  { status: "VENDA_REALIZADA",     label: "Venda Realizada",      short: "Vendido",     hex: "#34d399" },
+  { status: "POS_VENDA",           label: "Pós-Venda",            short: "Pós-venda",   hex: "#c084fc" },
+  { status: "FOLLOW_UP",           label: "Follow-up",            short: "Follow-up",   hex: "#22d3ee" },
+  { status: "SEM_RESPOSTA",        label: "Sem Resposta",         short: "Sem resp.",   hex: "#fbbf24" },
+  { status: "SEM_INTERESSE",       label: "Sem Interesse",        short: "Sem int.",    hex: "#fb7185" },
 ];
 
 const todasOpcoes = [
@@ -90,6 +90,7 @@ export default function LeadsPage() {
   const [vendaForm, setVendaForm] = useState({ valor: "", descricao: "", vendedorId: "" });
   const [registrandoVenda, setRegistrandoVenda] = useState(false);
   const [vendaRegistrada, setVendaRegistrada] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState("LEAD");
 
   useEffect(() => {
     Promise.all([
@@ -230,7 +231,8 @@ export default function LeadsPage() {
           <div>
             <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Leads</h2>
             <p className="text-sm mt-1" style={{ color: "var(--muted-2)" }}>
-              {leads.length} leads · Arraste os cards para mover entre colunas
+              {leads.length} leads
+              <span className="hidden sm:inline"> · Arraste os cards para mover entre colunas</span>
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -283,8 +285,103 @@ export default function LeadsPage() {
           </div>
         </div>
 
-        {/* Kanban */}
-        <div className="flex gap-3 overflow-x-auto pb-4">
+        {/* ── Mobile: lista filtrada por status ── */}
+        <div className="sm:hidden">
+          {/* Chips de status */}
+          <div className="flex gap-2 overflow-x-auto pb-3 -mx-6 px-6 mb-4">
+            {colunas.map((col) => {
+              const count = leads.filter(l => l.status === col.status).length;
+              const ativo = filtroStatus === col.status;
+              return (
+                <button key={col.status} onClick={() => setFiltroStatus(col.status)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
+                  style={ativo
+                    ? { background: `${col.hex}22`, color: col.hex, border: `1.5px solid ${col.hex}55` }
+                    : { background: "var(--card)", color: "var(--muted-2)", border: "1px solid var(--border)" }
+                  }>
+                  {col.short}
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: ativo ? `${col.hex}33` : "var(--card-2)", color: ativo ? col.hex : "var(--muted-3)" }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Lista de leads do status selecionado */}
+          {(() => {
+            const col = colunas.find(c => c.status === filtroStatus)!;
+            const leadsColuna = leads.filter(l => l.status === filtroStatus);
+            return (
+              <div className="space-y-2 pb-4">
+                {leadsColuna.length === 0 ? (
+                  <div className="py-12 text-center text-[13px] rounded-2xl"
+                    style={{ color: "var(--muted-3)", border: "1px dashed var(--border)" }}>
+                    Nenhum lead em {col.label}
+                  </div>
+                ) : leadsColuna.map((lead) => {
+                  const sc = fireColor(lead.score);
+                  const fl2 = fireLabel(lead.score);
+                  const isSelected = selecionados.includes(lead.id);
+                  return (
+                    <div key={lead.id}
+                      onClick={() => modoSelecao ? toggleSelecao(lead.id) : abrirEdit(lead)}
+                      className="rounded-xl p-3.5 transition-all relative"
+                      style={{
+                        background: isSelected ? "rgba(99,102,241,.12)" : "var(--card)",
+                        border: isSelected ? "1px solid rgba(99,102,241,.35)" : "1px solid var(--border)",
+                        borderLeft: `3px solid ${col.hex}`,
+                        cursor: "pointer",
+                      }}>
+                      {modoSelecao && (
+                        <div className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{
+                            background: isSelected ? "#6366f1" : "var(--card-3)",
+                            border: isSelected ? "none" : "1px solid var(--border-2)",
+                          }}>
+                          {isSelected && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        </div>
+                      )}
+                      <div className={`flex items-start justify-between gap-2${modoSelecao ? " pr-7" : ""}`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-[14px] leading-tight" style={{ color: "var(--text)" }}>
+                            {lead.cliente.nome ?? lead.cliente.telefone}
+                          </p>
+                          {lead.cliente.nome && (
+                            <p className="text-[12px] font-mono mt-0.5" style={{ color: "var(--muted-2)" }}>{lead.cliente.telefone}</p>
+                          )}
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-3)" }}>{lead.empresa.nome}</p>
+                          {lead.observacoes && (
+                            <p className="text-[12px] mt-1.5 line-clamp-1" style={{ color: "var(--muted-2)" }}>{lead.observacoes}</p>
+                          )}
+                        </div>
+                        {!modoSelecao && (
+                          <button onClick={(e) => { e.stopPropagation(); abrirEdit(lead); }}
+                            className="text-[11px] px-2.5 py-1.5 rounded-lg font-semibold flex-shrink-0"
+                            style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                            Editar
+                          </button>
+                        )}
+                      </div>
+                      {lead.score > 0 && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--card-3)" }}>
+                            <div className="h-full rounded-full" style={{ width: `${lead.score}%`, background: `linear-gradient(90deg, ${sc}, ${sc}bb)` }} />
+                          </div>
+                          <span className="text-[10px]">{fl2.emoji}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* ── Desktop: Kanban ── */}
+        <div className="hidden sm:flex gap-3 overflow-x-auto pb-4">
           {colunas.map((col) => {
             const leadsColuna = leads.filter((l) => l.status === col.status);
             const isOver = dragOverCol === col.status;
@@ -448,7 +545,7 @@ export default function LeadsPage() {
       {/* Floating campaign bar */}
       {modoSelecao && selecionados.length > 0 && (
         <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-5 py-3 rounded-2xl animate-fade-up"
+          className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:w-auto sm:-translate-x-1/2 z-40 flex items-center justify-between sm:justify-start gap-3 sm:gap-4 px-4 sm:px-5 py-3 rounded-2xl animate-fade-up"
           style={{
             background: "linear-gradient(145deg, #13131f, #0d0d18)",
             border: "1px solid rgba(99,102,241,.3)",
@@ -833,75 +930,67 @@ export default function LeadsPage() {
             </div>
 
             {/* Modal footer */}
-            <div
-              className="px-5 py-4 flex gap-2 justify-between items-center flex-shrink-0"
-              style={{ borderTop: "1px solid var(--border)" }}
-            >
-              <div>
-                {!confirmandoExclusao ? (
-                  <button
-                    onClick={() => setConfirmandoExclusao(true)}
-                    className="text-[12px] transition-colors"
-                    style={{ color: "rgba(248,113,113,.6)" }}
-                    onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#f87171")}
-                    onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "rgba(248,113,113,.6)")}
-                  >
-                    Excluir lead
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-medium" style={{ color: "#f87171" }}>Confirmar?</span>
-                    <button
-                      onClick={excluirLead}
-                      disabled={salvando}
-                      className="text-[11px] font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
-                      style={{ background: "rgba(239,68,68,.15)", color: "#f87171", border: "1px solid rgba(239,68,68,.3)" }}
-                    >
-                      Excluir
-                    </button>
-                    <button
-                      onClick={() => setConfirmandoExclusao(false)}
-                      className="text-[11px]"
-                      style={{ color: "var(--muted-2)" }}
-                    >
-                      Não
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2 items-center">
-                {["PRONTO_PARA_COMPRAR", "NEGOCIACAO", "AGENDADO"].includes(editForm.status) && editLead && (
-                  <button
-                    onClick={() => abrirModalVenda(editLead!)}
-                    className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
-                    style={{
-                      background: "rgba(52,211,153,.12)",
-                      border: "1px solid rgba(52,211,153,.3)",
-                      color: "#34d399",
-                    }}
-                  >
-                    Registrar Venda
-                  </button>
-                )}
+            <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+              {/* Registrar Venda — full width no mobile */}
+              {["PRONTO_PARA_COMPRAR", "NEGOCIACAO", "AGENDADO"].includes(editForm.status) && editLead && (
                 <button
-                  onClick={() => { setEditLead(null); setConfirmandoExclusao(false); }}
-                  className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
-                  style={{
-                    background: "var(--card-2)",
-                    border: "1px solid var(--border-2)",
-                    color: "#94a3b8",
-                  }}
+                  onClick={() => abrirModalVenda(editLead!)}
+                  className="w-full sm:hidden mb-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+                  style={{ background: "rgba(52,211,153,.12)", border: "1px solid rgba(52,211,153,.3)", color: "#34d399" }}
                 >
-                  Cancelar
+                  Registrar Venda
                 </button>
-                <button
-                  onClick={salvarEdit}
-                  disabled={salvando}
-                  className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50"
-                >
-                  {salvando ? "Salvando..." : "Salvar"}
-                </button>
+              )}
+              <div className="flex gap-2 justify-between items-center">
+                <div>
+                  {!confirmandoExclusao ? (
+                    <button
+                      onClick={() => setConfirmandoExclusao(true)}
+                      className="text-[12px] transition-colors"
+                      style={{ color: "rgba(248,113,113,.6)" }}
+                      onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "#f87171")}
+                      onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "rgba(248,113,113,.6)")}
+                    >
+                      Excluir lead
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-medium" style={{ color: "#f87171" }}>Confirmar?</span>
+                      <button
+                        onClick={excluirLead}
+                        disabled={salvando}
+                        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
+                        style={{ background: "rgba(239,68,68,.15)", color: "#f87171", border: "1px solid rgba(239,68,68,.3)" }}
+                      >
+                        Excluir
+                      </button>
+                      <button onClick={() => setConfirmandoExclusao(false)} className="text-[11px]" style={{ color: "var(--muted-2)" }}>
+                        Não
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 items-center">
+                  {["PRONTO_PARA_COMPRAR", "NEGOCIACAO", "AGENDADO"].includes(editForm.status) && editLead && (
+                    <button
+                      onClick={() => abrirModalVenda(editLead!)}
+                      className="hidden sm:block px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
+                      style={{ background: "rgba(52,211,153,.12)", border: "1px solid rgba(52,211,153,.3)", color: "#34d399" }}
+                    >
+                      Registrar Venda
+                    </button>
+                  )}
+                  <button
+                    onClick={() => { setEditLead(null); setConfirmandoExclusao(false); }}
+                    className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
+                    style={{ background: "var(--card-2)", border: "1px solid var(--border-2)", color: "#94a3b8" }}
+                  >
+                    Cancelar
+                  </button>
+                  <button onClick={salvarEdit} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
+                    {salvando ? "Salvando..." : "Salvar"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
