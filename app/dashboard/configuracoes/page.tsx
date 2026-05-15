@@ -1069,81 +1069,69 @@ export default function ConfiguracoesPage() {
                     <input required placeholder="ex: quando o cliente pedir o catálogo ou perguntar sobre produtos" value={novaMidia.descricaoUso}
                       onChange={(e) => setNovaMidia((p) => ({ ...p, descricaoUso: e.target.value }))} className={INPUT} />
                   </div>
-                  <button type="submit" disabled={salvando || !novaMidiaArquivo} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50">
+                  <button type="submit" disabled={salvando || !novaMidiaArquivo} className="btn-primary px-4 py-2.5 text-[13px] disabled:opacity-50 w-full sm:w-auto">
                     {salvando ? "Enviando arquivo..." : "Adicionar Mídia"}
                   </button>
                 </form>
 
-                <ScrollHint />
-                <div className="relative">
-                  <GradientFade />
-                  <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-                    {carregandoMidias ? (
-                      <div className="p-6 space-y-2">
-                        {[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}
-                      </div>
-                    ) : midias.length === 0 ? (
-                      <div className="p-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>
-                        Nenhuma mídia cadastrada para esta empresa.
-                      </div>
-                    ) : (
-                      <table className="w-full text-[13px] min-w-[520px]">
-                        <thead>
-                          <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                            <TH>Etiqueta</TH><TH>Tipo</TH><TH>Quando usar</TH><TH>Status</TH><TH></TH>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {midias.map((m) => (
-                            <tr key={m.id} style={{ borderBottom: "1px solid var(--card)", opacity: m.ativo ? 1 : 0.45 }}
-                              onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
-                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                              <td className="px-4 py-3">
-                                <div className="font-semibold" style={{ color: "var(--text)" }}>{m.etiqueta}</div>
-                                {m.url ? (
-                                  <a href={m.url} target="_blank" rel="noopener noreferrer"
-                                    className="text-[11px] truncate block max-w-xs hover:underline"
-                                    style={{ color: "#60a5fa" }}>{m.url}</a>
-                                ) : (
-                                  <span className="text-[11px] px-1.5 py-0.5 rounded font-mono"
-                                    style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc" }}>
-                                    {m.mimeType || "arquivo"}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 capitalize" style={{ color: "var(--muted)" }}>{m.tipo}</td>
-                              <td className="px-4 py-3 text-[12px] max-w-xs" style={{ color: "var(--muted-2)" }}>{m.descricaoUso}</td>
-                              <td className="px-4 py-3">
-                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                                  style={m.ativo
-                                    ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                                    : { background: "var(--card-2)", color: "var(--muted-2)" }}>
-                                  {m.ativo ? "Ativa" : "Inativa"}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex gap-2 justify-end">
-                                  <button onClick={() => toggleMidia(m)}
-                                    className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                    style={m.ativo
-                                      ? { background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }
-                                      : { background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
-                                    {m.ativo ? "Desativar" : "Ativar"}
-                                  </button>
-                                  <button onClick={() => excluirMidia(m.id)}
-                                    className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                    style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
-                                    Excluir
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
+                {/* Lista de mídias como cards */}
+                {carregandoMidias ? (
+                  <div className="space-y-2">
+                    {[1,2,3].map(i => <div key={i} className="shimmer h-16 rounded-2xl" />)}
                   </div>
-                </div>
+                ) : midias.length === 0 ? (
+                  <div className="py-10 text-center text-[13px] rounded-2xl" style={cardStyle}>
+                    Nenhuma mídia cadastrada para esta empresa.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {midias.map((m) => (
+                      <div key={m.id} className="p-4 rounded-2xl" style={{ ...cardStyle, opacity: m.ativo ? 1 : 0.55 }}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>{m.etiqueta}</p>
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize"
+                                style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc" }}>
+                                {m.tipo}
+                              </span>
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                                style={m.ativo
+                                  ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                                  : { background: "var(--card-2)", color: "var(--muted-2)" }}>
+                                {m.ativo ? "Ativa" : "Inativa"}
+                              </span>
+                            </div>
+                            {m.url ? (
+                              <a href={m.url} target="_blank" rel="noopener noreferrer"
+                                className="text-[11px] truncate block hover:underline mb-1"
+                                style={{ color: "#60a5fa" }}>{m.url}</a>
+                            ) : (
+                              <span className="text-[11px] font-mono" style={{ color: "#a5b4fc" }}>
+                                {m.mimeType || "arquivo"}
+                              </span>
+                            )}
+                            <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>{m.descricaoUso}</p>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+                            <button onClick={() => toggleMidia(m)}
+                              className="text-[12px] px-3 py-1.5 rounded-xl font-semibold text-center"
+                              style={m.ativo
+                                ? { background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }
+                                : { background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
+                              {m.ativo ? "Desativar" : "Ativar"}
+                            </button>
+                            <button onClick={() => excluirMidia(m.id)}
+                              className="text-[12px] px-3 py-1.5 rounded-xl font-semibold text-center"
+                              style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                              Excluir
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
