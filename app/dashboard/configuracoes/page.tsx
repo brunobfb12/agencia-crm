@@ -222,9 +222,9 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
             </div>
 
             {qrcode ? (
-              <div className="flex flex-col sm:flex-row gap-5 items-center">
-                <div className="p-3 rounded-2xl flex-shrink-0" style={{ background: "#ffffff" }}>
-                  <img src={qrcode} alt="QR Code WhatsApp" className="w-52 h-52 object-contain" />
+              <div className="flex flex-col sm:flex-row gap-5 sm:items-center">
+                <div className="p-3 rounded-2xl flex-shrink-0 mx-auto sm:mx-0" style={{ background: "#ffffff" }}>
+                  <img src={qrcode} alt="QR Code WhatsApp" className="w-64 h-64 sm:w-52 sm:h-52 object-contain" />
                 </div>
                 <div className="space-y-3 text-[13px]" style={{ color: "var(--muted)" }}>
                   <p className="font-semibold" style={{ color: "var(--text)" }}>Como escanear:</p>
@@ -234,7 +234,7 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
                       'Toque em "Mais opções" (⋮) ou Configurações',
                       'Selecione "Aparelhos conectados"',
                       'Toque em "Conectar um aparelho"',
-                      "Aponte a câmera para o QR Code ao lado",
+                      "Aponte a câmera para o QR Code acima",
                     ].map((step, i) => (
                       <li key={i} className="flex gap-2.5">
                         <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
@@ -252,7 +252,7 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
               </div>
             ) : (
               <div className="py-6 text-center">
-                <button onClick={checar} className="btn-primary px-5 py-2.5 text-[13px]">
+                <button onClick={checar} className="btn-primary px-5 py-2.5 text-[13px] w-full sm:w-auto">
                   Gerar QR Code
                 </button>
               </div>
