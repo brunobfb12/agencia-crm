@@ -244,12 +244,12 @@ export default function CentralPage() {
             style={{ background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.18)" }}>
             Painel Central
           </span>
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
             <div>
               <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Central</h1>
               <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>Ferramentas, WhatsApp, atividade e usuários</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {msg && (
                 <span className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
                   style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
@@ -304,136 +304,248 @@ export default function CentralPage() {
             <div className="px-4 py-3 rounded-xl text-[12px]" style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.15)", color: "#a5b4fc" }}>
               Gerencie planos manualmente — isento, valor personalizado, Hotmart ou trial. Empresas isentas nunca são bloqueadas.
             </div>
-            <ScrollHint />
-            <div className="relative">
-              <GradientFade />
-              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-                <table className="w-full text-[13px] min-w-[700px]">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                      <TH>Empresa</TH><TH>Status</TH><TH>Plano</TH><TH>Trial até</TH><TH>Valor/mês</TH><TH>Isenta</TH><TH></TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {empresasPlano.map((e) => {
-                      const statusColor: Record<string, string> = { TRIAL: "#fbbf24", ATIVO: "#34d399", BLOQUEADO: "#fb923c", CANCELADO: "#f87171" };
-                      const statusBg: Record<string, string> = { TRIAL: "rgba(251,191,36,.1)", ATIVO: "rgba(52,211,153,.1)", BLOQUEADO: "rgba(251,146,60,.1)", CANCELADO: "rgba(248,113,113,.1)" };
-                      const cor = statusColor[e.planStatus] ?? "#94a3b8";
-                      const bg = statusBg[e.planStatus] ?? "rgba(148,163,184,.08)";
-                      return (
-                        <>
-                          <tr key={e.id} style={{ borderBottom: "1px solid var(--card)" }}
-                            onMouseEnter={ev => ev.currentTarget.style.background = "var(--card)"}
-                            onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
-                            <td className="px-4 py-3">
-                              <div className="font-semibold" style={{ color: "var(--text)" }}>{e.nome}</div>
-                              <div className="text-[11px]" style={{ color: "var(--muted-3)" }}>{e.instanciaWhatsapp}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: bg, color: cor }}>{e.planStatus}</span>
-                            </td>
-                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>{e.plano}</td>
-                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
-                              {e.trialFim ? new Date(e.trialFim).toLocaleDateString("pt-BR") : "—"}
-                            </td>
-                            <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>
-                              {e.valorMensal != null ? `R$ ${e.valorMensal.toFixed(2)}` : "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              {e.isenta && (
-                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc" }}>Isenta</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-1.5 justify-end flex-wrap">
-                                <button onClick={() => editPlanoId === e.id ? setEditPlanoId(null) : abrirEditPlano(e)}
-                                  className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                  style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
-                                  {editPlanoId === e.id ? "Fechar" : "Editar"}
-                                </button>
-                                {e.planStatus !== "ATIVO" && (
-                                  <button onClick={async () => {
-                                    await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "ATIVO", trialFim: null }) });
-                                    carregarUsuarios(); showMsg("Ativado!");
-                                  }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                    style={{ background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
-                                    Ativar
-                                  </button>
+            {/* Mobile: cards */}
+            <div className="sm:hidden space-y-3">
+              {empresasPlano.map((e) => {
+                const statusColor: Record<string, string> = { TRIAL: "#fbbf24", ATIVO: "#34d399", BLOQUEADO: "#fb923c", CANCELADO: "#f87171" };
+                const statusBg: Record<string, string> = { TRIAL: "rgba(251,191,36,.1)", ATIVO: "rgba(52,211,153,.1)", BLOQUEADO: "rgba(251,146,60,.1)", CANCELADO: "rgba(248,113,113,.1)" };
+                const cor = statusColor[e.planStatus] ?? "#94a3b8";
+                const bg = statusBg[e.planStatus] ?? "rgba(148,163,184,.08)";
+                return (
+                  <div key={e.id}>
+                    <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[14px]" style={{ color: "var(--text)" }}>{e.nome}</p>
+                          <p className="text-[11px] font-mono" style={{ color: "var(--muted-3)" }}>{e.instanciaWhatsapp}</p>
+                        </div>
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0" style={{ background: bg, color: cor }}>{e.planStatus}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] mb-3">
+                        <span style={{ color: "var(--muted-2)" }}>Plano: <strong style={{ color: "var(--text)" }}>{e.plano}</strong></span>
+                        <span style={{ color: "var(--muted-2)" }}>Trial: <strong style={{ color: "var(--text)" }}>{e.trialFim ? new Date(e.trialFim).toLocaleDateString("pt-BR") : "—"}</strong></span>
+                        <span style={{ color: "var(--muted-2)" }}>Valor: <strong style={{ color: "var(--text)" }}>{e.valorMensal != null ? `R$ ${e.valorMensal.toFixed(2)}` : "—"}</strong></span>
+                        {e.isenta && <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc" }}>Isenta</span>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => editPlanoId === e.id ? setEditPlanoId(null) : abrirEditPlano(e)}
+                          className="py-2 rounded-xl text-[12px] font-semibold"
+                          style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                          {editPlanoId === e.id ? "Fechar" : "Editar"}
+                        </button>
+                        <button onClick={() => ativarTrial(e.id, 30)}
+                          className="py-2 rounded-xl text-[12px] font-semibold"
+                          style={{ background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }}>
+                          +30d trial
+                        </button>
+                        {e.planStatus !== "ATIVO" && (
+                          <button onClick={async () => {
+                            await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "ATIVO", trialFim: null }) });
+                            carregarUsuarios(); showMsg("Ativado!");
+                          }} className="py-2 rounded-xl text-[12px] font-semibold"
+                            style={{ background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
+                            Ativar
+                          </button>
+                        )}
+                        {e.planStatus !== "BLOQUEADO" && (
+                          <button onClick={async () => {
+                            if (!confirm(`Bloquear "${e.nome}"?`)) return;
+                            await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "BLOQUEADO" }) });
+                            carregarUsuarios(); showMsg("Bloqueado.");
+                          }} className="py-2 rounded-xl text-[12px] font-semibold"
+                            style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
+                            Bloquear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {editPlanoId === e.id && (
+                      <div className="rounded-xl p-4 mt-1" style={{ background: "rgba(99,102,241,.04)", border: "1px solid rgba(99,102,241,.12)" }}>
+                        <div className="grid grid-cols-1 gap-3 mb-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>STATUS</label>
+                            <select value={editPlanoForm.planStatus} onChange={ev => setEditPlanoForm(p => ({ ...p, planStatus: ev.target.value }))} className={INPUT}>
+                              {["TRIAL", "ATIVO", "BLOQUEADO", "CANCELADO"].map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>PLANO</label>
+                            <select value={editPlanoForm.plano} onChange={ev => setEditPlanoForm(p => ({ ...p, plano: ev.target.value }))} className={INPUT}>
+                              {["STARTER", "PRO", "AGENCY"].map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TRIAL ATÉ</label>
+                            <input type="date" value={editPlanoForm.trialFim} onChange={ev => setEditPlanoForm(p => ({ ...p, trialFim: ev.target.value }))} className={INPUT} />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>VALOR REAL (R$)</label>
+                            <input type="number" step="0.01" placeholder="0,00" value={editPlanoForm.valorMensal} onChange={ev => setEditPlanoForm(p => ({ ...p, valorMensal: ev.target.value }))} className={INPUT} />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ISENTA</label>
+                            <button type="button" onClick={() => setEditPlanoForm(p => ({ ...p, isenta: !p.isenta }))}
+                              className="w-full py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+                              style={editPlanoForm.isenta
+                                ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
+                                : { background: "var(--input)", color: "var(--muted)", border: "1px solid var(--border-2)" }}>
+                              {editPlanoForm.isenta ? "Sim — Isenta" : "Não"}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => salvarPlano(e.id)} disabled={salvandoPlano} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
+                            {salvandoPlano ? "Salvando..." : "Salvar"}
+                          </button>
+                          <button onClick={() => setEditPlanoId(null)}
+                            className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                            style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {!empresasPlano.length && (
+                <p className="text-center py-10 text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</p>
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden sm:block">
+              <ScrollHint />
+              <div className="relative">
+                <GradientFade />
+                <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+                  <table className="w-full text-[13px] min-w-[700px]">
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+                        <TH>Empresa</TH><TH>Status</TH><TH>Plano</TH><TH>Trial até</TH><TH>Valor/mês</TH><TH>Isenta</TH><TH></TH>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {empresasPlano.map((e) => {
+                        const statusColor: Record<string, string> = { TRIAL: "#fbbf24", ATIVO: "#34d399", BLOQUEADO: "#fb923c", CANCELADO: "#f87171" };
+                        const statusBg: Record<string, string> = { TRIAL: "rgba(251,191,36,.1)", ATIVO: "rgba(52,211,153,.1)", BLOQUEADO: "rgba(251,146,60,.1)", CANCELADO: "rgba(248,113,113,.1)" };
+                        const cor = statusColor[e.planStatus] ?? "#94a3b8";
+                        const bg = statusBg[e.planStatus] ?? "rgba(148,163,184,.08)";
+                        return (
+                          <>
+                            <tr key={e.id} style={{ borderBottom: "1px solid var(--card)" }}
+                              onMouseEnter={ev => ev.currentTarget.style.background = "var(--card)"}
+                              onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}>
+                              <td className="px-4 py-3">
+                                <div className="font-semibold" style={{ color: "var(--text)" }}>{e.nome}</div>
+                                <div className="text-[11px]" style={{ color: "var(--muted-3)" }}>{e.instanciaWhatsapp}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: bg, color: cor }}>{e.planStatus}</span>
+                              </td>
+                              <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>{e.plano}</td>
+                              <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
+                                {e.trialFim ? new Date(e.trialFim).toLocaleDateString("pt-BR") : "—"}
+                              </td>
+                              <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted)" }}>
+                                {e.valorMensal != null ? `R$ ${e.valorMensal.toFixed(2)}` : "—"}
+                              </td>
+                              <td className="px-4 py-3">
+                                {e.isenta && (
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc" }}>Isenta</span>
                                 )}
-                                {e.planStatus !== "BLOQUEADO" && (
-                                  <button onClick={async () => {
-                                    if (!confirm(`Bloquear "${e.nome}"?`)) return;
-                                    await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "BLOQUEADO" }) });
-                                    carregarUsuarios(); showMsg("Bloqueado.");
-                                  }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                    style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
-                                    Bloquear
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-1.5 justify-end flex-wrap">
+                                  <button onClick={() => editPlanoId === e.id ? setEditPlanoId(null) : abrirEditPlano(e)}
+                                    className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                    style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                                    {editPlanoId === e.id ? "Fechar" : "Editar"}
                                   </button>
-                                )}
-                                <button onClick={() => ativarTrial(e.id, 30)}
-                                  className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                  style={{ background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }}>
-                                  +30d trial
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                          {editPlanoId === e.id && (
-                            <tr key={`${e.id}-edit`}>
-                              <td colSpan={7} className="px-4 py-4" style={{ background: "rgba(99,102,241,.04)", borderBottom: "1px solid rgba(99,102,241,.12)" }}>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-3">
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>STATUS</label>
-                                    <select value={editPlanoForm.planStatus} onChange={ev => setEditPlanoForm(p => ({ ...p, planStatus: ev.target.value }))} className={INPUT}>
-                                      {["TRIAL", "ATIVO", "BLOQUEADO", "CANCELADO"].map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>PLANO</label>
-                                    <select value={editPlanoForm.plano} onChange={ev => setEditPlanoForm(p => ({ ...p, plano: ev.target.value }))} className={INPUT}>
-                                      {["STARTER", "PRO", "AGENCY"].map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                  </div>
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TRIAL ATÉ</label>
-                                    <input type="date" value={editPlanoForm.trialFim} onChange={ev => setEditPlanoForm(p => ({ ...p, trialFim: ev.target.value }))} className={INPUT} />
-                                  </div>
-                                  <div>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>VALOR REAL (R$)</label>
-                                    <input type="number" step="0.01" placeholder="0,00" value={editPlanoForm.valorMensal} onChange={ev => setEditPlanoForm(p => ({ ...p, valorMensal: ev.target.value }))} className={INPUT} />
-                                  </div>
-                                  <div className="flex flex-col justify-end">
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ISENTA</label>
-                                    <button type="button" onClick={() => setEditPlanoForm(p => ({ ...p, isenta: !p.isenta }))}
-                                      className="w-full py-2.5 rounded-xl text-[13px] font-semibold transition-all"
-                                      style={editPlanoForm.isenta
-                                        ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
-                                        : { background: "var(--input)", color: "var(--muted)", border: "1px solid var(--border-2)" }}>
-                                      {editPlanoForm.isenta ? "Sim — Isenta" : "Não"}
+                                  {e.planStatus !== "ATIVO" && (
+                                    <button onClick={async () => {
+                                      await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "ATIVO", trialFim: null }) });
+                                      carregarUsuarios(); showMsg("Ativado!");
+                                    }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                      style={{ background: "rgba(52,211,153,.08)", color: "#34d399", border: "1px solid rgba(52,211,153,.15)" }}>
+                                      Ativar
                                     </button>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button onClick={() => salvarPlano(e.id)} disabled={salvandoPlano} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
-                                    {salvandoPlano ? "Salvando..." : "Salvar"}
-                                  </button>
-                                  <button onClick={() => setEditPlanoId(null)}
-                                    className="px-4 py-2 rounded-xl text-[13px] font-medium"
-                                    style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                                    Cancelar
+                                  )}
+                                  {e.planStatus !== "BLOQUEADO" && (
+                                    <button onClick={async () => {
+                                      if (!confirm(`Bloquear "${e.nome}"?`)) return;
+                                      await fetch(`/api/empresas/${e.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planStatus: "BLOQUEADO" }) });
+                                      carregarUsuarios(); showMsg("Bloqueado.");
+                                    }} className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                      style={{ background: "rgba(251,146,60,.08)", color: "#fb923c", border: "1px solid rgba(251,146,60,.15)" }}>
+                                      Bloquear
+                                    </button>
+                                  )}
+                                  <button onClick={() => ativarTrial(e.id, 30)}
+                                    className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                    style={{ background: "rgba(251,191,36,.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.15)" }}>
+                                    +30d trial
                                   </button>
                                 </div>
                               </td>
                             </tr>
-                          )}
-                        </>
-                      );
-                    })}
-                    {!empresasPlano.length && (
-                      <tr><td colSpan={7} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</td></tr>
-                    )}
-                  </tbody>
-                </table>
+                            {editPlanoId === e.id && (
+                              <tr key={`${e.id}-edit`}>
+                                <td colSpan={7} className="px-4 py-4" style={{ background: "rgba(99,102,241,.04)", borderBottom: "1px solid rgba(99,102,241,.12)" }}>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-3">
+                                    <div>
+                                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>STATUS</label>
+                                      <select value={editPlanoForm.planStatus} onChange={ev => setEditPlanoForm(p => ({ ...p, planStatus: ev.target.value }))} className={INPUT}>
+                                        {["TRIAL", "ATIVO", "BLOQUEADO", "CANCELADO"].map(s => <option key={s} value={s}>{s}</option>)}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>PLANO</label>
+                                      <select value={editPlanoForm.plano} onChange={ev => setEditPlanoForm(p => ({ ...p, plano: ev.target.value }))} className={INPUT}>
+                                        {["STARTER", "PRO", "AGENCY"].map(s => <option key={s} value={s}>{s}</option>)}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TRIAL ATÉ</label>
+                                      <input type="date" value={editPlanoForm.trialFim} onChange={ev => setEditPlanoForm(p => ({ ...p, trialFim: ev.target.value }))} className={INPUT} />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>VALOR REAL (R$)</label>
+                                      <input type="number" step="0.01" placeholder="0,00" value={editPlanoForm.valorMensal} onChange={ev => setEditPlanoForm(p => ({ ...p, valorMensal: ev.target.value }))} className={INPUT} />
+                                    </div>
+                                    <div className="flex flex-col justify-end">
+                                      <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>ISENTA</label>
+                                      <button type="button" onClick={() => setEditPlanoForm(p => ({ ...p, isenta: !p.isenta }))}
+                                        className="w-full py-2.5 rounded-xl text-[13px] font-semibold transition-all"
+                                        style={editPlanoForm.isenta
+                                          ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
+                                          : { background: "var(--input)", color: "var(--muted)", border: "1px solid var(--border-2)" }}>
+                                        {editPlanoForm.isenta ? "Sim — Isenta" : "Não"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button onClick={() => salvarPlano(e.id)} disabled={salvandoPlano} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">
+                                      {salvandoPlano ? "Salvando..." : "Salvar"}
+                                    </button>
+                                    <button onClick={() => setEditPlanoId(null)}
+                                      className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        );
+                      })}
+                      {!empresasPlano.length && (
+                        <tr><td colSpan={7} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma empresa cadastrada.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -477,97 +589,175 @@ export default function CentralPage() {
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="shimmer h-12 rounded-xl" />)}</div>
             ) : (
               <>
-              <ScrollHint />
-              <div className="relative">
-                <GradientFade />
-              <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-                <table className="w-full text-[13px] min-w-[560px]">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                      <TH>Ferramenta</TH><TH>Tipo</TH><TH>Valor/mês</TH><TH>Vencimento</TH><TH>Obs.</TH><TH></TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data?.ferramentas.map((f) => (
-                      <>
-                        <tr key={f.id} style={{ borderBottom: "1px solid var(--card)" }}
-                          onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
-                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                          <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>
-                            {f.link
-                              ? <a href={f.link} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "#60a5fa" }}>{f.nome}</a>
-                              : f.nome}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                              style={{ background: "var(--border)", color: "var(--muted)" }}>{f.tipo}</span>
-                          </td>
-                          <td className="px-4 py-3" style={{ color: "var(--muted)" }}>
-                            {f.valor != null ? `R$ ${f.valor.toFixed(2)}` : "—"}
-                          </td>
-                          <td className="px-4 py-3"><VencimentoBadge vencimento={f.vencimento} /></td>
-                          <td className="px-4 py-3 text-[12px] max-w-xs truncate" style={{ color: "var(--muted-2)" }}>{f.observacoes ?? "—"}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
-                                {editId === f.id ? "Fechar" : "Editar"}
-                              </button>
-                              <button onClick={() => excluir(f.id, f.nome)}
-                                className="text-[11px] px-2 py-1 rounded-lg font-semibold"
-                                style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
-                                Excluir
-                              </button>
+                {/* Mobile: cards */}
+                <div className="sm:hidden space-y-2">
+                  {data?.ferramentas.map((f) => (
+                    <div key={f.id}>
+                      <div className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-[14px]" style={{ color: f.link ? "#60a5fa" : "var(--text)" }}>
+                              {f.link
+                                ? <a href={f.link} target="_blank" rel="noopener noreferrer">{f.nome}</a>
+                                : f.nome}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "var(--border)", color: "var(--muted)" }}>{f.tipo}</span>
+                              {f.valor != null && <span className="text-[12px]" style={{ color: "var(--muted-2)" }}>R$ {f.valor.toFixed(2)}/mês</span>}
                             </div>
-                          </td>
-                        </tr>
-                        {editId === f.id && (
-                          <tr key={`${f.id}-edit`}>
-                            <td colSpan={6} className="px-4 py-4" style={editRowStyle}>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                                {[
-                                  { key: "nome", label: "NOME", type: "text" },
-                                  { key: "link", label: "LINK", type: "text" },
-                                  { key: "observacoes", label: "OBSERVAÇÕES", type: "text" },
-                                  { key: "valor", label: "VALOR (R$)", type: "number" },
-                                  { key: "vencimento", label: "VENCIMENTO", type: "date" },
-                                ].map(fi => (
-                                  <div key={fi.key}>
-                                    <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>{fi.label}</label>
-                                    <input type={fi.type} step={fi.key === "valor" ? "0.01" : undefined}
-                                      value={(editForm as Record<string, string>)[fi.key]}
-                                      onChange={(e) => setEditForm((p) => ({ ...p, [fi.key]: e.target.value }))}
-                                      className={INPUT} />
-                                  </div>
-                                ))}
-                                <div>
-                                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO</label>
-                                  <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
-                                    {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
-                                  </select>
-                                </div>
+                          </div>
+                          <VencimentoBadge vencimento={f.vencimento} />
+                        </div>
+                        {f.observacoes && <p className="text-[12px] mb-2" style={{ color: "var(--muted-2)" }}>{f.observacoes}</p>}
+                        <div className="flex gap-2">
+                          <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
+                            className="flex-1 py-2 rounded-xl text-[12px] font-semibold"
+                            style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                            {editId === f.id ? "Fechar" : "Editar"}
+                          </button>
+                          <button onClick={() => excluir(f.id, f.nome)}
+                            className="flex-1 py-2 rounded-xl text-[12px] font-semibold"
+                            style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                            Excluir
+                          </button>
+                        </div>
+                      </div>
+                      {editId === f.id && (
+                        <div className="rounded-xl p-4 mt-1" style={editRowStyle}>
+                          <div className="grid grid-cols-1 gap-3 mb-3">
+                            {[
+                              { key: "nome", label: "NOME", type: "text" },
+                              { key: "link", label: "LINK", type: "text" },
+                              { key: "observacoes", label: "OBSERVAÇÕES", type: "text" },
+                              { key: "valor", label: "VALOR (R$)", type: "number" },
+                              { key: "vencimento", label: "VENCIMENTO", type: "date" },
+                            ].map(fi => (
+                              <div key={fi.key}>
+                                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>{fi.label}</label>
+                                <input type={fi.type} step={fi.key === "valor" ? "0.01" : undefined}
+                                  value={(editForm as Record<string, string>)[fi.key]}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, [fi.key]: e.target.value }))}
+                                  className={INPUT} />
                               </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => salvarEdicao(f.id)} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
-                                <button onClick={() => setEditId(null)}
-                                  className="px-4 py-2 rounded-xl text-[13px] font-medium"
-                                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
-                                  Cancelar
-                                </button>
-                              </div>
-                            </td>
+                            ))}
+                            <div>
+                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO</label>
+                              <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
+                                {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button onClick={() => salvarEdicao(f.id)} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
+                            <button onClick={() => setEditId(null)}
+                              className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                              style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {!data?.ferramentas.length && (
+                    <p className="text-center py-10 text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma ferramenta cadastrada.</p>
+                  )}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden sm:block">
+                  <ScrollHint />
+                  <div className="relative">
+                    <GradientFade />
+                    <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+                      <table className="w-full text-[13px] min-w-[560px]">
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+                            <TH>Ferramenta</TH><TH>Tipo</TH><TH>Valor/mês</TH><TH>Vencimento</TH><TH>Obs.</TH><TH></TH>
                           </tr>
-                        )}
-                      </>
-                    ))}
-                    {!data?.ferramentas.length && (
-                      <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma ferramenta cadastrada.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              </div>
+                        </thead>
+                        <tbody>
+                          {data?.ferramentas.map((f) => (
+                            <>
+                              <tr key={f.id} style={{ borderBottom: "1px solid var(--card)" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
+                                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                                <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>
+                                  {f.link
+                                    ? <a href={f.link} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: "#60a5fa" }}>{f.nome}</a>
+                                    : f.nome}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                                    style={{ background: "var(--border)", color: "var(--muted)" }}>{f.tipo}</span>
+                                </td>
+                                <td className="px-4 py-3" style={{ color: "var(--muted)" }}>
+                                  {f.valor != null ? `R$ ${f.valor.toFixed(2)}` : "—"}
+                                </td>
+                                <td className="px-4 py-3"><VencimentoBadge vencimento={f.vencimento} /></td>
+                                <td className="px-4 py-3 text-[12px] max-w-xs truncate" style={{ color: "var(--muted-2)" }}>{f.observacoes ?? "—"}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex gap-2 justify-end">
+                                    <button onClick={() => editId === f.id ? setEditId(null) : abrirEdicao(f)}
+                                      className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                      style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}>
+                                      {editId === f.id ? "Fechar" : "Editar"}
+                                    </button>
+                                    <button onClick={() => excluir(f.id, f.nome)}
+                                      className="text-[11px] px-2 py-1 rounded-lg font-semibold"
+                                      style={{ background: "rgba(248,113,113,.08)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                                      Excluir
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {editId === f.id && (
+                                <tr key={`${f.id}-edit`}>
+                                  <td colSpan={6} className="px-4 py-4" style={editRowStyle}>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                                      {[
+                                        { key: "nome", label: "NOME", type: "text" },
+                                        { key: "link", label: "LINK", type: "text" },
+                                        { key: "observacoes", label: "OBSERVAÇÕES", type: "text" },
+                                        { key: "valor", label: "VALOR (R$)", type: "number" },
+                                        { key: "vencimento", label: "VENCIMENTO", type: "date" },
+                                      ].map(fi => (
+                                        <div key={fi.key}>
+                                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>{fi.label}</label>
+                                          <input type={fi.type} step={fi.key === "valor" ? "0.01" : undefined}
+                                            value={(editForm as Record<string, string>)[fi.key]}
+                                            onChange={(e) => setEditForm((p) => ({ ...p, [fi.key]: e.target.value }))}
+                                            className={INPUT} />
+                                        </div>
+                                      ))}
+                                      <div>
+                                        <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>TIPO</label>
+                                        <select value={editForm.tipo} onChange={(e) => setEditForm((p) => ({ ...p, tipo: e.target.value }))} className={INPUT}>
+                                          {TIPOS.map((t) => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <button onClick={() => salvarEdicao(f.id)} disabled={salvando} className="btn-primary px-4 py-2 text-[13px] disabled:opacity-50">Salvar</button>
+                                      <button onClick={() => setEditId(null)}
+                                        className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                                        style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted)" }}>
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ))}
+                          {!data?.ferramentas.length && (
+                            <tr><td colSpan={6} className="px-4 py-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhuma ferramenta cadastrada.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -736,56 +926,90 @@ export default function CentralPage() {
               </form>
             </div>
 
-            <ScrollHint />
-            <div className="relative">
-              <GradientFade />
-            <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
-                <h3 className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Acessos ativos ({usuarios.length})</h3>
-              </div>
-              {usuarios.length === 0 ? (
-                <div className="p-10 text-center text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhum usuário de empresa criado ainda</div>
-              ) : (
-                <table className="w-full text-[13px] min-w-[480px]">
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                      <TH>Nome</TH><TH>Email</TH><TH>Empresa</TH><TH>Status</TH><TH></TH>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {usuarios.map(u => (
-                      <tr key={u.id} style={{ borderBottom: "1px solid var(--card)" }}
-                        onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
-                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{u.nome}</td>
-                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.email}</td>
-                        <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.empresa?.nome ?? "—"}</td>
-                        <td className="px-4 py-3">
-                          <button onClick={() => toggleAtivo(u.id, u.ativo)}
-                            className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                            style={u.ativo
-                              ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
-                              : { background: "var(--card-2)", color: "var(--muted-2)" }
-                            }>
-                            {u.ativo ? "Ativo" : "Inativo"}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button onClick={() => excluirUsuario(u.id, u.nome)}
-                            className="text-[12px] transition-colors"
-                            style={{ color: "var(--muted-3)" }}
-                            onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                            onMouseLeave={e => e.currentTarget.style.color = "var(--muted-3)"}>
-                            Excluir
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            <div className="px-4 py-3 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+              <h3 className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Acessos ativos ({usuarios.length})</h3>
             </div>
-            </div>
+
+            {usuarios.length === 0 ? (
+              <p className="text-center py-10 text-[13px]" style={{ color: "var(--muted-3)" }}>Nenhum usuário de empresa criado ainda</p>
+            ) : (
+              <>
+                {/* Mobile: cards */}
+                <div className="sm:hidden space-y-2">
+                  {usuarios.map(u => (
+                    <div key={u.id} className="rounded-xl p-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[14px]" style={{ color: "var(--text)" }}>{u.nome}</p>
+                          <p className="text-[12px]" style={{ color: "var(--muted-2)" }}>{u.email}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-3)" }}>{u.empresa?.nome ?? "—"}</p>
+                        </div>
+                        <button onClick={() => toggleAtivo(u.id, u.ativo)}
+                          className="text-[11px] px-2.5 py-1 rounded-full font-semibold flex-shrink-0"
+                          style={u.ativo
+                            ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                            : { background: "var(--card-2)", color: "var(--muted-2)" }
+                          }>
+                          {u.ativo ? "Ativo" : "Inativo"}
+                        </button>
+                      </div>
+                      <button onClick={() => excluirUsuario(u.id, u.nome)}
+                        className="mt-2 text-[12px] w-full py-1.5 rounded-lg font-medium"
+                        style={{ background: "rgba(248,113,113,.06)", color: "#f87171", border: "1px solid rgba(248,113,113,.15)" }}>
+                        Excluir
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden sm:block">
+                  <ScrollHint />
+                  <div className="relative">
+                    <GradientFade />
+                    <div className="rounded-2xl overflow-x-auto" style={cardStyle}>
+                      <table className="w-full text-[13px] min-w-[480px]">
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+                            <TH>Nome</TH><TH>Email</TH><TH>Empresa</TH><TH>Status</TH><TH></TH>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usuarios.map(u => (
+                            <tr key={u.id} style={{ borderBottom: "1px solid var(--card)" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "var(--card)"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                              <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{u.nome}</td>
+                              <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.email}</td>
+                              <td className="px-4 py-3" style={{ color: "var(--muted)" }}>{u.empresa?.nome ?? "—"}</td>
+                              <td className="px-4 py-3">
+                                <button onClick={() => toggleAtivo(u.id, u.ativo)}
+                                  className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                                  style={u.ativo
+                                    ? { background: "rgba(52,211,153,.1)", color: "#34d399" }
+                                    : { background: "var(--card-2)", color: "var(--muted-2)" }
+                                  }>
+                                  {u.ativo ? "Ativo" : "Inativo"}
+                                </button>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <button onClick={() => excluirUsuario(u.id, u.nome)}
+                                  className="text-[12px] transition-colors"
+                                  style={{ color: "var(--muted-3)" }}
+                                  onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
+                                  onMouseLeave={e => e.currentTarget.style.color = "var(--muted-3)"}>
+                                  Excluir
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

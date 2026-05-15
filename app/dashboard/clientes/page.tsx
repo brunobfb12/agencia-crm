@@ -180,7 +180,7 @@ export default function ClientesPage() {
           >
             CRM
           </span>
-          <div className="flex items-end justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
               <h1 className="text-[28px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Clientes</h1>
               <p className="text-[13px] mt-1" style={{ color: "var(--muted-2)" }}>
@@ -191,11 +191,7 @@ export default function ClientesPage() {
               <button
                 onClick={() => { setModalNovo(true); setNovoErro(""); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
-                style={{
-                  background: "rgba(99,102,241,.15)",
-                  border: "1px solid rgba(99,102,241,.3)",
-                  color: "#a5b4fc",
-                }}
+                style={{ background: "rgba(99,102,241,.15)", border: "1px solid rgba(99,102,241,.3)", color: "#a5b4fc" }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -205,11 +201,7 @@ export default function ClientesPage() {
               <button
                 onClick={() => { setModalImport(true); setImportResult(null); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"
-                style={{
-                  background: "rgba(52,211,153,.1)",
-                  border: "1px solid rgba(52,211,153,.25)",
-                  color: "#34d399",
-                }}
+                style={{ background: "rgba(52,211,153,.1)", border: "1px solid rgba(52,211,153,.25)", color: "#34d399" }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -221,110 +213,151 @@ export default function ClientesPage() {
                 placeholder="Buscar por nome ou telefone..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="input-dark px-4 py-2 text-[13px] w-64"
+                className="input-dark px-4 py-2 text-[13px] w-full sm:w-64"
               />
             </div>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table / Cards */}
         {loading ? (
           <div className="space-y-3">
             {[1,2,3,4,5].map(i => (
               <div key={i} className="shimmer h-12 rounded-xl" />
             ))}
           </div>
+        ) : clientes.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-16" style={{ color: "var(--muted-3)" }}>
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 10v-2a4 4 0 00-3-3.87M23 21v-2a4 4 0 00-3-3.87" />
+            </svg>
+            <p className="text-[13px]">Nenhum cliente cadastrado. Importe um CSV para começar.</p>
+          </div>
         ) : (
           <>
-            <ScrollHint />
-            <div className="relative">
-              <GradientFade />
-              <div
-                className="bento-card overflow-x-auto animate-fade-up"
-                style={{ animationDelay: "80ms" }}
-              >
-            <table className="w-full text-sm min-w-[520px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
-                  <TH>Cliente</TH>
-                  <TH>Telefone</TH>
-                  <TH>E-mail</TH>
-                  <TH>Empresa</TH>
-                  <TH>Status</TH>
-                  <TH>Cadastro</TH>
-                  <TH>{" "}</TH>
-                </tr>
-              </thead>
-              <tbody>
-                {clientes.map((c, idx) => (
-                  <tr
+            {/* Mobile: cards */}
+            <div className="sm:hidden space-y-2 animate-fade-up">
+              {clientes.map((c) => {
+                const badge = c.leads[0] ? STATUS_BADGE[c.leads[0].status] : null;
+                return (
+                  <div
                     key={c.id}
-                    style={{
-                      borderBottom: idx < clientes.length - 1 ? "1px solid var(--card)" : "none",
-                      transition: "background .15s",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "var(--card)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    className="rounded-xl p-4"
+                    style={{ background: "var(--card)", border: "1px solid var(--border)" }}
                   >
-                    <td className="px-4 py-3 font-semibold text-[13px]" style={{ color: "var(--text)" }}>
-                      {c.nome ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-[13px] font-mono" style={{ color: "var(--muted)" }}>
-                      {c.telefone}
-                    </td>
-                    <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
-                      {c.email ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--muted)" }}>
-                      {c.empresa.nome}
-                    </td>
-                    <td className="px-4 py-3">
-                      {c.leads[0] ? (() => {
-                        const badge = STATUS_BADGE[c.leads[0].status];
-                        return (
-                          <span
-                            className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
-                            style={{ background: badge?.bg ?? "rgba(148,163,184,.1)", color: badge?.color ?? "#94a3b8" }}
-                          >
-                            {badge?.label ?? c.leads[0].status}
-                          </span>
-                        );
-                      })() : (
-                        <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-3)" }}>
-                      {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
-                    </td>
-                    <td className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <p className="font-semibold text-[14px]" style={{ color: "var(--text)" }}>
+                            {c.nome ?? "—"}
+                          </p>
+                          {badge && (
+                            <span
+                              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                              style={{ background: badge.bg, color: badge.color }}
+                            >
+                              {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] font-mono" style={{ color: "var(--muted-2)" }}>{c.telefone}</p>
+                        {c.email && (
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-3)" }}>{c.email}</p>
+                        )}
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-3)" }}>
+                          {c.empresa.nome} · {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
                       <button
                         onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                        style={{ background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.25)", color: "#a5b4fc" }}
-                        title="Enviar primeira mensagem e ativar lead"
+                        className="text-[12px] px-3 py-2 rounded-xl font-semibold flex-shrink-0"
+                        style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
                         Ativar
                       </button>
-                    </td>
-                  </tr>
-                ))}
-                {clientes.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-16 text-center">
-                      <div className="flex flex-col items-center gap-3" style={{ color: "var(--muted-3)" }}>
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zm8 10v-2a4 4 0 00-3-3.87M23 21v-2a4 4 0 00-3-3.87" />
-                        </svg>
-                        <p className="text-[13px]">Nenhum cliente cadastrado. Importe um CSV para começar.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden sm:block">
+              <ScrollHint />
+              <div className="relative">
+                <GradientFade />
+                <div className="bento-card overflow-x-auto animate-fade-up" style={{ animationDelay: "80ms" }}>
+                  <table className="w-full text-sm min-w-[520px]">
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
+                        <TH>Cliente</TH>
+                        <TH>Telefone</TH>
+                        <TH>E-mail</TH>
+                        <TH>Empresa</TH>
+                        <TH>Status</TH>
+                        <TH>Cadastro</TH>
+                        <TH>{" "}</TH>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clientes.map((c, idx) => (
+                        <tr
+                          key={c.id}
+                          style={{
+                            borderBottom: idx < clientes.length - 1 ? "1px solid var(--card)" : "none",
+                            transition: "background .15s",
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = "var(--card)")}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                        >
+                          <td className="px-4 py-3 font-semibold text-[13px]" style={{ color: "var(--text)" }}>
+                            {c.nome ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 text-[13px] font-mono" style={{ color: "var(--muted)" }}>
+                            {c.telefone}
+                          </td>
+                          <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-2)" }}>
+                            {c.email ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 text-[13px]" style={{ color: "var(--muted)" }}>
+                            {c.empresa.nome}
+                          </td>
+                          <td className="px-4 py-3">
+                            {c.leads[0] ? (() => {
+                              const badge = STATUS_BADGE[c.leads[0].status];
+                              return (
+                                <span
+                                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                                  style={{ background: badge?.bg ?? "rgba(148,163,184,.1)", color: badge?.color ?? "#94a3b8" }}
+                                >
+                                  {badge?.label ?? c.leads[0].status}
+                                </span>
+                              );
+                            })() : (
+                              <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-3)" }}>
+                            {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                              style={{ background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.25)", color: "#a5b4fc" }}
+                              title="Enviar primeira mensagem e ativar lead"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                              Ativar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </>
