@@ -35,12 +35,18 @@ if (!cliente.dataNascimento) dadosFaltando.push('data de nascimento');
 
 const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA'];
 const isReativacao = statusReativacao.includes(lead.status);
-const isPrimeiraMensagem = historico.length <= 1;
+const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
+const isPrimeiraMensagem = mensagensEntrada <= 1;
 
 let reativacaoSection = '';
 if (isReativacao && isPrimeiraMensagem) {
   reativacaoSection = '\nCONTEXTO DE REATIVACAO:\n- Este cliente ja teve contato anterior. Seja caloroso e mencione que esta feliz em ve-lo de volta.\n- Referencia sutil ao historico: mencione que houve interesse anterior sem ser insistente.\n- Objetivo: reacender o interesse naturalmente.';
 }
+
+const isFastTrack = vendas.length > 0 && isReativacao;
+const fastTrackSection = isFastTrack
+  ? '\nCOMPRADOR RECORRENTE: Este cliente ja comprou antes (historico de compras disponivel abaixo). NAO faca perguntas de qualificacao basicas que ele ja respondeu em compras anteriores. Pergunte diretamente o que precisa hoje e referencie o ultimo pedido de forma natural e acolhedora. Ele e um cliente fiel — trate como tal.'
+  : '';
 
 const roteiroSection = empresa.perguntasQualificacao
   ? '\nROTEIRO DE QUALIFICACAO (aplique quando o cliente mostrar interesse, UMA pergunta por vez):\n' + empresa.perguntasQualificacao
@@ -59,6 +65,12 @@ if (agendamentos.some(a => a.status === 'PENDENTE')) {
 const isClienteRetornante = historico.length > 4;
 const retornanteSection = isClienteRetornante
   ? '\nCLIENTE RETORNANTE: voce ja conversou com ' + (cliente.nome || 'este cliente') + ' antes. NAO pergunte se e primeira vez. Reconheca o historico e mencione o interesse anterior de forma natural.'
+  : '';
+
+// Modo da conversa: lê a última mensagem de saída para entender o contexto
+const ultimaSaida = historico.slice().reverse().find(function(m) { return m.direcao === 'SAIDA'; });
+const modoConversaSection = ultimaSaida
+  ? '\nMODO DA CONVERSA (leia antes de responder): A ultima mensagem que voce enviou foi: "' + ultimaSaida.conteudo.slice(0, 200) + '"\n- Se foi uma mensagem de cuidado, dica ou valor (sem oferta direta): mantenha esse tom. NAO ofereça produto ou tente fechar venda imediatamente. Deixe o cliente guiar.\n- Se foi uma mensagem de reativacao, novidade ou oferta: avance para entender a necessidade e oferecer o produto naturalmente.'
   : '';
 
 let midiasSection = '';
@@ -126,9 +138,11 @@ const sistemaParts = [
   '',
   infoEmpresa,
   retornanteSection,
+  modoConversaSection,
   calendlySection,
   agendamentoSection,
   reativacaoSection,
+  fastTrackSection,
   roteiroSection,
   coletaSection,
   midiasSection,
