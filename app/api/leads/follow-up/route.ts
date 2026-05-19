@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     }),
     prisma.lead.findMany({
       where: {
-        status: "FOLLOW_UP",
+        status: { notIn: ["PERDIDO", "SEM_INTERESSE", "SEM_RESPOSTA", "VENDA_REALIZADA", "POS_VENDA", "AGENDADO", "NEGOCIACAO"] },
         dataRecontato: { lte: todayEnd },
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
@@ -203,7 +203,7 @@ export async function GET(req: Request) {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "recontato_agendado",
-          `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Conforme combinamos, estou passando pra saber se posso te ajudar agora! Como posso te atender?`
+          `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Passando pra ver se consigo te ajudar a agendar ou se ficou alguma dúvida! Como posso te atender?`
         );
       }),
   ];
