@@ -20,9 +20,36 @@ export async function PATCH(
       enviadoEm: status === "ENVIADO" ? new Date() : undefined,
       erro: erro ?? null,
     },
+    include: {
+      campanha: { select: { mensagem: true, tipo: true } },
+      lead: { include: { cliente: { select: { id: true } } } },
+    },
   });
 
-  // Check if all items in campaign are done
+  // Salva mensagem da campanha no histórico de conversas para que a IA
+  // veja o que foi enviado quando o cliente responder
+  if (status === "ENVIADO" && item.lead?.cliente) {
+    const clienteId = item.lead.cliente.id;
+    const mensagem = item.campanha.mensagem;
+
+    let conversa = await prisma.conversa.findFirst({
+      where: { clienteId },
+      orderBy: { ultimaAtividade: "desc" },
+    });
+    if (!conversa) {
+      conversa = await prisma.conversa.create({ data: { clienteId } });
+    }
+
+    await prisma.mensagem.create({
+      data: { conversaId: conversa.id, conteudo: mensagem, direcao: "SAIDA" },
+    });
+    await prisma.conversa.update({
+      where: { id: conversa.id },
+      data: { ultimaMensagem: mensagem, ultimaAtividade: new Date() },
+    });
+  }
+
+  // Marca campanha como concluída quando todos os itens forem processados
   const pendentes = await prisma.campanhaItem.count({
     where: { campanhaId: item.campanhaId, status: "PENDENTE" },
   });
