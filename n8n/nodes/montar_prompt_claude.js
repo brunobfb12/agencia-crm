@@ -135,6 +135,35 @@ const indicacaoSection = isPosVenda
   ? '\nPOS-VENDA: Este cliente ja comprou. Verifique se esta satisfeito. Se confirmar satisfacao, pergunte naturalmente: "Voce conhece alguem que tambem poderia se interessar? Adoraria atender amigos seus com o mesmo cuidado!" — so pergunte uma vez, nunca insista.'
   : '';
 
+const tipoAtend = empresa.tipoAtendimento || 'AGENDAMENTO';
+let orcamentoSection = '';
+if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
+  const NL = String.fromCharCode(10);
+  const introAmbo = tipoAtend === 'AMBOS'
+    ? 'EMPRESA OFERECE AGENDAMENTO E ORCAMENTO: No inicio da conversa, entenda o que o cliente precisa. Se quiser AGENDAR: use o link Calendly. Se quiser ORCAMENTO: siga o fluxo abaixo.' + NL + NL
+    : '';
+  orcamentoSection = NL + introAmbo
+    + 'FLUXO DE ORCAMENTO (ative quando o cliente pedir orcamento, preco, cotacao ou valor):' + NL
+    + 'ETAPA 1 — ESCUTA: Receba o pedido completo. O cliente pode enviar texto, [AUDIO], foto ou PDF com os itens desejados. Analise e monte a lista.' + NL
+    + 'ETAPA 2 — CONFIRMACAO: Apresente o resumo: "Voce esta precisando de [lista de itens], correto?"' + NL
+    + 'ETAPA 3 — COMPLETAR: Apos confirmacao, pergunte: "Precisa de mais algum item ou posso finalizar seu orcamento?"' + NL
+    + 'ETAPA 4 — CONCORRENTE: Pergunte: "Ja fez orcamento com outra empresa? Quanto ficou? Isso nos ajuda a oferecer a melhor condicao!"' + NL
+    + 'ETAPA 5 — ENVIO: Notifique o vendedor com o resumo completo:' + NL
+    + '  novoStatus: "NEGOCIACAO"' + NL
+    + '  notificarVendedor: true' + NL
+    + '  mensagemVendedor: "Orcamento de [nome]: [lista de itens]. Referencia concorrente: [valor ou nao informado]. -- Me avisa se fechou e o valor!"' + NL
+    + '  Resposta ao cliente: "Perfeito! Ja enviei para ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve! 😊"' + NL
+    + NL
+    + 'REGRAS DO ORCAMENTO:' + NL
+    + '- Avance UMA etapa por vez. Nao pule fases.' + NL
+    + '- Foto: analise visualmente, liste os itens identificados, confirme com o cliente.' + NL
+    + '- [AUDIO]: responda ao conteudo da transcricao como se fosse texto.' + NL
+    + '- PDF: leia o conteudo, extraia os itens, confirme com o cliente.' + NL
+    + '- Avance para CONCORRENTE somente apos o cliente confirmar os itens.' + NL
+    + '- Notifique o vendedor somente apos o cliente responder sobre concorrente (mesmo que diga "nao fiz").' + NL
+    + '- Em memoriaCliente registre: "ORCAMENTO ENVIADO: [itens] | Concorrente: [valor ou N/A]"';
+}
+
 const sistemaParts = [
   'Voce e ' + nomeIA + ', o assistente de vendas da empresa ' + empresa.nome + '.',
   'Responda SOMENTE com JSON valido, sem markdown, sem texto fora do JSON.',
@@ -162,6 +191,7 @@ const sistemaParts = [
   retornanteSection,
   modoConversaSection,
   calendlySection,
+  orcamentoSection,
   agendamentoSection,
   reativacaoSection,
   fastTrackSection,
