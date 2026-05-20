@@ -54,8 +54,16 @@ console.log(`\n📋 Código atual (primeiros 80 chars):\n${codigoAnterior.slice(
 node.parameters.jsCode = novocodigo;
 console.log(`✏️  Novo código aplicado (${novocodigo.length} chars)`);
 
-const payload = workflow.data ?? workflow;
-payload.nodes = nodes;
+const wf = workflow.data ?? workflow;
+
+// N8N API PUT aceita apenas estes campos
+const payload = {
+  name: wf.name,
+  nodes: nodes,
+  connections: wf.connections,
+  settings: wf.settings,
+  staticData: wf.staticData || null,
+};
 
 console.log(`\n📤 Enviando atualização...`);
 const put = await fetch(`${N8N_URL}/api/v1/workflows/${WORKFLOW_ID}`, {
