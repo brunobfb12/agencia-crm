@@ -448,6 +448,71 @@ function LandingPage() {
         </div>
       </section>
 
+      {/* ── O QUE É UM CRM AUTOMÁTICO ────────────────────────────────────── */}
+      <section className="px-6 py-24 relative" style={{ background: "rgba(255,255,255,.015)", zIndex: 1 }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-[12px] font-bold uppercase tracking-widest mb-4" style={{ color: "#818cf8" }}>Entenda o sistema</p>
+            <h2 style={{ fontSize: "clamp(26px,4vw,46px)", fontWeight: 800, letterSpacing: "-1.5px", color: "#f8fafc", lineHeight: 1.1 }}>
+              O que é um CRM automático<br />
+              <span style={{ background: "linear-gradient(135deg,#818cf8,#38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                e como ele trabalha por você
+              </span>
+            </h2>
+            <p className="text-[15px] mt-5 max-w-2xl mx-auto leading-relaxed" style={{ color: "rgba(148,163,184,.55)" }}>
+              CRM significa Gestão de Relacionamento com Clientes. No FácilCRM ele é 100% automático:
+              do primeiro &quot;oi&quot; no WhatsApp até a recompra, o sistema conduz cada cliente pela jornada certa — sem você precisar lembrar de nada.
+            </p>
+          </div>
+
+          {/* Fluxo da jornada */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {([
+              { icon: "📱", cor: "#6366f1", glow: "rgba(99,102,241,.3)", step: "01", titulo: "Mensagem chega", desc: "Cliente manda &quot;oi&quot; no WhatsApp a qualquer hora do dia ou da noite." },
+              { icon: "🤖", cor: "#38bdf8", glow: "rgba(56,189,248,.3)", step: "02", titulo: "IA responde em segundos", desc: "Qualifica o interesse, tira dúvidas, envia catálogo e entende o que o cliente precisa." },
+              { icon: "📋", cor: "#a78bfa", glow: "rgba(167,139,250,.3)", step: "03", titulo: "Lead entra no pipeline", desc: "O CRM registra o contato e acompanha cada etapa: Lead → Aquecimento → Pronto para Comprar." },
+              { icon: "📅", cor: "#34d399", glow: "rgba(52,211,153,.3)", step: "04", titulo: "Proposta no momento certo", desc: "Quando o cliente está pronto, a IA oferece agendamento ou orçamento — sem pressão, sem perder a hora." },
+            ] as { icon: string; cor: string; glow: string; step: string; titulo: string; desc: string }[]).map(s => (
+              <div key={s.step} className="relative p-5 rounded-2xl"
+                style={{ background: `linear-gradient(145deg, ${s.cor}10, ${s.cor}05)`, border: `1px solid ${s.cor}25` }}>
+                <span className="text-[10px] font-black tracking-widest block mb-3" style={{ color: `${s.cor}70` }}>{s.step}</span>
+                <div className="text-[26px] mb-3">{s.icon}</div>
+                <h3 className="text-[14px] font-bold mb-2" style={{ color: "#f1f5f9" }}>{s.titulo}</h3>
+                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(148,163,184,.55)" }} dangerouslySetInnerHTML={{ __html: s.desc }} />
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+            {([
+              { icon: "🏆", cor: "#f59e0b", glow: "rgba(245,158,11,.3)", step: "05", titulo: "Venda fechada", desc: "Lead vira cliente. A venda é registrada no CRM com valor, data e vendedor responsável." },
+              { icon: "💬", cor: "#ec4899", glow: "rgba(236,72,153,.3)", step: "06", titulo: "D+7: Pós-venda", desc: "Sete dias depois, o sistema pergunta como foi a experiência. Fidelização no piloto automático." },
+              { icon: "🔄", cor: "#38bdf8", glow: "rgba(56,189,248,.3)", step: "07", titulo: "D+28: Recompra", desc: "Proposta automática baseada no que o cliente já comprou. Na hora certa, sem forçar." },
+              { icon: "🎯", cor: "#34d399", glow: "rgba(52,211,153,.3)", step: "08", titulo: "Cliente fiel", desc: "Ciclo de relacionamento contínuo. O sistema nunca esquece nenhum cliente — e nem deixa dinheiro na mesa." },
+            ] as { icon: string; cor: string; glow: string; step: string; titulo: string; desc: string }[]).map(s => (
+              <div key={s.step} className="relative p-5 rounded-2xl"
+                style={{ background: `linear-gradient(145deg, ${s.cor}10, ${s.cor}05)`, border: `1px solid ${s.cor}25` }}>
+                <span className="text-[10px] font-black tracking-widest block mb-3" style={{ color: `${s.cor}70` }}>{s.step}</span>
+                <div className="text-[26px] mb-3">{s.icon}</div>
+                <h3 className="text-[14px] font-bold mb-2" style={{ color: "#f1f5f9" }}>{s.titulo}</h3>
+                <p className="text-[12px] leading-relaxed" style={{ color: "rgba(148,163,184,.55)" }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Callout resultado */}
+          <div className="p-6 rounded-2xl text-center"
+            style={{ background: "linear-gradient(135deg, rgba(99,102,241,.08), rgba(56,189,248,.05))", border: "1px solid rgba(99,102,241,.2)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.05)" }}>
+            <p className="text-[15px] font-semibold mb-1" style={{ color: "#f1f5f9" }}>
+              O resultado: menos trabalho manual, mais vendas fechadas, clientes que voltam.
+            </p>
+            <p className="text-[13px]" style={{ color: "rgba(148,163,184,.5)" }}>
+              Enquanto você dorme, o FácilCRM está respondendo, qualificando e aquecendo sua base — sozinho.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── PARA QUEM É ─────────────────────────────────────────────────── */}
       <section className="px-6 py-24 relative" style={{ background:"rgba(255,255,255,.015)", zIndex:1 }}>
         <div className="max-w-5xl mx-auto">
