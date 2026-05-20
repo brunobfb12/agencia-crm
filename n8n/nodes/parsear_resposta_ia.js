@@ -16,6 +16,8 @@ try {
   ai = Object.assign(ai, parsed);
 } catch(e) {
   ai.resposta = 'Ola! Estou aqui para ajudar. Como posso te atender?';
+  ai.notificarGerente = true;
+  ai.mensagemGerente = 'ERRO: IA retornou JSON invalido. Detalhe: ' + e.message.slice(0, 120) + '. Verifique o N8N e reinicie o atendimento manualmente se necessario.';
 }
 
 if (!ai.resposta) ai.resposta = 'Ola! Como posso te ajudar hoje?';
