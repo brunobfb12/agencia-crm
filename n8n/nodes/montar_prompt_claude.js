@@ -48,7 +48,28 @@ const fastTrackSection = isFastTrack
   ? '\nCOMPRADOR RECORRENTE: Este cliente ja comprou antes (historico de compras disponivel abaixo). NAO faca perguntas de qualificacao basicas que ele ja respondeu em compras anteriores. Pergunte diretamente o que precisa hoje e referencie o ultimo pedido de forma natural e acolhedora. Ele e um cliente fiel — trate como tal.'
   : '';
 
-const roteiroSection = empresa.perguntasQualificacao
+// Modo explícito de atendimento — baseado em dias desde a última compra
+const ultimaVenda = vendas.length > 0 ? new Date(vendas[0].criadoEm) : null;
+const diasDesdeCompra = ultimaVenda
+  ? Math.floor((Date.now() - ultimaVenda.getTime()) / (1000 * 60 * 60 * 24))
+  : null;
+
+const statusAtivosVenda = ['LEAD', 'AQUECIMENTO', 'PRONTO_PARA_COMPRAR', 'NEGOCIACAO', 'AGENDADO'];
+let modoConversa = 'VENDER';
+if (!statusAtivosVenda.includes(lead.status) && diasDesdeCompra !== null) {
+  if (diasDesdeCompra <= 14) modoConversa = 'RELACIONAR';
+  else if (diasDesdeCompra <= 25) modoConversa = 'AQUECER';
+}
+
+const modoInstrucoesMap = {
+  RELACIONAR: 'Este cliente comprou ha ' + diasDesdeCompra + ' dias. SEU OBJETIVO AGORA E CUIDADO E VALOR — NAO tente vender nem ofereça produtos proativamente. Responda duvidas, ofereça dicas de uso, demonstre que se importa com a experiencia dele. So fale de compra se o cliente pedir diretamente.',
+  AQUECER: 'Cliente comprou ha ' + diasDesdeCompra + ' dias. Pode mencionar novidades de forma leve e natural. Se o cliente mostrar interesse em comprar, avance. Se nao mostrar, mantenha o tom de cuidado e relacionamento — nao force.',
+  VENDER: 'Entenda a necessidade do cliente e ofereça a melhor solucao. Use o historico de compras (se houver) para personalizar a oferta e encurtar o caminho ate o fechamento. Avance com confianca.',
+};
+const modoAtualSection = '\nMODO DE ATENDIMENTO ATUAL: ' + modoConversa + '\n' + modoInstrucoesMap[modoConversa];
+
+// Roteiro de qualificação só faz sentido no modo VENDER
+const roteiroSection = (empresa.perguntasQualificacao && modoConversa === 'VENDER')
   ? '\nROTEIRO DE QUALIFICACAO (aplique quando o cliente mostrar interesse, UMA pergunta por vez):\n' + empresa.perguntasQualificacao
   : '';
 
@@ -137,6 +158,7 @@ const sistemaParts = [
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
   '',
   infoEmpresa,
+  modoAtualSection,
   retornanteSection,
   modoConversaSection,
   calendlySection,
