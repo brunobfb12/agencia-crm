@@ -83,6 +83,42 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // Calendário de relacionamento por compra — D+7, D+20, D+28, D+45 desde última venda
+  const [vendasD7, vendasD20, vendasD28, vendasD45] = await Promise.all([
+    prisma.venda.findMany({
+      where: {
+        criadoEm: { gte: windowStart(7), lt: windowEnd(7) },
+        status: { not: "CANCELADA" },
+        lead: { status: { in: ["POS_VENDA", "FOLLOW_UP"] }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
+      },
+      include: { lead: { include: { cliente: { select: { nome: true, telefone: true } }, empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } } } } },
+    }),
+    prisma.venda.findMany({
+      where: {
+        criadoEm: { gte: windowStart(20), lt: windowEnd(20) },
+        status: { not: "CANCELADA" },
+        lead: { status: { in: ["POS_VENDA", "FOLLOW_UP"] }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
+      },
+      include: { lead: { include: { cliente: { select: { nome: true, telefone: true } }, empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } } } } },
+    }),
+    prisma.venda.findMany({
+      where: {
+        criadoEm: { gte: windowStart(28), lt: windowEnd(28) },
+        status: { not: "CANCELADA" },
+        lead: { status: { in: ["POS_VENDA", "FOLLOW_UP"] }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
+      },
+      include: { lead: { include: { cliente: { select: { nome: true, telefone: true } }, empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } } } } },
+    }),
+    prisma.venda.findMany({
+      where: {
+        criadoEm: { gte: windowStart(45), lt: windowEnd(45) },
+        status: { not: "CANCELADA" },
+        lead: { status: { in: ["POS_VENDA", "FOLLOW_UP"] }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
+      },
+      include: { lead: { include: { cliente: { select: { nome: true, telefone: true } }, empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } } } } },
+    }),
+  ]);
+
   const pressaoInclude = {
     cliente: { select: { nome: true, telefone: true } },
     empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
@@ -294,6 +330,74 @@ export async function GET(req: Request) {
         mensagem: `🚨 Lead *${nc}* (vendedor: ${l.vendedor?.nome ?? "não atribuído"}) sem atualização há +72h. Verifique antes de perder essa oportunidade.`,
       });
     }
+  }
+
+  // Calendário de relacionamento: D+7, D+20, D+28, D+45 desde última compra
+  // Deduplicação por leadId — prioridade para compra mais recente (janela menor)
+  const seenVendaLeadIds = new Set<string>();
+
+  for (const venda of vendasD7) {
+    if (!venda.lead.empresa.instanciaWhatsapp) continue;
+    seenVendaLeadIds.add(venda.leadId);
+    const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
+    const nome = primeiroNome ? ` ${primeiroNome}` : "";
+    const ia = venda.lead.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "valor_d7", leadId: venda.lead.id,
+      clienteTelefone: venda.lead.cliente.telefone,
+      clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
+      instancia: venda.lead.empresa.instanciaWhatsapp,
+      empresaNome: venda.lead.empresa.nome,
+      mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Passando pra saber como está sendo sua experiência! Ficou com alguma dúvida ou tem algo que posso te ajudar?`,
+    });
+  }
+
+  for (const venda of vendasD20) {
+    if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
+    seenVendaLeadIds.add(venda.leadId);
+    const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
+    const nome = primeiroNome ? ` ${primeiroNome}` : "";
+    const ia = venda.lead.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "toque_d20", leadId: venda.lead.id,
+      clienteTelefone: venda.lead.cliente.telefone,
+      clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
+      instancia: venda.lead.empresa.instanciaWhatsapp,
+      empresaNome: venda.lead.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${venda.lead.empresa.nome}. Temos algumas novidades que chegaram por aqui e lembrei de você! Quer dar uma olhada? 👀`,
+    });
+  }
+
+  for (const venda of vendasD28) {
+    if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
+    seenVendaLeadIds.add(venda.leadId);
+    const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
+    const nome = primeiroNome ? ` ${primeiroNome}` : "";
+    const ia = venda.lead.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "recompra_d28", leadId: venda.lead.id,
+      clienteTelefone: venda.lead.cliente.telefone,
+      clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
+      instancia: venda.lead.empresa.instanciaWhatsapp,
+      empresaNome: venda.lead.empresa.nome,
+      mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Já faz um tempinho desde seu último pedido — está precisando repor? Me fala que te ajudo rapidinho!`,
+    });
+  }
+
+  for (const venda of vendasD45) {
+    if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
+    seenVendaLeadIds.add(venda.leadId);
+    const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
+    const nome = primeiroNome ? ` ${primeiroNome}` : "";
+    const ia = venda.lead.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "oferta_d45", leadId: venda.lead.id,
+      clienteTelefone: venda.lead.cliente.telefone,
+      clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
+      instancia: venda.lead.empresa.instanciaWhatsapp,
+      empresaNome: venda.lead.empresa.nome,
+      mensagem: `Oi${nome}! 🎁 ${ia} aqui, da ${venda.lead.empresa.nome}. Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais?`,
+    });
   }
 
   return NextResponse.json({ total: items.length, items });
