@@ -43,6 +43,7 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [busca, setBusca] = useState("");
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
   const [loading, setLoading] = useState(true);
 
   // modal CSV
@@ -89,12 +90,13 @@ export default function ClientesPage() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (busca) params.set("busca", busca);
+    if (filtroEmpresa) params.set("empresaId", filtroEmpresa);
     setLoading(true);
     fetch(`/api/clientes?${params}`)
       .then((r) => r.json())
       .then((data) => { setClientes(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [busca]);
+  }, [busca, filtroEmpresa]);
 
   const salvarNovo = async () => {
     if (!novoForm.telefone || !novoForm.empresaId) {
@@ -188,6 +190,16 @@ export default function ClientesPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {empresas.length > 1 && (
+                <select
+                  value={filtroEmpresa}
+                  onChange={(e) => setFiltroEmpresa(e.target.value)}
+                  className="input-dark px-3 py-2 text-[13px] rounded-xl"
+                >
+                  <option value="">Todas as empresas</option>
+                  {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              )}
               <button
                 onClick={() => { setModalNovo(true); setNovoErro(""); }}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all"

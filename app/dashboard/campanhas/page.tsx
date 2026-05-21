@@ -53,25 +53,32 @@ export default function CampanhasPage() {
   const [salvandoRegras, setSalvandoRegras] = useState(false);
   const [msg, setMsg] = useState("");
   const [isCentral, setIsCentral] = useState(false);
+  const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((me) => {
-        if (me?.perfil === "CENTRAL") setIsCentral(true);
-      });
-    fetch("/api/campanhas")
-      .then((r) => r.json())
-      .then((d) => {
-        setCampanhas(Array.isArray(d) ? d : []);
-        setLoading(false);
+        if (me?.perfil === "CENTRAL") {
+          setIsCentral(true);
+          fetch("/api/empresas").then(r => r.json()).then(setEmpresas).catch(() => {});
+        }
       });
     fetch("/api/campanhas/regras")
       .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d)) setRegras(d);
-      });
+      .then((d) => { if (Array.isArray(d)) setRegras(d); });
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filtroEmpresa) params.set("empresaId", filtroEmpresa);
+    fetch(`/api/campanhas?${params}`)
+      .then((r) => r.json())
+      .then((d) => { setCampanhas(Array.isArray(d) ? d : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [filtroEmpresa]);
 
   const salvarRegras = async () => {
     setSalvandoRegras(true);
@@ -217,8 +224,8 @@ export default function CampanhasPage() {
           <strong>&quot;Disparar Campanha&quot;</strong>.
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        {/* Tabs + filtro */}
+        <div className="flex flex-wrap items-center gap-2 mb-6">
           <button
             onClick={() => setAba("historico")}
             className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
@@ -234,6 +241,16 @@ export default function CampanhasPage() {
             >
               Regras Automáticas
             </button>
+          )}
+          {empresas.length > 1 && (
+            <select
+              value={filtroEmpresa}
+              onChange={(e) => setFiltroEmpresa(e.target.value)}
+              className="input-dark px-3 py-2 text-[13px] rounded-xl ml-auto"
+            >
+              <option value="">Todas as empresas</option>
+              {empresas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+            </select>
           )}
         </div>
 

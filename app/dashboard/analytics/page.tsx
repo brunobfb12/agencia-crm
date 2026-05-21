@@ -109,16 +109,24 @@ export default function AnalyticsPage() {
   const [data, setData]       = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState("30d");
+  const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
 
-  const load = useCallback((p: string) => {
+  useEffect(() => {
+    fetch("/api/empresas").then(r => r.json()).then(d => setEmpresas(d)).catch(() => {});
+  }, []);
+
+  const load = useCallback((p: string, emp: string) => {
     setLoading(true);
-    fetch(`/api/analytics?periodo=${p}`)
+    const params = new URLSearchParams({ periodo: p });
+    if (emp) params.set("empresaId", emp);
+    fetch(`/api/analytics?${params}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(periodo); }, [periodo, load]);
+  useEffect(() => { load(periodo, filtroEmpresa); }, [periodo, filtroEmpresa, load]);
 
   const k = data?.kpis;
   const maxFunil = data ? Math.max(...data.funil.map(f => f.count), 1) : 1;
@@ -142,17 +150,29 @@ export default function AnalyticsPage() {
             </p>
           </div>
 
-          {/* Period pills */}
-          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-            {PERIODOS.map(p => (
-              <button key={p.key} onClick={() => setPeriodo(p.key)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
-                style={periodo === p.key
-                  ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
-                  : { color: "var(--muted)", border: "1px solid transparent" }}>
-                {p.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {empresas.length > 1 && (
+              <select
+                value={filtroEmpresa}
+                onChange={(e) => setFiltroEmpresa(e.target.value)}
+                className="input-dark px-3 py-1.5 text-[12px] rounded-xl"
+              >
+                <option value="">Todas as empresas</option>
+                {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+              </select>
+            )}
+            {/* Period pills */}
+            <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+              {PERIODOS.map(p => (
+                <button key={p.key} onClick={() => setPeriodo(p.key)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                  style={periodo === p.key
+                    ? { background: "rgba(99,102,241,.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }
+                    : { color: "var(--muted)", border: "1px solid transparent" }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
