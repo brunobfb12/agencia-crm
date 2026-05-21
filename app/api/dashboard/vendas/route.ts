@@ -32,12 +32,18 @@ export async function GET(req: Request) {
     ate_  = new Date();
   }
 
-  const empresaFilter = me.perfil !== "CENTRAL" && me.empresaId
-    ? { lead: { empresaId: me.empresaId } }
+  const empresaIdParam = searchParams.get("empresaId") ?? undefined;
+
+  const resolvedEmpresaId = me.perfil !== "CENTRAL" && me.empresaId
+    ? me.empresaId
+    : empresaIdParam;
+
+  const empresaFilter = resolvedEmpresaId
+    ? { lead: { empresaId: resolvedEmpresaId } }
     : {};
 
-  const leadEmpresaFilter = me.perfil !== "CENTRAL" && me.empresaId
-    ? { empresaId: me.empresaId }
+  const leadEmpresaFilter = resolvedEmpresaId
+    ? { empresaId: resolvedEmpresaId }
     : {};
 
   const dataFilter = { gte: desde, lte: ate_ };

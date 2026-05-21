@@ -52,18 +52,30 @@ export default function VendasPage() {
   const [dataFim, setFim]       = useState(() => toInputDate(new Date()));
   const [data, setData]         = useState<VendasData | null>(null);
   const [loading, setLoading]   = useState(true);
+  const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
+
+  useEffect(() => {
+    fetch("/api/empresas")
+      .then((r) => r.json())
+      .then((d) => setEmpresas(d))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (periodo === "custom" && (!dataInicio || !dataFim)) return;
     setLoading(true);
-    const url = periodo === "custom"
-      ? `/api/dashboard/vendas?de=${dataInicio}&ate=${dataFim}`
-      : `/api/dashboard/vendas?periodo=${periodo}`;
-    fetch(url)
+    const params = new URLSearchParams(
+      periodo === "custom"
+        ? { de: dataInicio, ate: dataFim }
+        : { periodo }
+    );
+    if (filtroEmpresa) params.set("empresaId", filtroEmpresa);
+    fetch(`/api/dashboard/vendas?${params}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [periodo, dataInicio, dataFim]);
+  }, [periodo, dataInicio, dataFim, filtroEmpresa]);
 
   const cards = [
     {
@@ -165,6 +177,19 @@ export default function VendasPage() {
               {p.label}
             </button>
           ))}
+
+          {empresas.length > 1 && (
+            <select
+              value={filtroEmpresa}
+              onChange={(e) => setFiltroEmpresa(e.target.value)}
+              className="input-dark px-3 py-1.5 text-[12.5px] rounded-full ml-auto"
+            >
+              <option value="">Todas as empresas</option>
+              {empresas.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.nome}</option>
+              ))}
+            </select>
+          )}
 
           {/* Date pickers — shown only when "Personalizado" is selected */}
           {periodo === "custom" && (
