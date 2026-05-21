@@ -119,44 +119,18 @@ export async function POST(req: Request) {
   // Normalize stored phone before returning (DB may have "555562..." from old bookings)
   const telefoneLimpo = (cliente.telefone || "").replace(/\D/g, "").replace(/^5555(\d+)$/, "55$1");
 
-  // Fetch recent conversation history to include in vendor notification
-  const conversa = await prisma.conversa.findFirst({
-    where: { clienteId: cliente.id },
-    orderBy: { ultimaAtividade: "desc" },
-    include: {
-      mensagens: {
-        orderBy: { criadoEm: "desc" },
-        take: 15,
-        select: { conteudo: true, direcao: true },
-      },
-    },
-  });
-
-  let historicoTexto = "";
-  if (conversa && conversa.mensagens.length > 0) {
-    const msgs = [...conversa.mensagens].reverse();
-    const linhas = msgs.map((m: { conteudo: string; direcao: string }) => {
-      const prefix = m.direcao === "ENTRADA" ? `👤 ${nomeCliente}` : "🤖 IA";
-      const conteudo = m.conteudo.length > 200 ? m.conteudo.slice(0, 200) + "…" : m.conteudo;
-      return `${prefix}: ${conteudo}`;
-    });
-    historicoTexto = `\n\n💬 *Últimas mensagens:*\n${linhas.join("\n")}`;
-  }
-
-  const emailLinha = (cliente as any).email ? `📧 *Email:* ${(cliente as any).email}\n` : "";
-  const scoreLinha = (lead as any).score ? `📊 *Score:* ${(lead as any).score}/10\n` : "";
-  const obsLinha = (lead as any).observacoes ? `📋 *Obs:* ${(lead as any).observacoes}\n` : "";
+  // Use lead.observacoes — Haiku writes structured client summaries there during conversations
+  const briefing = (lead as any).observacoes
+    ? (lead as any).observacoes
+    : "(cliente novo — sem histórico de conversa)";
 
   const mensagemVendedor =
     `🔔 *AGENDAMENTO CONFIRMADO*\n\n` +
     `👤 *Cliente:* ${cliente.nome || "desconhecido"}\n` +
     `📱 *WhatsApp:* https://wa.me/${telefoneLimpo}\n` +
-    emailLinha +
     `📅 *Data:* ${dataFormatada}${hora ? " às " + hora : ""}\n` +
-    `💼 *Serviço:* ${servico || "não informado"}\n` +
-    scoreLinha +
-    obsLinha +
-    historicoTexto;
+    `💼 *Serviço:* ${servico || "não informado"}\n\n` +
+    `📋 *Briefing:*\n${briefing}`;
 
   return NextResponse.json({
     ok: true,
