@@ -119,17 +119,33 @@ export async function POST(req: Request) {
   // Normalize stored phone before returning (DB may have "555562..." from old bookings)
   const telefoneLimpo = (cliente.telefone || "").replace(/\D/g, "").replace(/^5555(\d+)$/, "55$1");
 
-  // Count past concluded appointments to distinguish new vs returning
-  const totalAnteriores = await prisma.agendamento.count({
-    where: { clienteId: cliente.id, status: "CONCLUIDO" },
+  // Fetch recent conversation history to include in vendor notification
+  const conversa = await prisma.conversa.findFirst({
+    where: { clienteId: cliente.id },
+    orderBy: { ultimaAtividade: "desc" },
+    include: {
+      mensagens: {
+        orderBy: { criadoEm: "desc" },
+        take: 15,
+        select: { conteudo: true, direcao: true },
+      },
+    },
   });
 
-  const statusCliente = totalAnteriores === 0 ? "🆕 Primeiro agendamento" : `🔁 Retorno — ${totalAnteriores} atendimento(s) anterior(es)`;
+  let historicoTexto = "";
+  if (conversa && conversa.mensagens.length > 0) {
+    const msgs = [...conversa.mensagens].reverse();
+    const linhas = msgs.map((m: { conteudo: string; direcao: string }) => {
+      const prefix = m.direcao === "ENTRADA" ? `👤 ${nomeCliente}` : "🤖 IA";
+      const conteudo = m.conteudo.length > 200 ? m.conteudo.slice(0, 200) + "…" : m.conteudo;
+      return `${prefix}: ${conteudo}`;
+    });
+    historicoTexto = `\n\n💬 *Últimas mensagens:*\n${linhas.join("\n")}`;
+  }
+
   const emailLinha = (cliente as any).email ? `📧 *Email:* ${(cliente as any).email}\n` : "";
-  const tagsRaw = (cliente as any).tags;
-  const tagsLinha = tagsRaw ? `🏷️ *Tags:* ${tagsRaw}\n` : "";
   const scoreLinha = (lead as any).score ? `📊 *Score:* ${(lead as any).score}/10\n` : "";
-  const obsLinha = (lead as any).observacoes ? `📋 *Observações:* ${(lead as any).observacoes}\n` : "";
+  const obsLinha = (lead as any).observacoes ? `📋 *Obs:* ${(lead as any).observacoes}\n` : "";
 
   const mensagemVendedor =
     `🔔 *AGENDAMENTO CONFIRMADO*\n\n` +
@@ -138,10 +154,9 @@ export async function POST(req: Request) {
     emailLinha +
     `📅 *Data:* ${dataFormatada}${hora ? " às " + hora : ""}\n` +
     `💼 *Serviço:* ${servico || "não informado"}\n` +
-    `${statusCliente}\n` +
     scoreLinha +
     obsLinha +
-    tagsLinha;
+    historicoTexto;
 
   return NextResponse.json({
     ok: true,
