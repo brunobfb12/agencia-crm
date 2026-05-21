@@ -61,6 +61,7 @@ model Usuario {
   nome      String
   email     String   @unique
   senha     String
+  telefone  String?
   perfil    Perfil   @default(VENDEDOR)
   empresaId String?
   ativo     Boolean  @default(true)

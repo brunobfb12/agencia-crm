@@ -14,9 +14,9 @@ function slugify(text: string): string {
 }
 
 export async function POST(req: Request) {
-  const { nomeEmpresa, nome, email, senha } = await req.json();
+  const { nomeEmpresa, nome, email, telefone, senha } = await req.json();
 
-  if (!nomeEmpresa?.trim() || !nome?.trim() || !email?.trim() || !senha) {
+  if (!nomeEmpresa?.trim() || !nome?.trim() || !email?.trim() || !telefone?.trim() || !senha) {
     return NextResponse.json({ error: "Preencha todos os campos" }, { status: 400 });
   }
   if (senha.length < 8) {
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
       nome: nome.trim(),
       email: email.trim().toLowerCase(),
       senha: senhaCriptografada,
+      telefone: telefone.trim(),
       perfil: "DONO",
       empresaId: empresa.id,
     },

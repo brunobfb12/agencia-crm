@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function RegistroPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ nomeEmpresa: "", nome: "", email: "", senha: "", confirmar: "" });
+  const [form, setForm] = useState({ nomeEmpresa: "", nome: "", telefone: "", email: "", senha: "", confirmar: "" });
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +30,7 @@ export default function RegistroPage() {
       body: JSON.stringify({
         nomeEmpresa: form.nomeEmpresa,
         nome: form.nome,
+        telefone: form.telefone,
         email: form.email,
         senha: form.senha,
       }),
@@ -115,6 +116,21 @@ export default function RegistroPage() {
                 onChange={(e) => set("nome", e.target.value)}
                 required
                 placeholder="Seu nome completo"
+                className="w-full input-dark px-4 py-3 text-[13.5px]"
+                style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
+                WHATSAPP / TELEFONE
+              </label>
+              <input
+                type="tel"
+                value={form.telefone}
+                onChange={(e) => set("telefone", e.target.value)}
+                required
+                placeholder="(62) 99999-9999"
                 className="w-full input-dark px-4 py-3 text-[13.5px]"
                 style={{ color: "#f1f5f9", background: "rgba(255,255,255,.06)" }}
               />
