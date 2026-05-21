@@ -79,26 +79,24 @@ export async function POST(req: Request) {
   // Normalize hora to "HH:MM" (strip seconds if present: "15:00:00" → "15:00")
   const horaNorm = hora ? String(hora).substring(0, 5) : null;
 
-  // Create Agendamento — catch P2002 (unique violation) when concurrent Cal.com webhooks race
-  const agendamento = await (async () => {
-    try {
-      return await prisma.agendamento.create({
-        data: {
-          clienteId: cliente.id,
-          tipo: "CONSULTA",
-          dataAgendada: dataAgendadaDate,
-          hora: horaNorm,
-          notas: servico || null,
-          status: "PENDENTE",
-        },
-      });
-    } catch (e: any) {
-      if (e.code !== "P2002") throw e;
-      return await prisma.agendamento.findFirst({
-        where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: horaNorm, status: "PENDENTE" },
-      });
-    }
-  })();
+  // Create Agendamento — catch P2002 (unique violation) when Cal.com sends duplicate webhooks
+  let agendamento;
+  try {
+    agendamento = await prisma.agendamento.create({
+      data: {
+        clienteId: cliente.id,
+        tipo: "CONSULTA",
+        dataAgendada: dataAgendadaDate,
+        hora: horaNorm,
+        notas: servico || null,
+        status: "PENDENTE",
+      },
+    });
+  } catch (e: any) {
+    if (e.code !== "P2002") throw e;
+    // Duplicate webhook from Cal.com — agendamento já existe, não reenvia notificações
+    return NextResponse.json({ ok: false, motivo: "duplicado" });
+  }
   if (!agendamento) return NextResponse.json({ ok: false, motivo: "agendamento nao encontrado" }, { status: 500 });
 
   // Round-robin vendor if lead has none
@@ -121,6 +119,30 @@ export async function POST(req: Request) {
   // Normalize stored phone before returning (DB may have "555562..." from old bookings)
   const telefoneLimpo = (cliente.telefone || "").replace(/\D/g, "").replace(/^5555(\d+)$/, "55$1");
 
+  // Count past concluded appointments to distinguish new vs returning
+  const totalAnteriores = await prisma.agendamento.count({
+    where: { clienteId: cliente.id, status: "CONCLUIDO" },
+  });
+
+  const statusCliente = totalAnteriores === 0 ? "🆕 Primeiro agendamento" : `🔁 Retorno — ${totalAnteriores} atendimento(s) anterior(es)`;
+  const emailLinha = (cliente as any).email ? `📧 *Email:* ${(cliente as any).email}\n` : "";
+  const tagsRaw = (cliente as any).tags;
+  const tagsLinha = tagsRaw ? `🏷️ *Tags:* ${tagsRaw}\n` : "";
+  const scoreLinha = (lead as any).score ? `📊 *Score:* ${(lead as any).score}/10\n` : "";
+  const obsLinha = (lead as any).observacoes ? `📋 *Observações:* ${(lead as any).observacoes}\n` : "";
+
+  const mensagemVendedor =
+    `🔔 *AGENDAMENTO CONFIRMADO*\n\n` +
+    `👤 *Cliente:* ${cliente.nome || "desconhecido"}\n` +
+    `📱 *WhatsApp:* https://wa.me/${telefoneLimpo}\n` +
+    emailLinha +
+    `📅 *Data:* ${dataFormatada}${hora ? " às " + hora : ""}\n` +
+    `💼 *Serviço:* ${servico || "não informado"}\n` +
+    `${statusCliente}\n` +
+    scoreLinha +
+    obsLinha +
+    tagsLinha;
+
   return NextResponse.json({
     ok: true,
     lead: { id: lead.id, status: "AGENDADO" },
@@ -128,7 +150,7 @@ export async function POST(req: Request) {
     cliente: { id: cliente.id, nome: cliente.nome, telefone: telefoneLimpo },
     vendedor,
     empresa: { instanciaWhatsapp: empresa.instanciaWhatsapp },
-    mensagemVendedor: `🔔 *AGENDAMENTO CONFIRMADO*\n\n👤 *Cliente:* ${cliente.nome || "desconhecido"}\n💼 *Serviço:* ${servico || "não informado"}\n📅 *Data:* ${dataFormatada}${hora ? " às " + hora : ""}\n\n📱 *Iniciar conversa:*\nhttps://wa.me/${telefoneLimpo}\n\n📋 *Briefing p/ abordagem:* O cliente agendou interesse em "${servico || "serviço a confirmar"}". Use isso como gancho ao entrar em contato.`,
+    mensagemVendedor,
     mensagemCliente: `Olá, ${nomeCliente}! ✅ Seu agendamento foi confirmado.\n📅 Data: ${dataFormatada}${hora ? " às " + hora : ""}\n💼 Serviço: ${servico || "a confirmar"}\nTe esperamos! 😊`,
   });
 }
