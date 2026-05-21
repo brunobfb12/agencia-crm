@@ -91,15 +91,19 @@ export default function LeadsPage() {
   const [registrandoVenda, setRegistrandoVenda] = useState(false);
   const [vendaRegistrada, setVendaRegistrada] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState("LEAD");
+  const [filtroEmpresa, setFiltroEmpresa] = useState("");
+  const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/leads").then((r) => r.json()),
       fetch("/api/vendedores?todos=true").then((r) => r.json()),
+      fetch("/api/empresas").then((r) => r.json()),
     ])
-      .then(([leadsData, vendedoresData]) => {
+      .then(([leadsData, vendedoresData, empresasData]) => {
         setLeads(leadsData);
         setVendedores(vendedoresData);
+        setEmpresas(empresasData);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -223,6 +227,8 @@ export default function LeadsPage() {
   const fc = fireColor(editForm.score);
   const fl = fireLabel(editForm.score);
 
+  const leadsVisiveis = filtroEmpresa ? leads.filter((l) => l.empresaId === filtroEmpresa) : leads;
+
   return (
     <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
       <div className="p-6">
@@ -231,11 +237,24 @@ export default function LeadsPage() {
           <div>
             <h2 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Leads</h2>
             <p className="text-sm mt-1" style={{ color: "var(--muted-2)" }}>
-              {leads.length} leads
+              {leadsVisiveis.length} leads{filtroEmpresa ? " nesta empresa" : ""}
               <span className="hidden sm:inline"> · Arraste os cards para mover entre colunas</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+            {empresas.length > 1 && (
+              <select
+                value={filtroEmpresa}
+                onChange={(e) => setFiltroEmpresa(e.target.value)}
+                className="input-dark px-3 py-2 text-[13px] rounded-xl"
+                style={{ minWidth: 0 }}
+              >
+                <option value="">Todas as empresas</option>
+                {empresas.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.nome}</option>
+                ))}
+              </select>
+            )}
             {vendaRegistrada && (
               <span
                 className="text-[12px] px-3 py-1.5 rounded-full font-semibold"
@@ -290,7 +309,7 @@ export default function LeadsPage() {
           {/* Chips de status */}
           <div className="flex gap-2 overflow-x-auto pb-3 -mx-6 px-6 mb-4">
             {colunas.map((col) => {
-              const count = leads.filter(l => l.status === col.status).length;
+              const count = leadsVisiveis.filter(l => l.status === col.status).length;
               const ativo = filtroStatus === col.status;
               return (
                 <button key={col.status} onClick={() => setFiltroStatus(col.status)}
@@ -312,7 +331,7 @@ export default function LeadsPage() {
           {/* Lista de leads do status selecionado */}
           {(() => {
             const col = colunas.find(c => c.status === filtroStatus)!;
-            const leadsColuna = leads.filter(l => l.status === filtroStatus);
+            const leadsColuna = leadsVisiveis.filter(l => l.status === filtroStatus);
             return (
               <div className="space-y-2 pb-4">
                 {leadsColuna.length === 0 ? (
@@ -383,7 +402,7 @@ export default function LeadsPage() {
         {/* ── Desktop: Kanban ── */}
         <div className="hidden sm:flex gap-3 overflow-x-auto pb-4">
           {colunas.map((col) => {
-            const leadsColuna = leads.filter((l) => l.status === col.status);
+            const leadsColuna = leadsVisiveis.filter((l) => l.status === col.status);
             const isOver = dragOverCol === col.status;
             return (
               <div
