@@ -203,6 +203,13 @@ html[data-theme="light"] .nav-item:not(.active):hover {
   border-color: rgba(99,102,241,.55);
   box-shadow: 0 0 0 3px rgba(99,102,241,.12);
 }
+.input-dark:-webkit-autofill,
+.input-dark:-webkit-autofill:hover,
+.input-dark:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f1f5f9;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(15,18,40,1) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
 
 .btn-primary {
   background: linear-gradient(135deg, #6366f1, #4f46e5);
