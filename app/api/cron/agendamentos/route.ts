@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const EVOL_URL = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8081";
+const EVOL_URL = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
 const EVOL_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 const SECRET   = "crm2026migra";
 
