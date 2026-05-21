@@ -9,7 +9,7 @@ async function enviarWhatsApp(instancia: string, numero: string, texto: string) 
   const res = await fetch(`${EVOL_URL}/message/sendText/${instancia}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOL_KEY },
-    body: JSON.stringify({ number: numero, textMessage: { text: texto } }),
+    body: JSON.stringify({ number: numero, text: texto }),
   });
   if (!res.ok) throw new Error(`Evolution ${res.status}: ${(await res.text()).slice(0, 120)}`);
 }

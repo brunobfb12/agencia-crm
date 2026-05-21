@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const resp = await fetch(`${EVOLUTION_URL}/message/sendText/${empresa.instanciaWhatsapp}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOLUTION_KEY },
-    body: JSON.stringify({ number: cliente.telefone, textMessage: { text: saudacao } }),
+    body: JSON.stringify({ number: cliente.telefone, text: saudacao }),
   });
 
   if (!resp.ok) {

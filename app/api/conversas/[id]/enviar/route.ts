@@ -34,7 +34,7 @@ export async function POST(
   const res = await fetch(`${apiUrl}/message/sendText/${instancia}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: apiKey },
-    body: JSON.stringify({ number: telefone, textMessage: { text: texto } }),
+    body: JSON.stringify({ number: telefone, text: texto }),
   });
 
   if (!res.ok) {
