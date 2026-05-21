@@ -129,14 +129,14 @@ function ThemeToggle({ compact = false }: { compact?: boolean }) {
 
 /* ── Nav items ────────────────────────────────────────────────────── */
 const navItemsBase = [
-  { href: "/dashboard/analytics",    label: "Analytics",     Icon: IconAnalytics  },
-  { href: "/dashboard/leads",        label: "Leads",          Icon: IconLeads     },
-  { href: "/dashboard/vendas",        label: "Vendas",         Icon: IconVendas    },
-  { href: "/dashboard/conversas",     label: "Conversas",     Icon: IconChat      },
-  { href: "/dashboard/clientes",      label: "Clientes",      Icon: IconClients   },
-  { href: "/dashboard/agendamentos",  label: "Agendamentos",  Icon: IconSchedule  },
-  { href: "/dashboard/campanhas",     label: "Campanhas",     Icon: IconCampanhas  },
-  { href: "/dashboard/configuracoes", label: "Configurações", Icon: IconSettings  },
+  { href: "/dashboard/leads",        label: "Leads",         Icon: IconLeads     },
+  { href: "/dashboard/clientes",     label: "Clientes",      Icon: IconClients   },
+  { href: "/dashboard/conversas",    label: "Conversas",     Icon: IconChat      },
+  { href: "/dashboard/agendamentos", label: "Agendamentos",  Icon: IconSchedule  },
+  { href: "/dashboard/vendas",       label: "Vendas",        Icon: IconVendas    },
+  { href: "/dashboard/campanhas",    label: "Campanhas",     Icon: IconCampanhas },
+  { href: "/dashboard/analytics",   label: "Analytics",     Icon: IconAnalytics },
+  { href: "/dashboard/configuracoes",label: "Configurações", Icon: IconSettings  },
 ];
 const navItemsCentral = [
   { href: "/dashboard/central", label: "Painel Central", Icon: IconCentral },
