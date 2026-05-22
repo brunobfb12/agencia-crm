@@ -133,8 +133,10 @@ const CSS = `
 .auth-pwd-wrap input[type="password"]::-ms-reveal,
 .auth-pwd-wrap input[type="password"]::-ms-clear{display:none}
 .auth-eye{
-  flex-shrink:0;padding:0 12px;background:none;border:none;
-  display:flex;align-items:center;cursor:pointer;
+  flex-shrink:0;padding:0 12px;border:none;cursor:pointer;
+  display:flex;align-items:center;align-self:stretch;
+  background:#08080f;border-radius:0 12px 12px 0;
+  border-left:1px solid rgba(255,255,255,.08);
 }
 
 /* Submit btn */
