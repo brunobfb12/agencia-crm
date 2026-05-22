@@ -573,8 +573,8 @@ export default function LandingPageV2() {
               <h1 className="hero-h1">
                 Pare de perder<br />vendas pra quem<br /><span className="grad">responde mais</span><br />rápido
               </h1>
-              <p style={{fontSize:".9rem",color:"var(--lp-indigo-l)",fontWeight:600,letterSpacing:".03em",marginBottom:"18px",marginTop:"-10px"}}>
-                A IA que atende. O vendedor que fecha.
+              <p style={{fontSize:"1.15rem",color:"var(--lp-indigo-l)",fontWeight:700,letterSpacing:".02em",marginBottom:"18px",marginTop:"-10px"}}>
+                Sua IA vende. Seu time de vendas fecha.
               </p>
               <p className="hero-sub">
                 O FácilCRM responde seus leads no WhatsApp em menos de 30 segundos — qualifica, aquece, agenda e avisa seu vendedor só quando o cliente está <strong>pronto pra fechar.</strong> Você não perde mais nenhum lead por demora.
