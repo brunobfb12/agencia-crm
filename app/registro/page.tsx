@@ -74,6 +74,15 @@ const CSS = `
 .reg-input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 .reg-input::placeholder{color:rgba(240,240,255,.18)}
 .reg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.reg-pwd-wrap{position:relative}
+.reg-pwd-wrap input[type="password"]::-ms-reveal,
+.reg-pwd-wrap input[type="password"]::-ms-clear{display:none}
+.reg-eye{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;background:none;border:none;
+  color:#818cf8;cursor:pointer;z-index:2;padding:0;line-height:0;flex-shrink:0;
+}
 
 .reg-btn{
   width:100%;padding:13px;border-radius:12px;
@@ -204,34 +213,28 @@ export default function RegistroPage() {
             <div className="reg-row">
               <div>
                 <label className="reg-label">SENHA</label>
-                <div style={{ position:"relative" }}>
+                <div className="reg-pwd-wrap">
                   <input className="reg-input" type={showSenha?"text":"password"} value={form.senha}
                     onChange={e=>set("senha",e.target.value)} required minLength={8}
                     placeholder="Mín. 8 caracteres" style={{ paddingRight:40 }} />
-                  <button type="button" onClick={()=>setShowSenha(!showSenha)}
-                    style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-                      background:"none",border:"none",color:"#818cf8",cursor:"pointer",
-                      padding:2,zIndex:1,display:"flex",alignItems:"center" }}>
+                  <button type="button" className="reg-eye" onClick={()=>setShowSenha(!showSenha)}>
                     {showSenha
-                      ? <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                      : <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      ? <svg width="18" height="18" fill="none" stroke="#818cf8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                      : <svg width="18" height="18" fill="none" stroke="#818cf8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     }
                   </button>
                 </div>
               </div>
               <div>
                 <label className="reg-label">CONFIRMAR</label>
-                <div style={{ position:"relative" }}>
+                <div className="reg-pwd-wrap">
                   <input className="reg-input" type={showConfirmar?"text":"password"} value={form.confirmar}
                     onChange={e=>set("confirmar",e.target.value)} required
                     placeholder="Repita a senha" style={{ paddingRight:40 }} />
-                  <button type="button" onClick={()=>setShowConfirmar(!showConfirmar)}
-                    style={{ position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-                      background:"none",border:"none",color:"#818cf8",cursor:"pointer",
-                      padding:2,zIndex:1,display:"flex",alignItems:"center" }}>
+                  <button type="button" className="reg-eye" onClick={()=>setShowConfirmar(!showConfirmar)}>
                     {showConfirmar
-                      ? <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                      : <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      ? <svg width="18" height="18" fill="none" stroke="#818cf8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                      : <svg width="18" height="18" fill="none" stroke="#818cf8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     }
                   </button>
                 </div>
