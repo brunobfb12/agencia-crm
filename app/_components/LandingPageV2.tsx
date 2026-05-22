@@ -412,15 +412,17 @@ const TICKER_ITEMS = [
 
 /* ── Component ───────────────────────────────────────────────────────────── */
 export default function LandingPageV2() {
-  const navRef  = useRef<HTMLElement>(null);
-  const cgRef   = useRef<HTMLDivElement>(null);
+  const navRef         = useRef<HTMLElement>(null);
+  const cgRef          = useRef<HTMLDivElement>(null);
+  const hiwScrollRef   = useRef<HTMLDivElement>(null);
+  const testiScrollRef = useRef<HTMLDivElement>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isDark,  setIsDark]  = useState(true);
 
   useEffect(() => {
-    /* sync theme state with current html[data-theme] */
-    const current = document.documentElement.getAttribute("data-theme") || "dark";
-    setIsDark(current !== "light");
+    /* LP always starts dark — ignore stored preference */
+    document.documentElement.setAttribute("data-theme", "dark");
+    setIsDark(true);
 
     /* cursor orb */
     const cg = cgRef.current;
@@ -453,11 +455,38 @@ export default function LandingPageV2() {
     };
     window.addEventListener("scroll", onScroll);
 
+    /* hover auto-scroll for HIW and Testimonials */
+    const setupHoverScroll = (el: HTMLDivElement | null) => {
+      if (!el) return () => {};
+      let scrollRafId = 0;
+      const tick = () => {
+        el.scrollLeft += 1.5;
+        if (el.scrollLeft < el.scrollWidth - el.clientWidth) {
+          scrollRafId = requestAnimationFrame(tick);
+        } else {
+          scrollRafId = 0;
+        }
+      };
+      const start = () => { cancelAnimationFrame(scrollRafId); scrollRafId = requestAnimationFrame(tick); };
+      const stop  = () => { cancelAnimationFrame(scrollRafId); scrollRafId = 0; };
+      el.addEventListener("mouseenter", start);
+      el.addEventListener("mouseleave", stop);
+      return () => {
+        el.removeEventListener("mouseenter", start);
+        el.removeEventListener("mouseleave", stop);
+        cancelAnimationFrame(scrollRafId);
+      };
+    };
+    const cleanHiw   = setupHoverScroll(hiwScrollRef.current);
+    const cleanTesti = setupHoverScroll(testiScrollRef.current);
+
     return () => {
       document.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(rafId);
       obs.disconnect();
       window.removeEventListener("scroll", onScroll);
+      cleanHiw();
+      cleanTesti();
     };
   }, []);
 
@@ -465,7 +494,7 @@ export default function LandingPageV2() {
     const next = isDark ? "light" : "dark";
     setIsDark(!isDark);
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("theme", next);
+    /* LP theme is session-only — não persiste no localStorage */
   };
 
   /* sun / moon icons */
@@ -645,7 +674,7 @@ export default function LandingPageV2() {
           </div>
         </div>
         <div className="container" style={{overflow:"visible"}}>
-          <div className="sw">
+          <div className="sw" ref={hiwScrollRef}>
             <div className="st">
               {STEPS.map((s, i) => (
                 <div key={s.n} style={{display:"contents"}}>
@@ -715,7 +744,7 @@ export default function LandingPageV2() {
           </div>
         </div>
         <div className="container" style={{overflow:"visible"}}>
-          <div className="tw">
+          <div className="tw" ref={testiScrollRef}>
             <div className="tt">
               {DEPOIMENTOS.map((d) => (
                 <div key={d.nome} className="gc tcard">
