@@ -268,7 +268,10 @@ export default function Nav({ nome, perfil, empresa }: { nome: string; perfil: s
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  const items = [...navItemsBase, ...(perfil === "CENTRAL" ? navItemsCentral : [])];
+  const items = [
+    ...navItemsBase.filter(i => perfil === "CENTRAL" ? i.href !== "/dashboard/assinatura" : true),
+    ...(perfil === "CENTRAL" ? navItemsCentral : []),
+  ];
 
   return (
     <>
