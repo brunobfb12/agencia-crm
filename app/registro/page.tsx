@@ -74,6 +74,17 @@ const CSS = `
 }
 .reg-input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 .reg-input::placeholder{color:rgba(240,240,255,.18)}
+.reg-input:-webkit-autofill,
+.reg-input:-webkit-autofill:hover,
+.reg-input:-webkit-autofill:focus,
+.reg-pwd-wrap input:-webkit-autofill,
+.reg-pwd-wrap input:-webkit-autofill:hover,
+.reg-pwd-wrap input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #08080f inset !important;
+  box-shadow:0 0 0 1000px #08080f inset !important;
+  -webkit-text-fill-color:#f0f0ff !important;
+  caret-color:#f0f0ff;
+}
 .reg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .reg-pwd-wrap{
   display:flex;align-items:center;

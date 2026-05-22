@@ -107,6 +107,17 @@ const CSS = `
 }
 .auth-input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 .auth-input::placeholder{color:rgba(240,240,255,.18)}
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-pwd-wrap input:-webkit-autofill,
+.auth-pwd-wrap input:-webkit-autofill:hover,
+.auth-pwd-wrap input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #08080f inset !important;
+  box-shadow:0 0 0 1000px #08080f inset !important;
+  -webkit-text-fill-color:#f0f0ff !important;
+  caret-color:#f0f0ff;
+}
 .auth-pwd-wrap{
   display:flex;align-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
