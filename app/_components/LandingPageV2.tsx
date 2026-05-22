@@ -546,7 +546,7 @@ export default function LandingPageV2() {
           <div className="nav-i">
             <div>
               <a href="/" className="logo">FácilCRM</a>
-              <div style={{fontSize:".65rem",color:"var(--lp-txt3)",letterSpacing:".04em",marginTop:"1px"}}>A IA que atende. O vendedor que fecha.</div>
+              <div style={{fontSize:".65rem",color:"var(--lp-txt3)",letterSpacing:".04em",marginTop:"1px"}}>Sua IA vende. Seu time de vendas fecha.</div>
             </div>
             <ul className="nav-links">
               <li><a href="#features">Funcionalidades</a></li>
@@ -870,7 +870,7 @@ export default function LandingPageV2() {
           <div className="fi">
             <div>
               <a href="/" className="logo" style={{fontSize:"1.2rem"}}>FácilCRM</a>
-              <p className="fc" style={{marginTop:"3px",fontStyle:"italic"}}>A IA que atende. O vendedor que fecha.</p>
+              <p className="fc" style={{marginTop:"3px",fontStyle:"italic"}}>Sua IA vende. Seu time de vendas fecha.</p>
               <p className="fc" style={{marginTop:"2px"}}>CRM com IA para empresas que vendem pelo WhatsApp</p>
             </div>
             <div className="fc">© 2026 FácilCRM · <a href="https://www.ocrmfacil.com.br">ocrmfacil.com.br</a></div>

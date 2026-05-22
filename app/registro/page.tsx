@@ -13,6 +13,7 @@ const CSS = `
   background:#04040c;color:#f0f0ff;
   font-family:'DM Sans',sans-serif;
   overflow-x:hidden;position:relative;
+  color-scheme:dark;
 }
 .reg-grid{position:fixed;inset:0;
   background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),

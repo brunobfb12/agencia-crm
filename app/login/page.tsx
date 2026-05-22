@@ -14,6 +14,7 @@ const CSS = `
   background:#04040c;color:#f0f0ff;
   font-family:'DM Sans',sans-serif;
   overflow:hidden;position:relative;
+  color-scheme:dark;
 }
 .auth-grid{content:'';position:fixed;inset:0;
   background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),
