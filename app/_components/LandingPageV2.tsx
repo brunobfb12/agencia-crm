@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import SupportButton from "./SupportButton";
 
 /* ── CSS ─────────────────────────────────────────────────────────────────── */
 const CSS = `
@@ -860,6 +861,8 @@ export default function LandingPageV2() {
           </div>
         </div>
       </section>
+
+      <SupportButton />
 
       {/* ── FOOTER ── */}
       <footer>

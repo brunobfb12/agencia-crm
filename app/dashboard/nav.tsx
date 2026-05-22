@@ -46,6 +46,11 @@ const IconAnalytics = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8M12 11v5M8 14v2M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
   </svg>
 );
+const IconPlan = () => (
+  <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+  </svg>
+);
 const IconSettings = () => (
   <svg className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={1.7} viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
@@ -137,6 +142,7 @@ const navItemsBase = [
   { href: "/dashboard/campanhas",    label: "Campanhas",     Icon: IconCampanhas },
   { href: "/dashboard/analytics",   label: "Analytics",     Icon: IconAnalytics },
   { href: "/dashboard/configuracoes",label: "Configurações", Icon: IconSettings  },
+  { href: "/dashboard/assinatura",   label: "Meu Plano",    Icon: IconPlan      },
 ];
 const navItemsCentral = [
   { href: "/dashboard/central", label: "Painel Central", Icon: IconCentral },

@@ -1,204 +1,158 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import SupportButton from "@/app/_components/SupportButton";
 
-/* ── Continent dots [lon, lat] ──────────────────────────────────── */
-function buildContinentDots(): [number, number][] {
-  const dots: [number, number][] = [];
-  const regions: [number, number, number, number, number][] = [
-    [-18, 52,  -34, 37,  9],  // Africa
-    [-82, -34, -55, 12,  10], // South America
-    [-125,-60,  25, 72,  13], // North America
-    [-12,  45,  36, 71,  10], // Europe
-    [ 28, 148,  -2, 77,  14], // Asia
-    [114, 154, -42, -9,  10], // Australia
-  ];
-  for (const [lonMin, lonMax, latMin, latMax, step] of regions) {
-    for (let lon = lonMin; lon <= lonMax; lon += step) {
-      for (let lat = latMin; lat <= latMax; lat += step) {
-        dots.push([lon, lat]);
-      }
-    }
-  }
-  return dots;
+/* ── CSS ─────────────────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap');
+
+.auth-wrap {
+  min-height:100vh;display:flex;
+  background:#04040c;color:#f0f0ff;
+  font-family:'DM Sans',sans-serif;
+  overflow:hidden;position:relative;
 }
-const DOTS = buildContinentDots();
+.auth-grid{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);
+  background-size:56px 56px;pointer-events:none;z-index:0}
+.auth-orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;opacity:.35}
+.auth-o1{width:600px;height:600px;background:radial-gradient(circle,rgba(99,102,241,.3),transparent);top:-200px;left:-180px}
+.auth-o2{width:400px;height:400px;background:radial-gradient(circle,rgba(34,211,238,.2),transparent);bottom:5%;right:-100px}
 
-/* ── Globe canvas component ─────────────────────────────────────── */
-function GlobeCanvas() {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctxMaybe = canvas.getContext("2d");
-    if (!ctxMaybe) return;
-    const ctx = ctxMaybe;
-
-    const dpr = window.devicePixelRatio || 1;
-    const S = 360;
-    canvas.width  = S * dpr;
-    canvas.height = S * dpr;
-    canvas.style.width  = `${S}px`;
-    canvas.style.height = `${S}px`;
-    ctx.scale(dpr, dpr);
-
-    const cx = S / 2;
-    const cy = S / 2;
-    const R  = S * 0.38;
-
-    const t0 = performance.now();
-    let animId: number;
-
-    function project(lon: number, lat: number, rotDeg: number): [number, number, number] {
-      const d = Math.PI / 180;
-      const lr = (lon + rotDeg) * d;
-      const pr = lat * d;
-      const cosP = Math.cos(pr);
-      return [cosP * Math.cos(lr), Math.sin(pr), cosP * Math.sin(lr)];
-      // returns [depth, screenY_raw, screenX_raw]
-    }
-
-    function draw(now: number) {
-      const t = (now - t0) / 1000;
-      const rot = (t * 10) % 360; // 36s per revolution
-      ctx.clearRect(0, 0, S, S);
-
-      /* 1 ── outer ambient glow */
-      const g1 = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.45);
-      g1.addColorStop(0, "rgba(0,100,255,.07)");
-      g1.addColorStop(1, "transparent");
-      ctx.beginPath(); ctx.arc(cx, cy, R * 1.45, 0, Math.PI * 2);
-      ctx.fillStyle = g1; ctx.fill();
-
-      /* 2 ── sphere fill */
-      const g2 = ctx.createRadialGradient(cx - R * .28, cy - R * .28, R * .05, cx, cy, R);
-      g2.addColorStop(0, "#0d1b3e");
-      g2.addColorStop(.55, "#060d22");
-      g2.addColorStop(1, "#020810");
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-      ctx.fillStyle = g2; ctx.fill();
-
-      /* edge rim light */
-      const g3 = ctx.createRadialGradient(cx, cy, R * .82, cx, cy, R);
-      g3.addColorStop(0, "transparent");
-      g3.addColorStop(1, "rgba(0,110,255,.22)");
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-      ctx.fillStyle = g3; ctx.fill();
-
-      /* 3 ── orbit ring params */
-      const orx = R * 1.2;
-      const ory = R * 0.36;
-      const tilt = -0.22; // radians
-
-      /* 3a ── back arc (lower opacity, drawn behind dots) */
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(tilt);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, orx, ory, 0, Math.PI, Math.PI * 2);
-      ctx.strokeStyle = "rgba(0,130,255,.2)";
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-      ctx.restore();
-
-      /* 4 ── continent dots */
-      for (const [lon, lat] of DOTS) {
-        const [depth, sy, sx] = project(lon, lat, rot);
-        if (depth < 0.04) continue;
-        const px = cx + sx * R;
-        const py = cy - sy * R;
-        const alpha = 0.14 + depth * 0.6;
-        const size  = 0.9 + depth * 1.4;
-        ctx.beginPath();
-        ctx.arc(px, py, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(80,160,255,${alpha.toFixed(2)})`;
-        ctx.fill();
-      }
-
-      /* 5 ── front arc (bright, with glow) */
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(tilt);
-      ctx.shadowColor = "#0088ff";
-      ctx.shadowBlur  = 14;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, orx, ory, 0, 0, Math.PI);
-      ctx.strokeStyle = "rgba(0,150,255,.9)";
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.restore();
-
-      /* 6 ── orbit nodes + connection lines */
-      const N = 6;
-      const speed = t * 0.45;
-      const nodes: [number, number][] = [];
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(tilt);
-
-      for (let i = 0; i < N; i++) {
-        const a = (i / N) * Math.PI * 2 + speed;
-        nodes.push([Math.cos(a) * orx, Math.sin(a) * ory]);
-      }
-
-      /* lines between non-adjacent nodes */
-      for (let i = 0; i < N; i++) {
-        const j = (i + 2) % N;
-        ctx.beginPath();
-        ctx.moveTo(...nodes[i]);
-        ctx.lineTo(...nodes[j]);
-        ctx.strokeStyle = "rgba(0,140,255,.1)";
-        ctx.lineWidth = 0.7;
-        ctx.stroke();
-      }
-
-      /* dots */
-      for (const [nx, ny] of nodes) {
-        ctx.beginPath();
-        ctx.arc(nx, ny, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "#4db8ff";
-        ctx.shadowColor = "#4db8ff";
-        ctx.shadowBlur = 14;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        /* bright center */
-        ctx.beginPath();
-        ctx.arc(nx, ny, 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = "#fff";
-        ctx.fill();
-      }
-
-      ctx.restore();
-
-      animId = requestAnimationFrame(draw);
-    }
-
-    animId = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animId);
-  }, []);
-
-  return <canvas ref={ref} style={{ display: "block" }} />;
+/* Split layout */
+.auth-left {
+  width:54%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:64px 56px;position:relative;z-index:2;
+  border-right:1px solid rgba(255,255,255,.05);
+}
+.auth-right {
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:32px 24px;position:relative;z-index:2;
 }
 
-/* ── Login page ─────────────────────────────────────────────────── */
+/* Logo */
+.auth-logo{
+  font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;
+  background:linear-gradient(135deg,#818cf8,#22d3ee);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-decoration:none;
+}
+
+/* Left copy */
+.auth-h1{
+  font-family:'Syne',sans-serif;font-weight:800;letter-spacing:-.02em;
+  font-size:clamp(1.9rem,3vw,2.9rem);line-height:1.1;margin-bottom:14px;
+}
+.auth-grad{
+  background:linear-gradient(135deg,#818cf8,#22d3ee);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.auth-sub{color:rgba(240,240,255,.5);font-size:.9rem;line-height:1.7;margin-bottom:28px;max-width:360px}
+
+/* Phone mini */
+.auth-phone{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  border-radius:18px;padding:16px;max-width:300px;
+  box-shadow:0 20px 60px rgba(99,102,241,.12);margin-bottom:28px;
+}
+.auth-msg{padding:9px 13px;border-radius:10px;font-size:.78rem;line-height:1.5;margin-bottom:8px;}
+.auth-msg.u{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);color:rgba(240,240,255,.8);max-width:85%}
+.auth-msg.a{
+  background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(124,58,237,.18));
+  border:1px solid rgba(99,102,241,.2);color:rgba(240,240,255,.9);margin-left:auto;max-width:90%;
+}
+.auth-msg-t{font-size:.6rem;color:rgba(240,240,255,.28);margin-top:3px}
+
+/* Stats row */
+.auth-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.auth-stat{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:14px 10px;text-align:center;
+}
+.auth-stat-v{
+  font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;
+  background:linear-gradient(135deg,#818cf8,#22d3ee);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.auth-stat-l{font-size:.65rem;color:rgba(240,240,255,.35);margin-top:3px}
+
+/* Form card */
+.auth-card{
+  width:100%;max-width:380px;
+  background:rgba(255,255,255,.035);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;padding:32px;
+  box-shadow:0 24px 80px rgba(0,0,0,.5);
+}
+.auth-card-title{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:1.25rem;
+  color:#f0f0ff;margin-bottom:4px;
+}
+.auth-card-sub{font-size:.8rem;color:rgba(240,240,255,.35);margin-bottom:24px}
+
+/* Inputs */
+.auth-label{display:block;font-size:.68rem;font-weight:600;letter-spacing:.1em;color:rgba(240,240,255,.4);margin-bottom:6px}
+.auth-input{
+  width:100%;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  padding:12px 16px;font-size:.88rem;color:#f0f0ff;
+  font-family:'DM Sans',sans-serif;outline:none;
+  transition:border-color .2s,box-shadow .2s;box-sizing:border-box;
+}
+.auth-input:focus{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.auth-input::placeholder{color:rgba(240,240,255,.18)}
+
+/* Submit btn */
+.auth-btn{
+  width:100%;padding:13px;border-radius:12px;
+  font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;
+  cursor:pointer;border:none;margin-top:8px;
+  background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;
+  transition:transform .2s,box-shadow .2s;
+}
+.auth-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(99,102,241,.45)}
+.auth-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Error */
+.auth-err{
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);
+  color:#f87171;border-radius:12px;padding:10px 14px;font-size:.82rem;margin-bottom:14px;
+}
+
+/* Spinner */
+@keyframes auth-spin{to{transform:rotate(360deg)}}
+.auth-spin{
+  width:15px;height:15px;border:2px solid #fff;border-top-color:transparent;
+  border-radius:50%;display:inline-block;animation:auth-spin .7s linear infinite;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  .auth-left{display:none}
+  .auth-wrap{display:block}
+  .auth-right{min-height:100vh;padding:40px 20px}
+}
+`;
+
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail]       = useState("");
-  const [senha, setSenha]       = useState("");
-  const [erro, setErro]         = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [showSenha, setShowSenha] = useState(false);
+  const [email, setEmail]     = useState("");
+  const [senha, setSenha]     = useState("");
+  const [erro, setErro]       = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setErro(""); setLoading(true);
     const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ email, senha }),
     });
     const data = await res.json();
@@ -209,210 +163,84 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-full flex" style={{ background: "#08080e" }}>
+    <div className="auth-wrap">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="auth-grid" />
+      <div className="auth-orb auth-o1" />
+      <div className="auth-orb auth-o2" />
 
-      {/* ── Left: Globe ───────────────────────────────────── */}
-      <div
-        className="hidden lg:flex lg:w-[58%] flex-col items-center justify-center relative overflow-hidden"
-        style={{
-          background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(0,80,200,.07) 0%, transparent 70%)",
-          borderRight: "1px solid rgba(255,255,255,.05)",
-        }}
-      >
-        {/* Subtle grid background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
+      {/* ── Left panel ── */}
+      <div className="auth-left">
+        <div style={{ width:"100%", maxWidth:400 }}>
+          <a href="/" className="auth-logo" style={{ display:"block", marginBottom:48 }}>FácilCRM</a>
+          <h1 className="auth-h1">A IA que atende.<br /><span className="auth-grad">O vendedor que fecha.</span></h1>
+          <p className="auth-sub">Resposta em menos de 30 segundos, qualificação automática e pipeline visual — enquanto você dorme.</p>
 
-        {/* Globe */}
-        <div className="relative z-10 flex flex-col items-center gap-8">
-          <div
-            style={{
-              filter: "drop-shadow(0 0 40px rgba(0,100,255,.25)) drop-shadow(0 0 80px rgba(0,100,255,.1))",
-            }}
-          >
-            <GlobeCanvas />
+          <div className="auth-phone">
+            <div className="auth-msg u">Oi! Quero saber o preço<div className="auth-msg-t">22:43</div></div>
+            <div className="auth-msg a">Oi! Temos opções a partir de R$397/mês 😊 Posso montar uma proposta personalizada. Você prefere mensal ou anual?<div className="auth-msg-t" style={{textAlign:"right"}}>IA · respondeu em 5s ✓✓</div></div>
           </div>
 
-          {/* Copy */}
-          <div className="text-center px-8 max-w-sm">
-            <h2
-              className="text-[28px] font-bold tracking-tight leading-tight"
-              style={{ color: "#f1f5f9" }}
-            >
-              Atendimento inteligente
-              <br />
-              <span className="gradient-text">via WhatsApp</span>
-            </h2>
-            <p className="mt-3 text-[13px] leading-relaxed" style={{ color: "rgba(148,163,184,.55)" }}>
-              IA + CRM integrados para aumentar suas vendas e centralizar o relacionamento com clientes de 10 empresas.
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="flex gap-8">
-            {[
-              { value: "10",  label: "Empresas"     },
-              { value: "24/7", label: "Atendimento" },
-              { value: "IA",   label: "Integrada"   },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <div
-                  className="text-[22px] font-bold"
-                  style={{ color: "#60a5fa" }}
-                >
-                  {s.value}
-                </div>
-                <div className="text-[11px] font-medium" style={{ color: "rgba(148,163,184,.45)" }}>
-                  {s.label}
-                </div>
+          <div className="auth-stats">
+            {[{v:"<30s",l:"Resposta média"},{v:"24/7",l:"Sem pausas"},{v:"3×",l:"Mais conversões"}].map(s=>(
+              <div key={s.l} className="auth-stat">
+                <div className="auth-stat-v">{s.v}</div>
+                <div className="auth-stat-l">{s.l}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Right: Form ───────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-[360px]">
+      {/* ── Right panel — form ── */}
+      <div className="auth-right">
+        <div className="auth-card">
+          <a href="/" className="auth-logo" style={{ display:"block", marginBottom:22 }}>FácilCRM</a>
+          <div className="auth-card-title">Bem-vindo de volta</div>
+          <div className="auth-card-sub">Entre com suas credenciais para continuar</div>
 
-          {/* Logo (mobile only) */}
-          <div className="lg:hidden flex items-center gap-2.5 justify-center mb-10">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #6366f1, #38bdf8)", boxShadow: "0 4px 14px rgba(99,102,241,.5)" }}
-            >
-              <svg className="w-[18px] h-[18px] text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
-                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
-              </svg>
-            </div>
-            <span className="text-[18px] font-bold gradient-text">FácilCRM</span>
-          </div>
+          <form onSubmit={handleLogin}>
+            {erro && <div className="auth-err">{erro}</div>}
 
-          {/* Card */}
-          <div
-            className="rounded-2xl p-7"
-            style={{
-              background: "linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.03))",
-              border: "1px solid rgba(255,255,255,.1)",
-              boxShadow: "0 24px 80px rgba(0,0,0,.5)",
-            }}
-          >
-            {/* Logo (desktop, inside card) */}
-            <div className="hidden lg:flex items-center gap-2.5 mb-7">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #6366f1, #38bdf8)", boxShadow: "0 4px 12px rgba(99,102,241,.45)" }}
-              >
-                <svg className="w-[16px] h-[16px] text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
-                  <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
-                </svg>
-              </div>
-              <span className="text-[15px] font-bold gradient-text">FácilCRM</span>
+            <div style={{ marginBottom:14 }}>
+              <label className="auth-label">E-MAIL</label>
+              <input className="auth-input" type="email" value={email} onChange={e=>setEmail(e.target.value)}
+                required autoComplete="email" placeholder="seu@email.com" />
             </div>
 
-            <h1 className="text-[22px] font-bold mb-1" style={{ color: "#f1f5f9" }}>
-              Bem-vindo de volta
-            </h1>
-            <p className="text-[13px] mb-6" style={{ color: "rgba(148,163,184,.5)" }}>
-              Entre com suas credenciais para continuar
-            </p>
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              {erro && (
-                <div
-                  className="text-[12.5px] rounded-xl px-4 py-3"
-                  style={{
-                    background: "rgba(239,68,68,.1)",
-                    border: "1px solid rgba(239,68,68,.25)",
-                    color: "#f87171",
-                  }}
-                >
-                  {erro}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
-                  EMAIL
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  placeholder="seu@email.com"
-                  className="w-full input-dark px-4 py-3 text-[13.5px]"
-                  style={{ color: "#f1f5f9", caretColor: "#f1f5f9" }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "rgba(148,163,184,.7)" }}>
-                  SENHA
-                </label>
-                <div className="relative">
-                  <input
-                    type={showSenha ? "text" : "password"}
-                    value={senha}
-                    onChange={(e) => setSenha(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    placeholder="••••••••"
-                    className="w-full input-dark px-4 py-3 pr-11 text-[13.5px]"
-                    style={{ color: "#f1f5f9", caretColor: "#f1f5f9" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowSenha(!showSenha)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                    style={{ color: "rgba(148,163,184,.5)" }}
-                    tabIndex={-1}
-                  >
-                    {showSenha ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full py-3 text-[14px] mt-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Entrando...
-                  </span>
-                ) : (
-                  "Entrar"
-                )}
+            <div style={{ marginBottom:8, position:"relative" }}>
+              <label className="auth-label">SENHA</label>
+              <input className="auth-input" type={showPwd?"text":"password"} value={senha}
+                onChange={e=>setSenha(e.target.value)} required autoComplete="current-password"
+                placeholder="••••••••" style={{ paddingRight:44 }} />
+              <button type="button" onClick={()=>setShowPwd(!showPwd)}
+                style={{ position:"absolute",right:12,bottom:11,background:"none",border:"none",
+                  color:"rgba(240,240,255,.3)",cursor:"pointer",padding:2 }}>
+                {showPwd
+                  ? <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                  : <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                }
               </button>
-            </form>
-          </div>
+            </div>
 
-          <p className="text-center text-[11px] mt-6" style={{ color: "rgba(148,163,184,.3)" }}>
-            FácilCRM · Powered by Claude AI
+            <button type="submit" disabled={loading} className="auth-btn">
+              {loading
+                ? <span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><span className="auth-spin"/>Entrando...</span>
+                : "Entrar →"
+              }
+            </button>
+          </form>
+
+          <p style={{ textAlign:"center",fontSize:".8rem",color:"rgba(240,240,255,.3)",marginTop:20 }}>
+            Não tem conta?{" "}
+            <Link href="/registro" style={{ color:"#818cf8",textDecoration:"none",fontWeight:600 }}>
+              Teste grátis — 30 dias
+            </Link>
           </p>
         </div>
       </div>
+
+      <SupportButton />
     </div>
   );
 }

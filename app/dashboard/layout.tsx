@@ -3,6 +3,7 @@ import { getUsuarioLogado } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Nav from "./nav";
+import SupportButton from "@/app/_components/SupportButton";
 
 export default async function DashboardLayout({
   children,
@@ -66,7 +67,7 @@ export default async function DashboardLayout({
           {diasTrial === 0
             ? "Seu teste expira hoje!"
             : `Seu teste expira em ${diasTrial} dia${diasTrial > 1 ? "s" : ""}.`}
-          <Link href="/assinar" className="font-bold underline">
+          <Link href="/dashboard/assinatura" className="font-bold underline">
             Assinar agora
           </Link>
         </div>
@@ -75,6 +76,7 @@ export default async function DashboardLayout({
         <Nav nome={usuario.nome} perfil={usuario.perfil} empresa={nomeEmpresa} />
         <main className="flex-1 overflow-hidden flex flex-col pt-14 md:pt-0">{children}</main>
       </div>
+      <SupportButton />
     </div>
   );
 }
