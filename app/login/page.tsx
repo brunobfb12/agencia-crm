@@ -118,25 +118,25 @@ const CSS = `
   -webkit-text-fill-color:#f0f0ff !important;
   caret-color:#f0f0ff;
 }
+.auth-pwd-outer{position:relative}
 .auth-pwd-wrap{
-  display:flex;align-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   border-radius:12px;transition:border-color .2s,box-shadow .2s;
 }
 .auth-pwd-wrap:focus-within{border-color:rgba(99,102,241,.55);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
 .auth-pwd-wrap input{
-  flex:1;min-width:0;background:none;border:none;outline:none;
-  padding:12px 16px;font-size:.88rem;color:#f0f0ff;
-  font-family:'DM Sans',sans-serif;
+  width:100%;box-sizing:border-box;background:none;border:none;outline:none;
+  padding:12px 48px 12px 16px;font-size:.88rem;color:#f0f0ff;
+  font-family:'DM Sans',sans-serif;border-radius:12px;display:block;
 }
 .auth-pwd-wrap input::placeholder{color:rgba(240,240,255,.18)}
 .auth-pwd-wrap input[type="password"]::-ms-reveal,
 .auth-pwd-wrap input[type="password"]::-ms-clear{display:none}
 .auth-eye{
-  flex-shrink:0;padding:0 12px;border:none;cursor:pointer;
-  display:flex;align-items:center;align-self:stretch;
-  background:#08080f;border-radius:0 12px 12px 0;
-  border-left:1px solid rgba(255,255,255,.08);
+  position:absolute;right:2px;top:2px;bottom:2px;width:40px;
+  display:flex;align-items:center;justify-content:center;
+  background:#0d0d1c;border:none;cursor:pointer;
+  border-radius:0 10px 10px 0;z-index:10;
 }
 
 /* Submit btn */
@@ -249,10 +249,12 @@ export default function LoginPage() {
 
             <div style={{ marginBottom:8 }}>
               <label className="auth-label">SENHA</label>
-              <div className="auth-pwd-wrap">
-                <input type={showPwd?"text":"password"} value={senha}
-                  onChange={e=>setSenha(e.target.value)} required autoComplete="current-password"
-                  placeholder="••••••••" />
+              <div className="auth-pwd-outer">
+                <div className="auth-pwd-wrap">
+                  <input type={showPwd?"text":"password"} value={senha}
+                    onChange={e=>setSenha(e.target.value)} required autoComplete="current-password"
+                    placeholder="••••••••" />
+                </div>
                 <button type="button" className="auth-eye" onClick={()=>setShowPwd(!showPwd)}>
                   {showPwd
                     ? <svg width="18" height="18" fill="none" stroke="#818cf8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
