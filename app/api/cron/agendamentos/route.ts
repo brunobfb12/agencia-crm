@@ -94,6 +94,8 @@ export async function GET(req: Request) {
     let mensagem    = "";
     let destinatario = ag.cliente.telefone;
     let ehMensagemCliente = true;
+    let mensagemVendedor: string | null = null;
+    let destinatarioVendedor: string | null = null;
 
     switch (ag.tipo) {
       case "FOLLOW_UP":
@@ -124,6 +126,17 @@ export async function GET(req: Request) {
               .replace(/\{ia\}/g, ia)
               .replace(/\{empresa\}/g, empresa.nome)
           : `Oi${nome}! 🎂 ${ia} aqui, da ${empresa.nome}. Hoje é seu dia especial — feliz aniversário! Que seja um dia incrível! 🥳`;
+        // Notificação ao vendedor com contexto do cliente
+        if (vendedor?.telefone) {
+          const memoria = (ag.cliente as any).memoriaCliente as string | null;
+          const obs = (lead as any)?.observacoes as string | null;
+          let aviso = `🎂 *Aniversário hoje!*\n👤 *${ag.cliente.nome ?? ag.cliente.telefone}* · ${ag.cliente.telefone}`;
+          if (memoria) aviso += `\n\n📝 *Histórico:* ${memoria.slice(0, 400)}`;
+          if (obs) aviso += `\n\n💡 *Obs do lead:* ${obs.slice(0, 300)}`;
+          aviso += `\n\n🎯 Bom momento para entrar em contato!`;
+          mensagemVendedor = aviso;
+          destinatarioVendedor = vendedor.telefone;
+        }
         break;
 
       case "CONSULTA":
@@ -147,6 +160,11 @@ export async function GET(req: Request) {
 
     try {
       await enviarWhatsApp(empresa.instanciaWhatsapp, destinatario, mensagem);
+
+      // Notificação ao vendedor (ex: aniversário com contexto do cliente)
+      if (mensagemVendedor && destinatarioVendedor) {
+        await enviarWhatsApp(empresa.instanciaWhatsapp, destinatarioVendedor, mensagemVendedor);
+      }
 
       // Registra no histórico da conversa (apenas mensagens ao cliente)
       if (ehMensagemCliente) {
