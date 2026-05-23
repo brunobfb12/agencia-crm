@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     where: {
       empresaId: empresa.id,
       ativo: true,
-      telefone: { endsWith: telLimpo.slice(-9) },
+      telefone: { contains: telLimpo.slice(-9) },
     },
     select: { id: true, nome: true, telefone: true },
   });
