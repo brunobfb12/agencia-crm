@@ -46,7 +46,7 @@ export async function GET(req: Request) {
   };
   const statusWhere = { ...(empresaId && { empresaId }) };
 
-  const [totalLeads, leadsByStatus, vendas, vendedores] = await Promise.all([
+  const [totalLeads, leadsByStatus, vendas, vendedores, empresasComAprendizados] = await Promise.all([
     prisma.lead.count({ where: leadWhere }),
     prisma.lead.groupBy({ by: ["status"], where: statusWhere, _count: { status: true } }),
     prisma.venda.findMany({
@@ -66,6 +66,10 @@ export async function GET(req: Request) {
           select: { valor: true },
         },
       },
+    }),
+    prisma.empresa.findMany({
+      where: { ...(empresaId && { id: empresaId }), ativa: true, aprendizados: { not: null } },
+      select: { id: true, nome: true, aprendizados: true },
     }),
   ]);
 
@@ -114,5 +118,16 @@ export async function GET(req: Request) {
     .filter(v => v.leads > 0 || v.vendas > 0)
     .sort((a, b) => b.vendas - a.vendas || b.receita - a.receita);
 
-  return NextResponse.json({ kpis: { totalLeads, vendasRealizadas, taxaConversao, receitaTotal, ticketMedio }, funil, vendasPorMes, ranking });
+  // Aprendizados da IA por empresa
+  const aprendizados = empresasComAprendizados.map(e => {
+    const itens = (e.aprendizados ?? "").split("\n---\n").filter(Boolean);
+    return {
+      empresaId: e.id,
+      empresaNome: e.nome,
+      vitorias: itens.filter(a => !a.startsWith("[PERDA]")),
+      perdas: itens.filter(a => a.startsWith("[PERDA]")).map(a => a.replace("[PERDA] ", "")),
+    };
+  }).filter(e => e.vitorias.length > 0 || e.perdas.length > 0);
+
+  return NextResponse.json({ kpis: { totalLeads, vendasRealizadas, taxaConversao, receitaTotal, ticketMedio }, funil, vendasPorMes, ranking, aprendizados });
 }

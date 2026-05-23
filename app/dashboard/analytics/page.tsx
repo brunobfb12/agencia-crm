@@ -14,7 +14,8 @@ interface Kpis {
 interface FunilItem  { status: string; label: string; count: number; hex: string; }
 interface MesItem    { mes: string; vendas: number; receita: number; }
 interface Vendedor   { nome: string; leads: number; vendas: number; receita: number; conversao: number; }
-interface Analytics  { kpis: Kpis; funil: FunilItem[]; vendasPorMes: MesItem[]; ranking: Vendedor[]; }
+interface Aprendizado { empresaId: string; empresaNome: string; vitorias: string[]; perdas: string[]; }
+interface Analytics  { kpis: Kpis; funil: FunilItem[]; vendasPorMes: MesItem[]; ranking: Vendedor[]; aprendizados: Aprendizado[]; }
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 function fmt(v: number) { return v.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
@@ -445,6 +446,84 @@ export default function AnalyticsPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* ── Inteligência da IA ── */}
+        {(data?.aprendizados?.length ?? 0) > 0 && (
+          <div className="rounded-2xl p-6 animate-fade-up"
+            style={{ background: "var(--card)", border: "1px solid var(--border)", animationDelay: "600ms" }}>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc" }}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Inteligência da IA</h2>
+                <p className="text-[11.5px] mt-0.5" style={{ color: "var(--muted-3)" }}>
+                  Aprendizados extraídos de conversas reais — aplicados automaticamente em novos atendimentos
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {data!.aprendizados.map((emp, ei) => (
+                <div key={ei}>
+                  {data!.aprendizados.length > 1 && (
+                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                      style={{ color: "var(--muted-3)" }}>{emp.empresaNome}</p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {emp.vitorias.length > 0 && (
+                      <div className="rounded-xl p-4"
+                        style={{ background: "rgba(52,211,153,.06)", border: "1px solid rgba(52,211,153,.15)" }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-5 h-5 rounded-lg flex items-center justify-center text-[10px]"
+                            style={{ background: "rgba(52,211,153,.15)", color: "#34d399" }}>✓</span>
+                          <span className="text-[12px] font-semibold" style={{ color: "#34d399" }}>
+                            O que funcionou ({emp.vitorias.length})
+                          </span>
+                        </div>
+                        <ul className="space-y-2">
+                          {emp.vitorias.map((v, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#34d399" }} />
+                              <span className="text-[12px] leading-relaxed" style={{ color: "var(--muted)" }}>{v}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {emp.perdas.length > 0 && (
+                      <div className="rounded-xl p-4"
+                        style={{ background: "rgba(248,113,113,.06)", border: "1px solid rgba(248,113,113,.15)" }}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-5 h-5 rounded-lg flex items-center justify-center text-[10px]"
+                            style={{ background: "rgba(248,113,113,.15)", color: "#f87171" }}>!</span>
+                          <span className="text-[12px] font-semibold" style={{ color: "#f87171" }}>
+                            Objeções frequentes ({emp.perdas.length})
+                          </span>
+                        </div>
+                        <ul className="space-y-2">
+                          {emp.perdas.map((p, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#f87171" }} />
+                              <span className="text-[12px] leading-relaxed" style={{ color: "var(--muted)" }}>{p}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-4 text-[11px]" style={{ color: "var(--muted-3)" }}>
+              A IA absorve esses padrões automaticamente a cada nova conversa — sem configuração manual.
+            </p>
           </div>
         )}
 

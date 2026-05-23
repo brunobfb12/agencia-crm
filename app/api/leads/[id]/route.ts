@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUsuarioLogado } from "@/lib/auth";
 
+const SECRET = "crm2026migra";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://ocrmfacil.com.br";
+
+function dispararAprendizado(leadId: string, tipo: "vitoria" | "derrota") {
+  fetch(`${BASE_URL}/api/webhook/${tipo}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ leadId, secret: SECRET }),
+  }).catch(() => {});
+}
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -11,11 +22,11 @@ export async function PATCH(
 
   const { id } = await params;
 
-  if (me.perfil !== "CENTRAL" && me.empresaId) {
-    const lead = await prisma.lead.findUnique({ where: { id }, select: { empresaId: true } });
-    if (!lead || lead.empresaId !== me.empresaId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
-    }
+  const leadAtual = await prisma.lead.findUnique({ where: { id }, select: { empresaId: true, status: true } });
+  if (!leadAtual) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
+
+  if (me.perfil !== "CENTRAL" && me.empresaId && leadAtual.empresaId !== me.empresaId) {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
   }
 
   const body = await req.json();
@@ -32,6 +43,13 @@ export async function PATCH(
     },
     include: { cliente: true },
   });
+
+  // Dispara análise de aprendizado quando lead muda para status final
+  if (body.status && body.status !== leadAtual.status) {
+    if (body.status === "VENDA_REALIZADA") dispararAprendizado(id, "vitoria");
+    else if (body.status === "PERDIDO" || body.status === "SEM_INTERESSE") dispararAprendizado(id, "derrota");
+  }
+
   return NextResponse.json(lead);
 }
 
