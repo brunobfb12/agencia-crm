@@ -16,6 +16,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, motivo: "empresa nao encontrada" });
   }
 
+  // Detectar se o remetente é um vendedor da empresa
+  // Quando o vendedor responde à notificação de pressão, a mensagem volta para a instância da empresa
+  const telLimpo = telefone.replace(/\D/g, "");
+  const vendedorRemetente = await prisma.vendedor.findFirst({
+    where: {
+      empresaId: empresa.id,
+      ativo: true,
+      telefone: { endsWith: telLimpo.slice(-9) },
+    },
+    select: { id: true, nome: true, telefone: true },
+  });
+
+  if (vendedorRemetente) {
+    // Buscar leads ativos sob responsabilidade deste vendedor
+    const leadsAtivos = await prisma.lead.findMany({
+      where: {
+        vendedorId: vendedorRemetente.id,
+        status: { in: ["PRONTO_PARA_COMPRAR", "NEGOCIACAO", "AGENDADO"] },
+      },
+      orderBy: { atualizadoEm: "desc" },
+      take: 5,
+      include: {
+        cliente: { select: { id: true, nome: true, telefone: true } },
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      isVendedor: true,
+      vendedor: vendedorRemetente,
+      mensagemVendedor: mensagem,
+      leadsAtivos,
+      empresa: { id: empresa.id, nome: empresa.nome, instanciaWhatsapp: empresa.instanciaWhatsapp },
+    });
+  }
+
   // @lid resolution: iPhones with WhatsApp Business send a numeric @lid JID
   // (e.g. 58136828342503) instead of a real Brazilian phone (always starts with "55").
   // When @lid is detected, look for an existing client with the same name in this empresa.

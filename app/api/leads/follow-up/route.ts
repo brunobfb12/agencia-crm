@@ -29,7 +29,10 @@ export async function GET(req: Request) {
     vendedor: { select: { nome: true } },
   };
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios] = await Promise.all([
+  const d60 = new Date(now);
+  d60.setDate(d60.getDate() - 60);
+
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -80,6 +83,16 @@ export async function GET(req: Request) {
         empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true, mensagemPosVenda: true, mensagemAniversario: true } },
         vendedor: { select: { nome: true, telefone: true } },
       },
+    }),
+    // Conversa Franca: SEM_RESPOSTA há 60+ dias — IA pergunta diretamente se ainda há interesse
+    prisma.lead.findMany({
+      where: {
+        status: "SEM_RESPOSTA",
+        atualizadoEm: { lt: d60 },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
+      },
+      include: baseInclude,
     }),
   ]);
 
@@ -142,6 +155,25 @@ export async function GET(req: Request) {
       include: pressaoInclude,
     }),
   ]);
+
+  // Item G: modoHumano automático para leads parados há 72h+
+  if (pressao72h.length > 0) {
+    const clienteIds72h = pressao72h.map(l => (l as any).clienteId).filter(Boolean);
+    if (clienteIds72h.length > 0) {
+      const conversas72h = await prisma.conversa.findMany({
+        where: { clienteId: { in: clienteIds72h } },
+        orderBy: { ultimaAtividade: "desc" },
+        distinct: ["clienteId"],
+        select: { id: true },
+      });
+      if (conversas72h.length > 0) {
+        await prisma.conversa.updateMany({
+          where: { id: { in: conversas72h.map((c: { id: string }) => c.id) } },
+          data: { modoHumano: true },
+        });
+      }
+    }
+  }
 
   const empresaIds72h = [...new Set(pressao72h.map(l => l.empresa.id))];
   const gerentes72h = empresaIds72h.length > 0
@@ -397,6 +429,22 @@ export async function GET(req: Request) {
       instancia: venda.lead.empresa.instanciaWhatsapp,
       empresaNome: venda.lead.empresa.nome,
       mensagem: `Oi${nome}! 🎁 ${ia} aqui, da ${venda.lead.empresa.nome}. Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais?`,
+    });
+  }
+
+  // Item F: Conversa Franca — SEM_RESPOSTA 60+ dias
+  for (const l of semResposta60d) {
+    if (!l.empresa.instanciaWhatsapp) continue;
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const dias = Math.floor((now.getTime() - new Date((l as any).atualizadoEm).getTime()) / (1000 * 60 * 60 * 24));
+    items.push({
+      tipo: "conversa_franca",
+      leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! Quero ser honesto com você: já faz ${dias} dias que não conversamos. Você ainda tem algum interesse em ser nosso cliente? Pode ser agora ou no futuro — me diga sem compromisso. Se preferir que eu entre em contato numa data melhor, é só me falar que agendo aqui! 😊`,
     });
   }
 

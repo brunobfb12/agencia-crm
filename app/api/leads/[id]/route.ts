@@ -44,10 +44,23 @@ export async function PATCH(
     include: { cliente: true },
   });
 
-  // Dispara análise de aprendizado quando lead muda para status final
+  // Dispara análise de aprendizado e redireciona status quando necessário
   if (body.status && body.status !== leadAtual.status) {
-    if (body.status === "VENDA_REALIZADA") dispararAprendizado(id, "vitoria");
-    else if (body.status === "PERDIDO" || body.status === "SEM_INTERESSE") dispararAprendizado(id, "derrota");
+    if (body.status === "VENDA_REALIZADA") {
+      dispararAprendizado(id, "vitoria");
+    } else if (body.status === "SEM_INTERESSE") {
+      dispararAprendizado(id, "derrota");
+    } else if (body.status === "PERDIDO") {
+      // PERDIDO = venda não fechou nesta rodada, não é saída permanente
+      // Dispara aprendizado e move automaticamente para FOLLOW_UP
+      dispararAprendizado(id, "derrota");
+      const leadFollowUp = await prisma.lead.update({
+        where: { id },
+        data: { status: "FOLLOW_UP" },
+        include: { cliente: true },
+      });
+      return NextResponse.json(leadFollowUp);
+    }
   }
 
   return NextResponse.json(lead);
