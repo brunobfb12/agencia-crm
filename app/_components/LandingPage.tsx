@@ -769,12 +769,22 @@ export default function LandingPage() {
     };
     window.addEventListener("scroll", onScroll);
 
+    const origBg     = document.body.style.background;
+    const origColor  = document.body.style.color;
+    const origOvX    = document.body.style.overflowX;
+    document.body.style.background  = "#04040c";
+    document.body.style.color       = "#f0f0ff";
+    document.body.style.overflowX   = "hidden";
+
     return () => {
       document.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(rafId);
       obs.disconnect();
       window.removeEventListener("scroll", onScroll);
       delete (window as any).toggleFaq;
+      document.body.style.background  = origBg;
+      document.body.style.color       = origColor;
+      document.body.style.overflowX   = origOvX;
     };
   }, []);
 

@@ -346,11 +346,21 @@ export default function AfiliadosPage() {
 
     (window as any).toggleFaq = (el: Element) => { el.classList.toggle("open"); };
 
+    const origBg    = document.body.style.background;
+    const origColor = document.body.style.color;
+    const origOvX   = document.body.style.overflowX;
+    document.body.style.background = "#04040c";
+    document.body.style.color      = "#f0f0ff";
+    document.body.style.overflowX  = "hidden";
+
     return () => {
       document.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(rafId);
       obs.disconnect();
       delete (window as any).toggleFaq;
+      document.body.style.background = origBg;
+      document.body.style.color      = origColor;
+      document.body.style.overflowX  = origOvX;
     };
   }, []);
 
