@@ -31,8 +31,12 @@ export async function GET(req: Request) {
 
   const d60 = new Date(now);
   d60.setDate(d60.getDate() - 60);
+  const d75 = new Date(now);
+  d75.setDate(d75.getDate() - 75);
+  const d90 = new Date(now);
+  d90.setDate(d90.getDate() - 90);
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d] = await Promise.all([
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -89,6 +93,34 @@ export async function GET(req: Request) {
       where: {
         status: "SEM_RESPOSTA",
         atualizadoEm: { lt: d60 },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
+      },
+      include: baseInclude,
+    }),
+    // #4: LEAD/AQUECIMENTO sem atividade 30+ dias → auto SEM_RESPOSTA
+    prisma.lead.findMany({
+      where: {
+        status: { in: ["LEAD", "AQUECIMENTO"] },
+        atualizadoEm: { lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+        empresa: { ativa: true },
+      },
+      select: { id: true },
+    }),
+    // #4: SEM_RESPOSTA 75+ dias → auto SEM_INTERESSE (conversa franca ignorada há 15d+)
+    prisma.lead.findMany({
+      where: {
+        status: "SEM_RESPOSTA",
+        atualizadoEm: { lt: d75 },
+        empresa: { ativa: true },
+      },
+      select: { id: true },
+    }),
+    // #6: SEM_INTERESSE 90+ dias → mensagem leve de reativação
+    prisma.lead.findMany({
+      where: {
+        status: "SEM_INTERESSE",
+        atualizadoEm: { lt: d90 },
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
@@ -197,6 +229,22 @@ export async function GET(req: Request) {
     await prisma.lead.updateMany({
       where: { id: { in: reativacao30d.map(l => l.id) } },
       data: { status: "SEM_RESPOSTA" },
+    });
+  }
+
+  // #4: LEAD/AQUECIMENTO sem atividade 30+ dias → SEM_RESPOSTA
+  if (inativos30d.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: inativos30d.map(l => l.id) } },
+      data: { status: "SEM_RESPOSTA" },
+    });
+  }
+
+  // #4: SEM_RESPOSTA 75+ dias sem resposta → SEM_INTERESSE (conversas_franca enviada e ignorada)
+  if (semInteresse75d.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: semInteresse75d.map(l => l.id) } },
+      data: { status: "SEM_INTERESSE" },
     });
   }
 
@@ -432,9 +480,11 @@ export async function GET(req: Request) {
     });
   }
 
-  // Item F: Conversa Franca — SEM_RESPOSTA 60+ dias
+  // Item F: Conversa Franca — SEM_RESPOSTA 60+ dias (exceto os que já serão SEM_INTERESSE)
+  const semInteresse75dIds = new Set(semInteresse75d.map(l => l.id));
   for (const l of semResposta60d) {
     if (!l.empresa.instanciaWhatsapp) continue;
+    if (semInteresse75dIds.has(l.id)) continue;
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
     const dias = Math.floor((now.getTime() - new Date((l as any).atualizadoEm).getTime()) / (1000 * 60 * 60 * 24));
     items.push({
@@ -445,6 +495,30 @@ export async function GET(req: Request) {
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
       mensagem: `Oi${nome}! Quero ser honesto com você: já faz ${dias} dias que não conversamos. Você ainda tem algum interesse em ser nosso cliente? Pode ser agora ou no futuro — me diga sem compromisso. Se preferir que eu entre em contato numa data melhor, é só me falar que agendo aqui! 😊`,
+    });
+  }
+
+  // #6: Reativação leve — SEM_INTERESSE 90+ dias sem contato
+  for (const l of reativacao90d) {
+    if (!l.empresa.instanciaWhatsapp) continue;
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const ia = l.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "reativacao_sem_interesse",
+      leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Faz tempo que não conversamos — tudo bem? Se um dia precisar de nós, pode nos chamar, estamos aqui! 😊`,
+    });
+  }
+
+  // Bump atualizadoEm para não re-enviar por 90 dias
+  if (reativacao90d.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: reativacao90d.map(l => l.id) } },
+      data: { status: "SEM_INTERESSE" },
     });
   }
 

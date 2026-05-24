@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Lead {
   id: string;
@@ -93,6 +93,35 @@ export default function LeadsPage() {
   const [filtroStatus, setFiltroStatus] = useState("LEAD");
   const [filtroEmpresa, setFiltroEmpresa] = useState("");
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
+  const kanbanRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const topScrollInnerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const kanban = kanbanRef.current;
+    const top = topScrollRef.current;
+    const inner = topScrollInnerRef.current;
+    if (!kanban || !top || !inner) return;
+
+    // Sync scroll position
+    const fromKanban = () => { top.scrollLeft = kanban.scrollLeft; };
+    const fromTop = () => { kanban.scrollLeft = top.scrollLeft; };
+    kanban.addEventListener("scroll", fromKanban);
+    top.addEventListener("scroll", fromTop);
+
+    // Keep mirror width = kanban scrollable width
+    const updateWidth = () => { inner.style.width = kanban.scrollWidth + "px"; };
+    updateWidth();
+    requestAnimationFrame(updateWidth);
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(kanban);
+
+    return () => {
+      kanban.removeEventListener("scroll", fromKanban);
+      top.removeEventListener("scroll", fromTop);
+      ro.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -400,7 +429,15 @@ export default function LeadsPage() {
         </div>
 
         {/* ── Desktop: Kanban ── */}
-        <div className="hidden sm:flex gap-3 overflow-x-auto pb-4">
+        {/* Barra de rolagem superior sincronizada */}
+        <div
+          ref={topScrollRef}
+          className="hidden sm:block"
+          style={{ overflowX: "scroll", overflowY: "hidden", height: 20 }}
+        >
+          <div ref={topScrollInnerRef} style={{ height: 1 }} />
+        </div>
+        <div ref={kanbanRef} className="hidden sm:flex gap-3 overflow-x-auto pb-4">
           {colunas.map((col) => {
             const leadsColuna = leadsVisiveis.filter((l) => l.status === col.status);
             const isOver = dragOverCol === col.status;
