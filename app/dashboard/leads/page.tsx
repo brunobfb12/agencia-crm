@@ -121,7 +121,7 @@ export default function LeadsPage() {
       top.removeEventListener("scroll", fromTop);
       ro.disconnect();
     };
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     Promise.all([
