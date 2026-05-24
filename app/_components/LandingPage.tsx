@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;overflow-x:hidden}
 :root{
   --bg:#04040c;--bg2:#080815;--indigo:#6366f1;--indigo-l:#818cf8;--violet:#7c3aed;
   --cyan:#22d3ee;--emerald:#10b981;--amber:#f59e0b;--red:#ef4444;--txt:#f0f0ff;
@@ -116,6 +116,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 0;backdrop-fil
 .sw::-webkit-scrollbar{height:4px}
 .sw::-webkit-scrollbar-track{background:transparent}
 .sw::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:2px}
+.sw .gc:hover,.tw .gc:hover{transform:none;box-shadow:none}
 .st{display:flex;gap:14px;width:max-content;padding:4px 0}
 .scard{width:210px;flex-shrink:0;padding:24px;border-radius:var(--rl)}
 .sn{font-family:'Syne',sans-serif;font-size:.7rem;font-weight:700;color:var(--indigo-l);letter-spacing:.1em;margin-bottom:10px;opacity:.65}
