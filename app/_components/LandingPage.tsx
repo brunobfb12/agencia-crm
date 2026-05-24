@@ -12,8 +12,8 @@ html{scroll-behavior:smooth}
   --gbd:rgba(255,255,255,.08);--gbdh:rgba(99,102,241,.4);
   --r:16px;--rl:24px;--tr:all .3s cubic-bezier(.4,0,.2,1)
 }
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;line-height:1.6}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
+.lp-root{font-family:'DM Sans',sans-serif;background:#04040c;color:#f0f0ff;overflow-x:hidden;line-height:1.6;min-height:100vh}
+.lp-root::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.04) 1px,transparent 1px);background-size:56px 56px;pointer-events:none;z-index:0}
 #cg{position:fixed;width:480px;height:480px;background:radial-gradient(circle,rgba(99,102,241,.14) 0%,rgba(124,58,237,.07) 40%,transparent 70%);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:1;transition:left .06s linear,top .06s linear;mix-blend-mode:screen}
 .orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.35}
@@ -769,12 +769,7 @@ export default function LandingPage() {
     };
     window.addEventListener("scroll", onScroll);
 
-    const origBg     = document.body.style.background;
-    const origColor  = document.body.style.color;
-    const origOvX    = document.body.style.overflowX;
-    document.body.style.background  = "#04040c";
-    document.body.style.color       = "#f0f0ff";
-    document.body.style.overflowX   = "hidden";
+    document.documentElement.setAttribute("data-theme", "dark");
 
     return () => {
       document.removeEventListener("mousemove", onMove);
@@ -782,14 +777,11 @@ export default function LandingPage() {
       obs.disconnect();
       window.removeEventListener("scroll", onScroll);
       delete (window as any).toggleFaq;
-      document.body.style.background  = origBg;
-      document.body.style.color       = origColor;
-      document.body.style.overflowX   = origOvX;
     };
   }, []);
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="lp-root">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div dangerouslySetInnerHTML={{ __html: HTML }} />
     </div>
