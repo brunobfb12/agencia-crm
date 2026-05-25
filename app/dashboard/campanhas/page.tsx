@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 /* ── Anti-spam typewriter ────────────────────────────────────────────── */
 const ANTISPAM_PHRASES = [
   "Disparar para centenas de contatos de uma vez é a forma mais rápida de ter seu número banido pelo WhatsApp.",
-  "Um número banido perde TUDO — histórico de conversas, leads, relacionamento. Não existe recuperação.",
-  "O FácilCRM usa API Oficial. Mas o volume e o conteúdo da campanha são sua responsabilidade.",
-  "20 leads bem qualificados convertem muito mais do que 500 disparos para contatos frios.",
+  "Um número banido perde TUDO: histórico, leads, relacionamentos construídos. Não existe recuperação — é perda permanente.",
+  "Atenção: mesmo seguindo todas as regras, o WhatsApp pode banir seu número se receber muitas denúncias. O risco é seu.",
+  "20 leads bem qualificados convertem muito mais do que 500 disparos para contatos frios. Qualidade > Volume, sempre.",
 ];
 
 function AntiSpamWarning() {
@@ -371,10 +371,10 @@ export default function CampanhasPage() {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {[
-              { icon: "⏱", texto: "Intervalo de 30 a 90 segundos entre cada mensagem — configurado no N8N para proteger seu número." },
-              { icon: "🔢", texto: "Máximo recomendado: 50 leads por campanha. Acima de 150 a campanha é bloqueada automaticamente." },
-              { icon: "📋", texto: "API Oficial do WhatsApp (Evolution API v2.3.7) — nenhuma engenharia reversa, sem risco de ban técnico." },
-              { icon: "⚖️", texto: "Você é responsável pelo conteúdo. Mensagens enganosas, promessas falsas ou assédio violam os Termos do WhatsApp." },
+              { icon: "⏱", texto: "Espaçamento inteligente entre mensagens — o sistema aguarda um intervalo seguro antes de cada envio para imitar comportamento humano." },
+              { icon: "🎯", texto: "Máximo recomendado: 50 leads por campanha. Menos leads + mensagem personalizada = muito mais retorno e zero risco." },
+              { icon: "🔒", texto: "Integração oficial com o WhatsApp — sem engenharia reversa, sem aplicativo clonado. Sua operação fica dentro das regras." },
+              { icon: "⚖️", texto: "Você é responsável pelo conteúdo. Mesmo seguindo tudo, o WhatsApp pode banir números por volume, denúncias ou conteúdo inadequado." },
             ].map((item, i) => (
               <div key={i} className="flex gap-2.5 px-3 py-2 rounded-xl"
                 style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(248,113,113,.1)" }}>
@@ -485,7 +485,7 @@ export default function CampanhasPage() {
                   placeholder={`Ex: Oi {nome}! Tenho uma novidade especial para você essa semana. Posso te contar mais?`}
                   className="w-full input-dark px-3 py-2.5 text-[13px] resize-none" />
                 <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>
-                  ⏱ Intervalo de 30 a 90 segundos entre cada mensagem (configurado no N8N — proteção anti-ban).
+                  ⏱ O sistema aguarda um intervalo seguro entre cada envio — proteção automática contra ban.
                 </p>
               </div>
 
@@ -659,7 +659,7 @@ export default function CampanhasPage() {
 
             <div className="px-4 py-3 rounded-xl text-[12.5px]"
               style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)", color: "#fbbf24" }}>
-              ⚡ Estas regras rodam automaticamente todo dia às 8h. O N8N verifica leads inativos e cria campanhas automaticamente.
+              ⚡ Estas regras rodam automaticamente todo dia às 8h. O sistema verifica leads inativos e cria campanhas sem você precisar fazer nada.
             </div>
             <div className="space-y-3">
               {regras.map((r, i) => (
