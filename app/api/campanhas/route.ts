@@ -64,14 +64,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
   }
 
-  // Fetch leads with client phone
+  // Fetch leads with client phone — exclude opt-out clients
   const leads = await prisma.lead.findMany({
-    where: { id: { in: leadIds }, empresaId },
+    where: { id: { in: leadIds }, empresaId, cliente: { optOutCampanhas: false } },
     include: { cliente: { select: { telefone: true, nome: true } } },
   });
 
   if (!leads.length) {
-    return NextResponse.json({ error: "Nenhum lead encontrado" }, { status: 400 });
+    return NextResponse.json({ error: "Nenhum lead encontrado (todos podem estar em opt-out)" }, { status: 400 });
   }
 
   const campanha = await prisma.campanha.create({

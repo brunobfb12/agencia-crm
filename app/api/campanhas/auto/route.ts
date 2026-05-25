@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
         ...whereEmpresa,
         status: { in: statuses as never[] },
         atualizadoEm: { lte: corte },
-        // Don't re-send to leads that already have a pending campaign item
         campanhaItens: { none: { status: "PENDENTE" } },
+        cliente: { optOutCampanhas: false },
       },
       include: { cliente: { select: { telefone: true, nome: true } }, empresa: { select: { id: true } } },
       take: 100,

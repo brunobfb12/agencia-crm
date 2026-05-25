@@ -107,7 +107,9 @@ model Cliente {
   tags           String[]
   criadoEm      DateTime  @default(now())
 
-  memoriaCliente String?
+  memoriaCliente  String?
+  optOutCampanhas Boolean   @default(false)
+  optOutEm        DateTime?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]

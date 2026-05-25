@@ -143,7 +143,7 @@ interface Campanha {
   pendentes: number; erros: number;
 }
 interface Regra { tipo: string; diasInativo: number; ativo: boolean; mensagem: string; }
-interface LeadSimples { id: string; status: string; cliente: { nome: string | null }; }
+interface LeadSimples { id: string; status: string; cliente: { nome: string | null; optOutCampanhas?: boolean }; }
 
 const TIPO_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   MANUAL:             { label: "Manual",       color: "#a5b4fc", bg: "rgba(99,102,241,.1)" },
@@ -185,6 +185,7 @@ export default function CampanhasPage() {
   const [regras, setRegras] = useState<Regra[]>([]);
   const [loading, setLoading] = useState(true);
   const [salvandoRegras, setSalvandoRegras] = useState(false);
+  const [regrasEmpresaId, setRegrasEmpresaId] = useState("");
   const [msg, setMsg] = useState("");
   const [isCentral, setIsCentral] = useState(false);
   const [meEmpresaId, setMeEmpresaId] = useState("");
@@ -207,14 +208,20 @@ export default function CampanhasPage() {
         setIsCentral(true);
         fetch("/api/empresas").then(r => r.json()).then((list) => {
           setEmpresas(list);
-          if (list.length > 0) setNovaEmpresaId(list[0].id);
+          if (list.length > 0) {
+            setNovaEmpresaId(list[0].id);
+            setRegrasEmpresaId(list[0].id);
+          }
         }).catch(() => {});
       } else if (me?.empresaId) {
         setMeEmpresaId(me.empresaId);
         setNovaEmpresaId(me.empresaId);
+        setRegrasEmpresaId(me.empresaId);
+        // EMPRESA carrega suas próprias regras
+        fetch(`/api/campanhas/regras?empresaId=${me.empresaId}`)
+          .then(r => r.json()).then((d) => { if (Array.isArray(d)) setRegras(d); });
       }
     });
-    fetch("/api/campanhas/regras").then(r => r.json()).then((d) => { if (Array.isArray(d)) setRegras(d); });
   }, []);
 
   useEffect(() => {
@@ -242,8 +249,17 @@ export default function CampanhasPage() {
   // Reset ciente when leads or message change
   useEffect(() => { setCienteRiscos(false); }, [statusSelecionados, novaMensagem, novaEmpresaId]);
 
-  const leadsAlvo = leadsDisponiveis.filter(l => statusSelecionados.includes(l.status));
-  const contaPorStatus = (s: string) => leadsDisponiveis.filter(l => l.status === s).length;
+  // Recarregar regras quando empresa muda (CENTRAL)
+  useEffect(() => {
+    if (!isCentral || !regrasEmpresaId) return;
+    fetch(`/api/campanhas/regras?empresaId=${regrasEmpresaId}`)
+      .then(r => r.json()).then((d) => { if (Array.isArray(d)) setRegras(d); });
+  }, [isCentral, regrasEmpresaId]);
+
+  const leadsAtivos  = leadsDisponiveis.filter(l => !l.cliente.optOutCampanhas);
+  const leadsAlvo    = leadsAtivos.filter(l => statusSelecionados.includes(l.status));
+  const optOutCount  = leadsDisponiveis.filter(l => l.cliente.optOutCampanhas && statusSelecionados.includes(l.status)).length;
+  const contaPorStatus = (s: string) => leadsAtivos.filter(l => l.status === s).length;
   const toggleStatus = (s: string) =>
     setStatusSelecionados(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
@@ -257,8 +273,10 @@ export default function CampanhasPage() {
   const showMsg = (texto: string) => { setMsg(texto); setTimeout(() => setMsg(""), 4000); };
 
   const salvarRegras = async () => {
+    const empId = regrasEmpresaId || meEmpresaId;
+    if (!empId) return;
     setSalvandoRegras(true);
-    await fetch("/api/campanhas/regras", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(regras) });
+    await fetch(`/api/campanhas/regras?empresaId=${empId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(regras) });
     setSalvandoRegras(false);
     showMsg("Regras salvas!");
   };
@@ -420,23 +438,34 @@ export default function CampanhasPage() {
 
                 {/* Contagem */}
                 {!carregandoLeads && (
-                  <div className="mt-3 px-3.5 py-2.5 rounded-xl flex items-center gap-2"
-                    style={leadsAlvo.length > 0
-                      ? leadsAlvo.length > 50
-                        ? { background: "rgba(251,191,36,.07)", border: "1px solid rgba(251,191,36,.2)" }
-                        : { background: "rgba(52,211,153,.07)", border: "1px solid rgba(52,211,153,.2)" }
-                      : { background: "var(--card-2)", border: "1px solid var(--border)" }}>
-                    <span className="text-[20px] font-black tabular-nums"
-                      style={{ color: leadsAlvo.length === 0 ? "var(--muted-3)" : leadsAlvo.length > 50 ? "#fbbf24" : "#34d399" }}>
-                      {leadsAlvo.length}
-                    </span>
-                    <span className="text-[12px]" style={{ color: leadsAlvo.length > 0 ? "var(--muted)" : "var(--muted-3)" }}>
-                      {leadsAlvo.length === 0 && statusSelecionados.length === 0 && "Selecione pelo menos um status"}
-                      {leadsAlvo.length === 0 && statusSelecionados.length > 0 && "Nenhum lead nos status selecionados"}
-                      {leadsAlvo.length > 0 && leadsAlvo.length <= 50 && `lead${leadsAlvo.length !== 1 ? "s" : ""} serão atingidos ✓`}
-                      {leadsAlvo.length > 50 && leadsAlvo.length <= 150 && `leads — volume alto, prossiga com atenção`}
-                      {leadsAlvo.length > 150 && `leads — volume BLOQUEADO (máx. 150)`}
-                    </span>
+                  <div className="mt-3 space-y-1.5">
+                    <div className="px-3.5 py-2.5 rounded-xl flex items-center gap-2"
+                      style={leadsAlvo.length > 0
+                        ? leadsAlvo.length > 50
+                          ? { background: "rgba(251,191,36,.07)", border: "1px solid rgba(251,191,36,.2)" }
+                          : { background: "rgba(52,211,153,.07)", border: "1px solid rgba(52,211,153,.2)" }
+                        : { background: "var(--card-2)", border: "1px solid var(--border)" }}>
+                      <span className="text-[20px] font-black tabular-nums"
+                        style={{ color: leadsAlvo.length === 0 ? "var(--muted-3)" : leadsAlvo.length > 50 ? "#fbbf24" : "#34d399" }}>
+                        {leadsAlvo.length}
+                      </span>
+                      <span className="text-[12px]" style={{ color: leadsAlvo.length > 0 ? "var(--muted)" : "var(--muted-3)" }}>
+                        {leadsAlvo.length === 0 && statusSelecionados.length === 0 && "Selecione pelo menos um status"}
+                        {leadsAlvo.length === 0 && statusSelecionados.length > 0 && "Nenhum lead nos status selecionados"}
+                        {leadsAlvo.length > 0 && leadsAlvo.length <= 50 && `lead${leadsAlvo.length !== 1 ? "s" : ""} serão atingidos ✓`}
+                        {leadsAlvo.length > 50 && leadsAlvo.length <= 150 && `leads — volume alto, prossiga com atenção`}
+                        {leadsAlvo.length > 150 && `leads — volume BLOQUEADO (máx. 150)`}
+                      </span>
+                    </div>
+                    {optOutCount > 0 && (
+                      <div className="px-3 py-2 rounded-xl flex items-center gap-2"
+                        style={{ background: "rgba(248,113,113,.06)", border: "1px solid rgba(248,113,113,.15)" }}>
+                        <span className="text-[12px]">🚫</span>
+                        <span className="text-[11.5px]" style={{ color: "#fca5a5" }}>
+                          <strong>{optOutCount}</strong> cliente{optOutCount !== 1 ? "s" : ""} excluído{optOutCount !== 1 ? "s" : ""} automaticamente — opt-out LGPD (solicitaram não receber mensagens)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -539,11 +568,9 @@ export default function CampanhasPage() {
           <button onClick={() => setAba("historico")} className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all" style={tabStyle("historico")}>
             Histórico
           </button>
-          {isCentral && (
-            <button onClick={() => setAba("regras")} className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all" style={tabStyle("regras")}>
-              Regras Automáticas
-            </button>
-          )}
+          <button onClick={() => setAba("regras")} className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all" style={tabStyle("regras")}>
+            Regras Automáticas
+          </button>
           {empresas.length > 1 && (
             <select value={filtroEmpresa} onChange={e => setFiltroEmpresa(e.target.value)}
               className="input-dark px-3 py-2 text-[13px] rounded-xl ml-auto">
@@ -616,8 +643,20 @@ export default function CampanhasPage() {
         )}
 
         {/* REGRAS */}
-        {aba === "regras" && isCentral && (
+        {aba === "regras" && (
           <div className="space-y-4 animate-fade-up">
+
+            {/* Seletor de empresa — só CENTRAL */}
+            {isCentral && empresas.length > 0 && (
+              <div>
+                <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>EMPRESA</label>
+                <select value={regrasEmpresaId} onChange={e => setRegrasEmpresaId(e.target.value)}
+                  className="input-dark px-3 py-2.5 text-[13px] w-full sm:w-auto min-w-[220px]">
+                  {empresas.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+            )}
+
             <div className="px-4 py-3 rounded-xl text-[12.5px]"
               style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)", color: "#fbbf24" }}>
               ⚡ Estas regras rodam automaticamente todo dia às 8h. O N8N verifica leads inativos e cria campanhas automaticamente.
