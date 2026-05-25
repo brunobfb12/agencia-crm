@@ -35,14 +35,14 @@ const PLANOS = [
     key:"PRO", nome:"Pro",
     desc:"Para empresas em crescimento",
     mensal:897, anual:748, totalAnual:8970, economia:1794,
-    features:["Até 2 WhatsApp conectados","IA respondendo 24/7","Kanban de leads","Follow-up automático","Clientes ilimitados","Campanhas em massa","Analytics completo","Aniversário automático"],
+    features:["Até 2 WhatsApp conectados","IA respondendo 24/7","Kanban de leads","Follow-up automático","Até 1.000 leads","Campanhas em massa","Analytics completo","Aniversário automático"],
     destaque:true,
   },
   {
     key:"AGENCY", nome:"Agency",
     desc:"Para agências e múltiplas empresas",
     mensal:1497, anual:1248, totalAnual:14970, economia:2994,
-    features:["★ Fazemos a implantação por você","3 WhatsApp conectados","Tudo do Pro incluso","Suporte prioritário","Gerente de conta dedicado"],
+    features:["★ Fazemos a implantação por você","3 WhatsApp conectados","Tudo do Pro incluso","Até 5.000 leads (acima: a combinar)","Suporte prioritário","Gerente de conta dedicado"],
   },
 ];
 
