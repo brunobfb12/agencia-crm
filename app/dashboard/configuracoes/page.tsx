@@ -10,7 +10,7 @@ interface SetupStatus {
   aniversarioOk: boolean; qualificacaoOk: boolean;
 }
 
-function SetupChecklist() {
+function SetupChecklist({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const [status, setStatus] = useState<SetupStatus | null>(null);
   const [open, setOpen] = useState(true);
 
@@ -21,15 +21,15 @@ function SetupChecklist() {
   if (!status) return null;
 
   const steps = [
-    { ok: true,                   label: "Conta criada e login realizado",             href: null },
-    { ok: status.informacoesOk,   label: "Informações da empresa preenchidas",         href: "#empresas" },
-    { ok: status.whatsappOk,      label: "WhatsApp conectado",                         href: "#whatsapp" },
-    { ok: status.vendedoresOk,    label: "Pelo menos 1 vendedor cadastrado",           href: "#vendedores" },
-    { ok: status.clientesOk,      label: "Primeiros clientes adicionados",             href: "/dashboard/clientes" },
-    { ok: status.nomeIAOk,        label: "Nome da IA configurado",                     href: "#empresas" },
-    { ok: status.qualificacaoOk,  label: "Roteiro de qualificação da IA preenchido",   href: "#empresas" },
-    { ok: status.posVendaOk,      label: "Mensagem de pós-venda personalizada",        href: "#empresas" },
-    { ok: status.aniversarioOk,   label: "Mensagem de aniversário personalizada",      href: "#empresas" },
+    { ok: true,                   label: "Conta criada e login realizado",           tab: null,        extHref: null },
+    { ok: status.informacoesOk,   label: "Informações da empresa preenchidas",       tab: "empresas",  extHref: null },
+    { ok: status.whatsappOk,      label: "WhatsApp conectado",                       tab: "whatsapp",  extHref: null },
+    { ok: status.vendedoresOk,    label: "Pelo menos 1 vendedor cadastrado",         tab: "vendedores",extHref: null },
+    { ok: status.clientesOk,      label: "Primeiros clientes adicionados",           tab: null,        extHref: "/dashboard/clientes" },
+    { ok: status.nomeIAOk,        label: "Nome da IA configurado",                   tab: "empresas",  extHref: null },
+    { ok: status.qualificacaoOk,  label: "Roteiro de qualificação da IA preenchido", tab: "empresas",  extHref: null },
+    { ok: status.posVendaOk,      label: "Mensagem de pós-venda personalizada",      tab: "empresas",  extHref: null },
+    { ok: status.aniversarioOk,   label: "Mensagem de aniversário personalizada",    tab: "empresas",  extHref: null },
   ];
 
   const done = steps.filter(s => s.ok).length;
@@ -37,33 +37,32 @@ function SetupChecklist() {
   const allDone = done === total;
   const pct = Math.round((done / total) * 100);
 
-  if (allDone && !open) return null;
+  if (allDone) return null;
 
   return (
     <div className="mb-6 rounded-2xl overflow-hidden animate-fade-up"
       style={{
-        background: allDone ? "linear-gradient(135deg,rgba(52,211,153,.08),rgba(16,185,129,.04))" : "linear-gradient(135deg,rgba(99,102,241,.08),rgba(79,70,229,.03))",
-        border: `1px solid ${allDone ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.18)"}`,
+        background: "linear-gradient(135deg,rgba(99,102,241,.08),rgba(79,70,229,.03))",
+        border: "1px solid rgba(99,102,241,.18)",
       }}>
       {/* Header */}
       <button onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between p-4 md:p-5 text-left">
         <div className="flex items-center gap-3">
-          {allDone
-            ? <span className="text-[18px]">🎉</span>
-            : <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[13px] font-bold flex-shrink-0"
-                style={{ background: "rgba(99,102,241,.15)", color: "#a5b4fc" }}>{pct}%</div>
-          }
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[13px] font-bold flex-shrink-0"
+            style={{ background: "rgba(99,102,241,.15)", color: "#a5b4fc" }}>
+            {pct}%
+          </div>
           <div>
             <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>
-              {allDone ? "Tudo configurado! CRM 100% pronto." : "Complete a configuração do seu CRM"}
+              Configure seu CRM — {done} de {total} etapas concluídas
             </p>
             <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
-              {allDone ? "Todas as etapas concluídas." : `${done} de ${total} etapas concluídas`}
+              Complete as etapas abaixo para ativar o atendimento automático
             </p>
           </div>
         </div>
-        <svg className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: "var(--muted-3)" }}>
+        <svg className={`w-4 h-4 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" style={{ color: "var(--muted-3)" }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -71,24 +70,43 @@ function SetupChecklist() {
       {open && (
         <div className="px-4 md:px-5 pb-5">
           {/* Progress bar */}
-          <div className="h-1.5 rounded-full mb-4 overflow-hidden" style={{ background: "var(--border)" }}>
+          <div className="h-1.5 rounded-full mb-5 overflow-hidden" style={{ background: "var(--border)" }}>
             <div className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${pct}%`, background: allDone ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+              style={{ width: `${pct}%`, background: "linear-gradient(90deg,#6366f1,#818cf8)" }} />
           </div>
-          {/* Steps grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Steps list */}
+          <div className="space-y-2">
             {steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={step.ok
-                    ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" }
-                    : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
-                  {step.ok && <svg className="w-2.5 h-2.5" fill="none" stroke="#34d399" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+              <div key={i} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all"
+                style={{
+                  background: step.ok ? "rgba(52,211,153,.04)" : "rgba(255,255,255,.02)",
+                  border: `1px solid ${step.ok ? "rgba(52,211,153,.12)" : "var(--border)"}`,
+                }}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={step.ok
+                      ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" }
+                      : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
+                    {step.ok
+                      ? <svg className="w-2.5 h-2.5" fill="none" stroke="#34d399" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      : <span className="text-[9px] font-bold" style={{ color: "var(--muted-3)" }}>{i + 1}</span>
+                    }
+                  </div>
+                  <span className="text-[12.5px]" style={{ color: step.ok ? "var(--muted)" : "var(--text)", textDecoration: step.ok ? "line-through" : "none" }}>
+                    {step.label}
+                  </span>
                 </div>
-                {step.href && !step.ok ? (
-                  <a href={step.href} className="text-[12.5px] hover:underline" style={{ color: "#a5b4fc" }}>{step.label}</a>
-                ) : (
-                  <span className="text-[12.5px]" style={{ color: step.ok ? "var(--muted)" : "var(--muted-2)", textDecoration: step.ok ? "line-through" : "none" }}>{step.label}</span>
+                {!step.ok && (step.tab || step.extHref) && (
+                  step.extHref
+                    ? <a href={step.extHref} className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                        style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)", whiteSpace: "nowrap" }}>
+                        Ir agora →
+                      </a>
+                    : <button onClick={() => onNavigate?.(step.tab!)}
+                        className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                        style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)", whiteSpace: "nowrap" }}>
+                        Configurar →
+                      </button>
                 )}
               </div>
             ))}
@@ -317,6 +335,13 @@ export default function ConfiguracoesPage() {
   }, []);
 
   useEffect(() => {
+    if (me && me.perfil !== "CENTRAL" && empresas.length === 1 && !editEmpresa) {
+      abrirEditEmpresa(empresas[0]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.perfil, empresas.length]);
+
+  useEffect(() => {
     if (aba === "midias" && midiaEmpresaId) carregarMidias(midiaEmpresaId);
   }, [aba, midiaEmpresaId]);
 
@@ -533,6 +558,9 @@ export default function ConfiguracoesPage() {
           )}
         </div>
 
+        {/* Onboarding checklist — only for company users */}
+        {!isCentral && <SetupChecklist onNavigate={(tab) => setAba(tab as "empresas" | "vendedores" | "midias" | "whatsapp")} />}
+
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
           {tabs.map((tab) => (
@@ -605,54 +633,6 @@ export default function ConfiguracoesPage() {
                   {editEmpresa === emp.id && (
                     <div className="px-4 pb-5" style={{ borderTop: "1px solid var(--border)", background: "rgba(99,102,241,.02)" }}>
                       <div className="pt-4">
-
-                        {/* Checklist de configuração */}
-                        {(() => {
-                          const vendedoresEmpresa = vendedores.filter(v => v.empresaId === emp.id && v.ativo);
-                          const items = [
-                            { ok: !!emp.informacoes?.trim(),           label: "Informações da empresa preenchidas" },
-                            { ok: vendedoresEmpresa.length > 0,        label: "Pelo menos 1 vendedor cadastrado" },
-                            { ok: emp._count.clientes > 0,             label: "Primeiros clientes adicionados" },
-                            { ok: !!emp.nomeIA?.trim(),                label: "Nome da IA configurado" },
-                            { ok: !!emp.perguntasQualificacao?.trim(), label: "Roteiro de qualificação preenchido" },
-                            { ok: !!emp.mensagemPosVenda?.trim(),      label: "Mensagem de pós-venda personalizada" },
-                            { ok: !!emp.mensagemAniversario?.trim(),   label: "Mensagem de aniversário personalizada" },
-                          ];
-                          const done = items.filter(i => i.ok).length;
-                          const pct = Math.round((done / items.length) * 100);
-                          const allOk = done === items.length;
-                          return (
-                            <div className="mb-5 rounded-xl p-4"
-                              style={{ background: allOk ? "rgba(52,211,153,.06)" : "rgba(99,102,241,.06)", border: `1px solid ${allOk ? "rgba(52,211,153,.2)" : "rgba(99,102,241,.15)"}` }}>
-                              <div className="flex items-center justify-between mb-3">
-                                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
-                                  {allOk ? "✅ Empresa 100% configurada!" : `Setup — ${done}/${items.length} etapas`}
-                                </p>
-                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                                  style={{ background: allOk ? "rgba(52,211,153,.15)" : "rgba(99,102,241,.15)", color: allOk ? "#34d399" : "#a5b4fc" }}>
-                                  {pct}%
-                                </span>
-                              </div>
-                              <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: "var(--border)" }}>
-                                <div className="h-full rounded-full transition-all duration-700"
-                                  style={{ width: `${pct}%`, background: allOk ? "linear-gradient(90deg,#34d399,#10b981)" : "linear-gradient(90deg,#6366f1,#818cf8)" }} />
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                {items.map((item, idx) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                                      style={item.ok ? { background: "rgba(52,211,153,.15)", border: "1.5px solid #34d399" } : { background: "var(--card)", border: "1.5px solid var(--border-2)" }}>
-                                      {item.ok && <svg className="w-2 h-2" fill="none" stroke="#34d399" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                                    </div>
-                                    <span className="text-[12px]" style={{ color: item.ok ? "var(--muted)" : "var(--text-2)", textDecoration: item.ok ? "line-through" : "none" }}>
-                                      {item.label}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })()}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           {SECOES.map((sec) => (
