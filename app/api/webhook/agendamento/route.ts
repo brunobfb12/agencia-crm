@@ -79,9 +79,11 @@ export async function POST(req: Request) {
   // Normalize hora to "HH:MM" (strip seconds if present: "15:00:00" → "15:00")
   const horaNorm = hora ? String(hora).substring(0, 5) : null;
 
-  // Create Agendamento — catch P2002 (unique violation) when Cal.com sends duplicate webhooks
-  let agendamento;
-  try {
+  // Idempotent create — check before insert to avoid unique constraint noise on duplicate Cal.com webhooks
+  let agendamento = await prisma.agendamento.findFirst({
+    where: { clienteId: cliente.id, dataAgendada: dataAgendadaDate, hora: horaNorm },
+  });
+  if (!agendamento) {
     agendamento = await prisma.agendamento.create({
       data: {
         clienteId: cliente.id,
@@ -92,12 +94,7 @@ export async function POST(req: Request) {
         status: "PENDENTE",
       },
     });
-  } catch (e: any) {
-    if (e.code !== "P2002") throw e;
-    // Duplicate webhook from Cal.com — agendamento já existe, não reenvia notificações
-    return NextResponse.json({ ok: false, motivo: "duplicado" });
   }
-  if (!agendamento) return NextResponse.json({ ok: false, motivo: "agendamento nao encontrado" }, { status: 500 });
 
   // Round-robin vendor if lead has none
   let vendedor = (lead as any).vendedor;
