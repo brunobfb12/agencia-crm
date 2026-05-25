@@ -271,7 +271,7 @@ export default function ClientesPage() {
         <div className="flex flex-wrap gap-2 mb-5">
           <button
             onClick={() => setFiltroTag("")}
-            className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+            className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap"
             style={{ background: filtroTag === "" ? "rgba(99,102,241,.2)" : "var(--card)", border: `1px solid ${filtroTag === "" ? "rgba(99,102,241,.4)" : "var(--border)"}`, color: filtroTag === "" ? "#a5b4fc" : "var(--muted-2)" }}
           >
             Todos
@@ -280,7 +280,7 @@ export default function ClientesPage() {
             <button
               key={t.key}
               onClick={() => setFiltroTag(filtroTag === t.key ? "" : t.key)}
-              className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+              className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap"
               style={{ background: filtroTag === t.key ? t.bg : "var(--card)", border: `1px solid ${filtroTag === t.key ? t.color : "var(--border)"}`, color: filtroTag === t.key ? t.color : "var(--muted-2)" }}
             >
               {t.label}
@@ -346,7 +346,7 @@ export default function ClientesPage() {
                             {c.tags.map(tag => {
                               const t = TAGS_PREDEFINIDAS.find(x => x.key === tag);
                               return (
-                                <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                                <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
                                   style={{ background: t?.bg ?? "rgba(148,163,184,.1)", color: t?.color ?? "#94a3b8" }}>
                                   {t?.label ?? tag}
                                 </span>
