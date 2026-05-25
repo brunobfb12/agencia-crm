@@ -816,6 +816,7 @@ export default function ConfiguracoesPage() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [aba, setAba] = useState<"empresas" | "vendedores" | "midias" | "whatsapp">("empresas");
+  const tabsRef = useRef<HTMLDivElement>(null);
 
   const [novaEmpresa, setNovaEmpresa] = useState({ nome: "", instanciaWhatsapp: "" });
   const [novoVendedor, setNovoVendedor] = useState({ nome: "", telefone: "", empresaId: "", cargo: "VENDEDOR" });
@@ -1106,10 +1107,13 @@ export default function ConfiguracoesPage() {
         </div>
 
         {/* Onboarding checklist — only for company users */}
-        {!isCentral && <SetupChecklist onNavigate={(tab) => setAba(tab as "empresas" | "vendedores" | "midias" | "whatsapp")} />}
+        {!isCentral && <SetupChecklist onNavigate={(tab) => {
+          setAba(tab as "empresas" | "vendedores" | "midias" | "whatsapp");
+          setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+        }} />}
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div ref={tabsRef} className="flex flex-wrap gap-2 mb-6">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setAba(tab.id as typeof aba)}
               className="px-4 py-2 rounded-xl text-[13px] font-medium transition-all"
