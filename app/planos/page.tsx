@@ -81,7 +81,7 @@ export default function PlanosPage() {
                 <li>Até 500 clientes/leads</li>
                 <li>Aniversário automático</li>
               </ul>
-              <a href="#" className="pcta sec">Assinar Starter</a>
+              <a href="https://pay.hotmart.com/X105970507I?off=gl10cife" target="_blank" rel="noopener noreferrer" className="pcta sec">Assinar Starter</a>
             </div>
 
             {/* Pro */}
@@ -104,7 +104,7 @@ export default function PlanosPage() {
                 <li>Analytics completo</li>
                 <li>Aniversário automático</li>
               </ul>
-              <a href="#" className="pcta pri">Assinar Pro</a>
+              <a href="https://pay.hotmart.com/D105975567P?off=aeumfwka" target="_blank" rel="noopener noreferrer" className="pcta pri">Assinar Pro</a>
             </div>
 
             {/* Agency */}
@@ -126,7 +126,7 @@ export default function PlanosPage() {
                 <li className="note">Seu ponto de contato direto para dúvidas, ajustes e estratégia</li>
                 <li className="note">Instâncias adicionais: valor a combinar com seu gerente</li>
               </ul>
-              <a href="#" className="pcta sec">Assinar Agency</a>
+              <a href="https://pay.hotmart.com/M105975917J" target="_blank" rel="noopener noreferrer" className="pcta sec">Assinar Agency</a>
             </div>
           </div>
 
