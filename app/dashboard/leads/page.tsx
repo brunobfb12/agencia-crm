@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+interface SetupStatus {
+  informacoesOk: boolean; whatsappOk: boolean; vendedoresOk: boolean;
+  clientesOk: boolean; nomeIAOk: boolean; posVendaOk: boolean;
+  aniversarioOk: boolean; qualificacaoOk: boolean;
+}
 
 interface Lead {
   id: string;
@@ -81,9 +88,11 @@ function fireColor(score: number) {
 }
 
 export default function LeadsPage() {
+  const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [setup, setSetup] = useState<SetupStatus | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [editLead, setEditLead] = useState<Lead | null>(null);
@@ -133,6 +142,21 @@ export default function LeadsPage() {
       ro.disconnect();
     };
   }, [loading]);
+
+  useEffect(() => {
+    fetch("/api/dashboard/setup")
+      .then(r => r.json())
+      .then(d => { if (d) setSetup(d); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!setup) return;
+    // Brand-new account: no clients and no vendors → redirect to onboarding
+    if (!setup.clientesOk && !setup.vendedoresOk) {
+      router.replace("/dashboard/configuracoes");
+    }
+  }, [setup]);
 
   useEffect(() => {
     Promise.all([
@@ -269,8 +293,44 @@ export default function LeadsPage() {
 
   const leadsVisiveis = filtroEmpresa ? leads.filter((l) => l.empresaId === filtroEmpresa) : leads;
 
+  const setupDone  = setup ? Object.values(setup).filter(Boolean).length : 0;
+  const setupTotal = setup ? Object.values(setup).length : 0;
+  const setupPct   = setupTotal ? Math.round((setupDone / setupTotal) * 100) : 0;
+  const allSetupDone   = setupDone === setupTotal;
+  const hasStartedUsing = setup && (setup.clientesOk || setup.vendedoresOk);
+
   return (
     <div className="h-full overflow-y-auto" style={{ background: "var(--bg)" }}>
+
+      {/* Setup banner — shows only when partially configured (not brand new, not done) */}
+      {setup && hasStartedUsing && !allSetupDone && (
+        <div className="px-6 pt-4 animate-fade-up">
+          <a href="/dashboard/configuracoes"
+            className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl group transition-all"
+            style={{ background: "rgba(99,102,241,.07)", border: "1px solid rgba(99,102,241,.16)" }}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-bold"
+                style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc" }}>
+                {setupPct}%
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>
+                  Configure seu CRM — {setupDone} de {setupTotal} etapas concluídas
+                </p>
+                <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,.07)", width: "180px", maxWidth: "100%" }}>
+                  <div className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${setupPct}%`, background: "linear-gradient(90deg,#6366f1,#818cf8)" }} />
+                </div>
+              </div>
+            </div>
+            <span className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all"
+              style={{ background: "rgba(99,102,241,.12)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)", whiteSpace: "nowrap" }}>
+              Concluir →
+            </span>
+          </a>
+        </div>
+      )}
+
       <div className="p-6">
         {/* Header */}
         <div className="mb-6 animate-fade-up flex items-start justify-between gap-4">
