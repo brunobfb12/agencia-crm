@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 type Props = {
+  empresaId: string;
   nome: string;
   planStatus: string;
   plano: string;
@@ -71,15 +72,19 @@ function getDiasRestantes(trialFim: string | null): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
-export default function AssinaturaClient({ nome, planStatus, plano, trialFim, isenta }: Props) {
+export default function AssinaturaClient({ empresaId, nome, planStatus, plano, trialFim, isenta }: Props) {
   const dias = planStatus === "TRIAL" ? getDiasRestantes(trialFim) : null;
   const isBloqueado = planStatus === "BLOQUEADO" || planStatus === "CANCELADO";
   const [anual, setAnual] = useState(false);
 
   function abrirCheckout(planKey: string) {
     const periodo = anual ? "ANUAL" : "MENSAL";
-    const url = HOTMART[`${planKey}_${periodo}`];
-    if (url) { window.open(url, "_blank"); return; }
+    const base = HOTMART[`${planKey}_${periodo}`];
+    if (base) {
+      const sep = base.includes("?") ? "&" : "?";
+      window.open(`${base}${sep}src=${empresaId}`, "_blank");
+      return;
+    }
     const msg = encodeURIComponent(`Quero fazer upgrade para o plano ${planKey} do FácilCRM`);
     window.open(`https://wa.me/${WHATSAPP}?text=${msg}`, "_blank");
   }

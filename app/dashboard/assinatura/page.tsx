@@ -18,6 +18,7 @@ export default async function AssinaturaPage() {
 
   return (
     <AssinaturaClient
+      empresaId={usuario.empresaId}
       nome={empresa.nome}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       planStatus={(empresa as any).planStatus as string}
