@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 type Props = {
   nome: string;
@@ -26,20 +27,20 @@ const PLANOS = [
   {
     key:"STARTER", nome:"Starter",
     desc:"Para empresas que estão começando",
-    mensal:497, anualMes:414,
+    mensal:497, anual:414, totalAnual:4970, economia:994,
     features:["1 WhatsApp conectado","IA respondendo 24/7","Kanban de leads","Follow-up automático","Até 500 clientes/leads","Aniversário automático"],
   },
   {
     key:"PRO", nome:"Pro",
     desc:"Para empresas em crescimento",
-    mensal:897, anualMes:748,
+    mensal:897, anual:748, totalAnual:8970, economia:1794,
     features:["Até 2 WhatsApp conectados","IA respondendo 24/7","Kanban de leads","Follow-up automático","Clientes ilimitados","Campanhas em massa","Analytics completo","Aniversário automático"],
     destaque:true,
   },
   {
     key:"AGENCY", nome:"Agency",
     desc:"Para agências e múltiplas empresas",
-    mensal:1497, anualMes:1248,
+    mensal:1497, anual:1248, totalAnual:14970, economia:2994,
     features:["★ Fazemos a implantação por você","3 WhatsApp conectados","Tudo do Pro incluso","Suporte prioritário","Gerente de conta dedicado"],
   },
 ];
@@ -73,9 +74,11 @@ function getDiasRestantes(trialFim: string | null): number {
 export default function AssinaturaClient({ nome, planStatus, plano, trialFim, isenta }: Props) {
   const dias = planStatus === "TRIAL" ? getDiasRestantes(trialFim) : null;
   const isBloqueado = planStatus === "BLOQUEADO" || planStatus === "CANCELADO";
+  const [anual, setAnual] = useState(false);
 
   function abrirCheckout(planKey: string) {
-    const url = HOTMART[`${planKey}_MENSAL`];
+    const periodo = anual ? "ANUAL" : "MENSAL";
+    const url = HOTMART[`${planKey}_${periodo}`];
     if (url) { window.open(url, "_blank"); return; }
     const msg = encodeURIComponent(`Quero fazer upgrade para o plano ${planKey} do FácilCRM`);
     window.open(`https://wa.me/${WHATSAPP}?text=${msg}`, "_blank");
@@ -181,12 +184,39 @@ export default function AssinaturaClient({ nome, planStatus, plano, trialFim, is
 
       {/* Plan cards — upgrade/downgrade */}
       <div style={{ marginBottom:12 }}>
-        <div style={{ fontSize:".85rem", fontWeight:600, color:"var(--muted-2)", marginBottom:16 }}>
-          {planStatus === "ATIVO" ? "Alterar plano" : "Escolha um plano"}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginBottom:16 }}>
+          <div style={{ fontSize:".85rem", fontWeight:600, color:"var(--muted-2)" }}>
+            {planStatus === "ATIVO" ? "Alterar plano" : "Escolha um plano"}
+          </div>
+          {/* Toggle mensal / anual */}
+          <div style={{ display:"flex", alignItems:"center", background:"var(--card-2)", border:"1px solid var(--border)", borderRadius:100, padding:3, gap:2 }}>
+            <button onClick={()=>setAnual(false)} style={{
+              padding:"5px 16px", borderRadius:100, border:"none", cursor:"pointer", fontSize:".78rem", fontWeight:600,
+              background: !anual ? "linear-gradient(135deg,#6366f1,#7c3aed)" : "transparent",
+              color: !anual ? "#fff" : "var(--muted-2)",
+              boxShadow: !anual ? "0 2px 10px rgba(99,102,241,.4)" : "none",
+              transition:"all .2s",
+            }}>Mensal</button>
+            <button onClick={()=>setAnual(true)} style={{
+              padding:"5px 16px", borderRadius:100, border:"none", cursor:"pointer", fontSize:".78rem", fontWeight:600,
+              background: anual ? "linear-gradient(135deg,#6366f1,#7c3aed)" : "transparent",
+              color: anual ? "#fff" : "var(--muted-2)",
+              boxShadow: anual ? "0 2px 10px rgba(99,102,241,.4)" : "none",
+              transition:"all .2s",
+              display:"flex", alignItems:"center", gap:6,
+            }}>
+              Anual
+              <span style={{ background:"#10b981", color:"#fff", fontSize:".6rem", fontWeight:700, padding:"2px 7px", borderRadius:100 }}>
+                2 meses grátis
+              </span>
+            </button>
+          </div>
         </div>
+
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(240px, 1fr))", gap:14 }}>
           {PLANOS.map(p => {
             const isCurrent = planStatus === "ATIVO" && plano === p.key;
+            const preco = anual ? p.anual : p.mensal;
             return (
               <div key={p.key} className="card" style={{
                 padding:22, position:"relative",
@@ -194,48 +224,54 @@ export default function AssinaturaClient({ nome, planStatus, plano, trialFim, is
                 background: p.destaque ? "rgba(99,102,241,.05)" : undefined,
               }}>
                 {isCurrent && (
-                  <div style={{
-                    position:"absolute", top:-10, left:16,
-                    background:"linear-gradient(135deg,#6366f1,#7c3aed)",
-                    color:"#fff", fontSize:".6rem", fontWeight:700, letterSpacing:".1em",
-                    padding:"3px 10px", borderRadius:100,
-                  }}>PLANO ATUAL</div>
+                  <div style={{ position:"absolute", top:-10, left:16, background:"linear-gradient(135deg,#6366f1,#7c3aed)", color:"#fff", fontSize:".6rem", fontWeight:700, letterSpacing:".1em", padding:"3px 10px", borderRadius:100 }}>PLANO ATUAL</div>
                 )}
                 {p.destaque && !isCurrent && (
-                  <div style={{
-                    position:"absolute", top:-10, left:16,
-                    background:"linear-gradient(135deg,#6366f1,#7c3aed)",
-                    color:"#fff", fontSize:".6rem", fontWeight:700, letterSpacing:".1em",
-                    padding:"3px 10px", borderRadius:100,
-                  }}>MAIS POPULAR</div>
+                  <div style={{ position:"absolute", top:-10, left:16, background:"linear-gradient(135deg,#6366f1,#7c3aed)", color:"#fff", fontSize:".6rem", fontWeight:700, letterSpacing:".1em", padding:"3px 10px", borderRadius:100 }}>MAIS POPULAR</div>
                 )}
                 <div style={{ fontWeight:700, fontSize:"1rem", color:"var(--text-2)", marginBottom:3 }}>{p.nome}</div>
-                <div style={{ fontSize:".75rem", color:"var(--muted-2)", marginBottom:12 }}>{p.desc}</div>
-                <div style={{ display:"flex", alignItems:"flex-end", gap:2, marginBottom:14 }}>
-                  <span style={{ fontSize:".8rem", color:"#818cf8" }}>R$</span>
-                  <span style={{ fontSize:"1.8rem", fontWeight:800, color:"var(--text-2)", lineHeight:1 }}>
-                    {p.mensal.toLocaleString("pt-BR")}
-                  </span>
-                  <span style={{ fontSize:".75rem", color:"var(--muted-3)", marginBottom:4 }}>/mês</span>
+                <div style={{ fontSize:".75rem", color:"var(--muted-2)", marginBottom:10 }}>{p.desc}</div>
+
+                {/* Preço */}
+                <div style={{ marginBottom:anual ? 4 : 14 }}>
+                  {anual && (
+                    <div style={{ fontSize:".75rem", color:"var(--muted-3)", textDecoration:"line-through", marginBottom:2 }}>
+                      R${p.mensal.toLocaleString("pt-BR")}/mês
+                    </div>
+                  )}
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:2 }}>
+                    <span style={{ fontSize:".8rem", color:"#818cf8" }}>R$</span>
+                    <span style={{ fontSize:"1.8rem", fontWeight:800, color:"var(--text-2)", lineHeight:1 }}>{preco.toLocaleString("pt-BR")}</span>
+                    <span style={{ fontSize:".75rem", color:"var(--muted-3)", marginBottom:4 }}>/mês</span>
+                  </div>
+                  {anual && (
+                    <div style={{ marginTop:4, marginBottom:10 }}>
+                      <span style={{ fontSize:".72rem", color:"var(--muted-3)" }}>Cobrado R${p.totalAnual.toLocaleString("pt-BR")}/ano · </span>
+                      <span style={{ fontSize:".72rem", color:"#10b981", fontWeight:700 }}>economize R${p.economia.toLocaleString("pt-BR")}</span>
+                    </div>
+                  )}
                 </div>
+
                 <ul style={{ listStyle:"none", display:"flex", flexDirection:"column", gap:7, marginBottom:18 }}>
                   {p.features.map((f,i) => (
                     <li key={i} style={{ display:"flex", gap:7, fontSize:".78rem", color:"var(--muted-2)" }}>
-                      <span style={{ color:"#10b981", flexShrink:0 }}>✓</span>{f}
+                      <span style={{ color: f.startsWith("★") ? "#f59e0b" : "#10b981", flexShrink:0 }}>
+                        {f.startsWith("★") ? "★" : "✓"}
+                      </span>
+                      {f.startsWith("★") ? f.slice(2) : f}
                     </li>
                   ))}
                 </ul>
+
                 {isCurrent ? (
-                  <button disabled className="btn-secondary" style={{ width:"100%", opacity:.5, cursor:"not-allowed", fontSize:".82rem" }}>
-                    Plano atual
-                  </button>
+                  <button disabled className="btn-secondary" style={{ width:"100%", opacity:.5, cursor:"not-allowed", fontSize:".82rem" }}>Plano atual</button>
                 ) : (
                   <button onClick={()=>abrirCheckout(p.key)}
                     className={p.destaque ? "btn-primary" : "btn-secondary"}
                     style={{ width:"100%", fontSize:".82rem" }}>
                     {planStatus === "ATIVO"
                       ? (PLANOS.findIndex(x=>x.key===plano) < PLANOS.findIndex(x=>x.key===p.key) ? "Fazer upgrade →" : "Fazer downgrade")
-                      : "Assinar agora →"}
+                      : `Assinar ${anual ? "Anual" : "Mensal"} →`}
                   </button>
                 )}
               </div>
