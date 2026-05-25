@@ -925,7 +925,7 @@ export default function ConfiguracoesPage() {
                                 <div className="flex items-center gap-4 mb-4">
                                   <div className="flex-shrink-0 text-center w-14">
                                     <div className="text-[2.2rem] font-black leading-none tabular-nums" style={{ color: q.cor }}>
-                                      {q.score.toFixed(1)}
+                                      {q.score === 10 ? "10" : q.score.toFixed(1)}
                                     </div>
                                     <div className="text-[10px] font-semibold" style={{ color: "var(--muted-3)" }}>/10</div>
                                   </div>
