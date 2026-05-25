@@ -390,6 +390,145 @@ const FIELD_HELP: Record<string, { title: string; desc: string; examples: string
   },
 };
 
+/* ── Templates por segmento ──────────────────────────────────────────── */
+interface Segmento {
+  id: string; emoji: string; nome: string; desc: string;
+  tipoAtendimento: string; nomeIA: string;
+  infoCampos: Record<string, string>;
+  qualificacao: string; posVenda: string; aniversario: string;
+}
+
+const SEGMENTOS: Segmento[] = [
+  {
+    id: "moda_atacado", emoji: "👗", nome: "Moda / Atacado",
+    desc: "Loja de roupas, moda íntima, atacadista, multimarcas",
+    tipoAtendimento: "ORCAMENTO", nomeIA: "Ana",
+    infoCampos: {
+      PRODUTOS: "Camisetas básicas e estampadas · Calças jeans femininas e masculinas · Vestidos casuais e sociais · Conjuntos femininos · Moda íntima (calcinhas, sutiãs, pijamas) · Moda plus size",
+      PRECOS: "Peças avulsas a partir de R$19,90 · Kit 5 peças com 15% desconto · Pedido mínimo atacado: R$300 · Tabela completa enviada após cadastro",
+      PAGAMENTO: "PIX com 5% desconto · Cartão débito/crédito até 12x sem juros · Boleto bancário (mínimo R$500)",
+      ENTREGA: "Entrega para todo o Brasil via Correios e Jadlog · Frete grátis acima de R$500 · Retirada na loja disponível · Prazo de 3 a 7 dias úteis",
+      DIFERENCIAIS: "Atacado a partir de 5 peças · Nota fiscal garantida · Troca sem burocracia em até 30 dias · Fotos em alta qualidade para revenda · Catálogo atualizado toda semana",
+      HORARIO: "Seg–Sex 8h–18h · Sáb 8h–12h · Dom e feriados: fechado",
+    },
+    qualificacao: "Você compra para revenda ou uso próprio?\nQual o seu orçamento médio por pedido?\nJá trabalha com alguma marca de moda?",
+    posVenda: "Oi {nome}! 😊 {ia} aqui, da {empresa}. Seu pedido chegou certinho? Tudo certo com as peças?",
+    aniversario: "Parabéns, {nome}! 🎂 A {empresa} deseja um dia incrível! Aproveite e garanta algo especial hoje! 🎁",
+  },
+  {
+    id: "estetica_beleza", emoji: "💅", nome: "Estética / Beleza",
+    desc: "Studio de sobrancelhas, cílios, micropigmentação, salão",
+    tipoAtendimento: "AGENDAMENTO", nomeIA: "Bella",
+    infoCampos: {
+      PRODUTOS: "Design de sobrancelha · Henna de sobrancelha · Micropigmentação · Extensão de cílios fio a fio · Volume russo · Limpeza de pele · Laser de sobrancelha",
+      PRECOS: "Design sobrancelha R$60 · Henna R$90 · Micropigmentação R$350 · Extensão cílios fio a fio R$150 · Volume russo R$200 · Pacote mensal sobrancelha R$120",
+      PAGAMENTO: "PIX · Cartão crédito até 6x · Cartão débito · Dinheiro",
+      ENTREGA: "Atendimento presencial — agendamento obrigatório pelo link. Endereço enviado após confirmação.",
+      DIFERENCIAIS: "10 anos de experiência · Materiais importados e certificados · Studio climatizado e exclusivo · Retoques inclusos nos primeiros 30 dias",
+      HORARIO: "Ter–Sáb 8h–20h · Dom e seg: fechado · Feriados: sob consulta",
+    },
+    qualificacao: "Qual serviço você tem interesse? (sobrancelha, cílios, limpeza de pele...)\nJá fez algum procedimento antes?\nTem alguma alergia a cosméticos?",
+    posVenda: "Oi {nome}! 😊 {ia} aqui, do {empresa}. Como ficou o resultado do seu procedimento? Ficou satisfeita?",
+    aniversario: "Parabéns, {nome}! 🥳 {ia} aqui. Que tal se presentear com um mimo de aniversário? Te esperamos no studio! 💕",
+  },
+  {
+    id: "clinica_saude", emoji: "🦷", nome: "Clínica / Saúde",
+    desc: "Odontologia, fisioterapia, estética clínica, nutrição",
+    tipoAtendimento: "AGENDAMENTO", nomeIA: "Sofia",
+    infoCampos: {
+      PRODUTOS: "Consulta inicial e avaliação gratuita · Limpeza e profilaxia · Clareamento dental · Aparelho ortodôntico (metálico e estético) · Implante dental · Tratamento de canal · Restaurações",
+      PRECOS: "Consulta avaliação: gratuita · Limpeza R$150 · Clareamento R$350 · Implante a partir de R$1.800 · Aparelho mensal R$250 · Parcelamento disponível",
+      PAGAMENTO: "PIX · Cartão crédito até 12x · Cartão débito · Convênios odontológicos aceitos · Financiamento disponível",
+      ENTREGA: "Atendimento presencial com hora marcada. Fácil acesso e estacionamento.",
+      DIFERENCIAIS: "Equipe especializada · Equipamentos digitais de última geração · Ambiente acolhedor · Avaliação gratuita · Atendimento de emergência",
+      HORARIO: "Seg–Sex 8h–19h · Sáb 8h–13h · Dom: emergências",
+    },
+    qualificacao: "Qual tratamento ou serviço você está buscando?\nÉ sua primeira consulta conosco?\nTem convênio odontológico?",
+    posVenda: "Oi {nome}! {ia} aqui. Como está se sentindo após o atendimento? Ficou com alguma dúvida?",
+    aniversario: "Parabéns, {nome}! 🎂 {ia} aqui. Desejamos saúde e muitos sorrisos no seu dia! ✨",
+  },
+  {
+    id: "automotivo", emoji: "🚗", nome: "Automotivo",
+    desc: "Funilaria, pintura, estética automotiva, mecânica",
+    tipoAtendimento: "ORCAMENTO", nomeIA: "Max",
+    infoCampos: {
+      PRODUTOS: "Funilaria e pintura completa · Polimento e vitrificação · Higienização interna · Remoção de amassados (PDR) · Insulfilm · Plotagem · Customização de veículos",
+      PRECOS: "Polimento simples a partir de R$200 · Vitrificação R$500 · Higienização completa R$150 · Funilaria: orçamento por item · Plotagem: orçamento por projeto",
+      PAGAMENTO: "PIX · Cartão débito e crédito até 6x · Dinheiro · Nota fiscal disponível",
+      ENTREGA: "Atendimento na nossa oficina. Retirada e entrega do veículo sob consulta na região.",
+      DIFERENCIAIS: "10 anos de experiência · Materiais premium · Profissionais certificados · Garantia nos serviços · Orçamento sem compromisso · Fotos antes e depois",
+      HORARIO: "Seg–Sex 8h–18h · Sáb 8h–13h · Dom: fechado",
+    },
+    qualificacao: "Qual o serviço que você precisa?\nQual é o modelo e ano do seu veículo?\nJá tem ideia do orçamento?",
+    posVenda: "Oi {nome}! {ia} aqui. Ficou satisfeito com o serviço no seu veículo? Tudo certo?",
+    aniversario: "Parabéns, {nome}! 🎉 {ia} aqui. Um dia excelente e que seu carro sempre te leve longe! 🚗",
+  },
+  {
+    id: "materiais_construcao", emoji: "🏗️", nome: "Materiais / Construção",
+    desc: "Tintas, materiais de construção, ferragens, acabamentos",
+    tipoAtendimento: "ORCAMENTO", nomeIA: "Carlos",
+    infoCampos: {
+      PRODUTOS: "Tintas imobiliárias internas e externas · Massa corrida e textura · Vernizes e seladores · Rolos, pincéis e acessórios · Impermeabilizantes · Cimento e argamassa · Porcelanatos e revestimentos",
+      PRECOS: "Tinta standard 18L a partir de R$80 · Tinta premium 18L R$150 · Textura saco 25kg R$45 · Consulte nossa tabela para obras grandes",
+      PAGAMENTO: "PIX com desconto · Cartão débito e crédito até 12x · Boleto para construtoras · Crediário para clientes cadastrados",
+      ENTREGA: "Entrega expressa na cidade · Frete grátis em pedidos acima de R$500 · Retirada na loja disponível · Prazo 1 a 2 dias úteis",
+      DIFERENCIAIS: "Melhor preço garantido · 500+ produtos em estoque · Atendimento técnico especializado · Entrega rápida · Cartão fidelidade com pontos",
+      HORARIO: "Seg–Sex 7h–18h · Sáb 7h–13h · Dom: fechado",
+    },
+    qualificacao: "Qual o tipo de obra ou projeto?\nQual a área aproximada (m²)?\nPrecisa de nota fiscal da empresa?",
+    posVenda: "Oi {nome}! {ia} aqui, da {empresa}. Como está indo a obra? Ficou satisfeito com os materiais?",
+    aniversario: "Parabéns, {nome}! 🎂 A {empresa} deseja um dia especial! Aproveite nosso desconto de aniversário! 🎁",
+  },
+  {
+    id: "cursos_educacao", emoji: "📚", nome: "Cursos / Educação",
+    desc: "Cursos presenciais ou online, treinamentos, capacitação",
+    tipoAtendimento: "AGENDAMENTO", nomeIA: "Júlia",
+    infoCampos: {
+      PRODUTOS: "Curso presencial extensão de cílios · Curso design de sobrancelha · Curso micropigmentação · Curso online em vídeo · Mentoria individual · Kit profissional para alunos",
+      PRECOS: "Cursos presenciais a partir de R$497 · Cursos online R$197 · Mentoria individual R$150/hora · Pacote completo com kit R$897",
+      PAGAMENTO: "PIX à vista · Cartão crédito até 12x · Parcelamento direto disponível",
+      ENTREGA: "Cursos presenciais no nosso studio · Cursos online: acesso imediato após pagamento · Kit enviado pelos Correios",
+      DIFERENCIAIS: "Certificado reconhecido pelo mercado · Professora com 8 anos de experiência · Material didático incluso · Suporte pós-curso · Turmas reduzidas (máx. 6 alunos)",
+      HORARIO: "Turmas Sáb–Dom 8h–18h · Cursos online: acesso 24h · Matrículas seg–sex 9h–18h",
+    },
+    qualificacao: "Qual curso te interessa?\nJá tem experiência na área ou é iniciante?\nPrefere aula presencial ou online?",
+    posVenda: "Oi {nome}! {ia} aqui. Como está sendo sua experiência com o curso? Tem alguma dúvida?",
+    aniversario: "Parabéns, {nome}! 🎂 {ia} aqui. Que seu novo ano seja cheio de conquistas! 🌟",
+  },
+  {
+    id: "purificadores", emoji: "💧", nome: "Purificadores / Produtos",
+    desc: "Purificadores de água, eletrodomésticos, produtos técnicos",
+    tipoAtendimento: "ORCAMENTO", nomeIA: "Daniel",
+    infoCampos: {
+      PRODUTOS: "Purificador de água H2 · Purificador compacto · Bebedouro de mesa · Refil H2 (6 meses) · Refil compacto · Instalação profissional · Manutenção preventiva",
+      PRECOS: "Purificador H2 R$1.200 · Purificador compacto R$750 · Refil H2 R$90 · Instalação inclusa na compra · Manutenção anual R$120",
+      PAGAMENTO: "PIX à vista · Cartão crédito até 12x · Boleto · Parcelamento direto",
+      ENTREGA: "Entrega e instalação em domicílio · Atendemos Goiânia e região metropolitana · Frete para outros estados via transportadora",
+      DIFERENCIAIS: "Técnico certificado · Atendimento 7 dias por semana · Garantia de 1 ano · Instalação no mesmo dia · Suporte técnico pós-venda",
+      HORARIO: "Seg–Sex 8h–18h · Sáb 8h–13h · Emergências 24h para clientes cadastrados",
+    },
+    qualificacao: "Você já tem purificador em casa ou é a primeira vez?\nQual é o uso: residencial ou comercial?\nTem torneira de encaixe ou precisaria adaptação?",
+    posVenda: "Oi {nome}! {ia} aqui. Seu purificador está funcionando bem? Precisa de algum suporte?",
+    aniversario: "Parabéns, {nome}! 🎂 {ia} aqui. Que seu dia seja especial! 💧",
+  },
+  {
+    id: "outros", emoji: "🏢", nome: "Outro segmento",
+    desc: "Serviços gerais, associações, e-commerce e outros",
+    tipoAtendimento: "ORCAMENTO", nomeIA: "Sofia",
+    infoCampos: {
+      PRODUTOS: "Descreva aqui os produtos e serviços que sua empresa oferece",
+      PRECOS: "Informe os valores e condições comerciais",
+      PAGAMENTO: "PIX · Cartão débito e crédito · Dinheiro",
+      ENTREGA: "Informe como funciona a entrega ou prestação dos serviços",
+      DIFERENCIAIS: "Descreva os diferenciais e pontos fortes da sua empresa",
+      HORARIO: "Seg–Sex 8h–18h · Sáb 8h–12h",
+    },
+    qualificacao: "O que você está buscando?\nJá conhece a empresa?\nQual o melhor horário para entrarmos em contato?",
+    posVenda: "Oi {nome}! {ia} aqui. Ficou satisfeito com o nosso atendimento? Tem alguma dúvida?",
+    aniversario: "Parabéns, {nome}! 🎂 {ia} aqui. Desejamos um dia muito especial! 🎉",
+  },
+];
+
 function parseInfo(texto: string | null): Record<string, string> {
   const result: Record<string, string> = {};
   if (!texto) return result;
@@ -565,9 +704,26 @@ export default function ConfiguracoesPage() {
   const [deletandoEmpresa, setDeletandoEmpresa] = useState<Empresa | null>(null);
   const [confirmNomeEmpresa, setConfirmNomeEmpresa] = useState("");
   const [helpOpen, setHelpOpen] = useState<string | null>(null);
+  const [segmentoModal, setSegmentoModal] = useState<string | null>(null); // empId being templated
 
   const isCentral = me?.perfil === "CENTRAL";
   const helpData = helpOpen ? FIELD_HELP[helpOpen] : null;
+
+  function aplicarTemplate(seg: Segmento) {
+    setInfoCampos(seg.infoCampos);
+    setNomeIA(seg.nomeIA);
+    setTipoAtendimento(seg.tipoAtendimento);
+    setPerguntasQualificacao(seg.qualificacao);
+    setMensagemPosVenda(seg.posVenda);
+    setMensagemAniversario(seg.aniversario);
+    setSegmentoModal(null);
+  }
+
+  function temConteudo() {
+    return SECOES.some(s => (infoCampos[s] ?? "").trim().length > 0)
+      || nomeIA.trim().length > 0
+      || perguntasQualificacao.trim().length > 0;
+  }
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then(setMe);
@@ -880,6 +1036,24 @@ export default function ConfiguracoesPage() {
                   {editEmpresa === emp.id && (
                     <div className="px-4 pb-5" style={{ borderTop: "1px solid var(--border)", background: "rgba(99,102,241,.02)" }}>
                       <div className="pt-4">
+
+                        {/* Template por segmento */}
+                        <div className="flex items-center justify-between mb-4 py-3 px-3.5 rounded-xl"
+                          style={{ background: "rgba(99,102,241,.05)", border: "1px dashed rgba(99,102,241,.2)" }}>
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-semibold" style={{ color: "#a5b4fc" }}>
+                              Começando do zero?
+                            </p>
+                            <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>
+                              Preencha tudo automaticamente com um template do seu segmento
+                            </p>
+                          </div>
+                          <button type="button" onClick={() => setSegmentoModal(emp.id)}
+                            className="flex-shrink-0 ml-3 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all hover:opacity-80"
+                            style={{ background: "rgba(99,102,241,.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)", whiteSpace: "nowrap" }}>
+                            Usar template →
+                          </button>
+                        </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           {SECOES.map((sec) => (
@@ -1488,6 +1662,67 @@ export default function ConfiguracoesPage() {
 
       </div>
     </div>
+
+    {/* Segmento template modal */}
+    {segmentoModal && (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,.85)", backdropFilter: "blur(10px)" }}
+        onClick={() => setSegmentoModal(null)}>
+        <div className="w-full max-w-lg rounded-2xl overflow-hidden animate-fade-up"
+          style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.6)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
+          onClick={(e) => e.stopPropagation()}>
+
+          {/* Header */}
+          <div className="px-5 py-4 flex items-start justify-between gap-3 flex-shrink-0"
+            style={{ borderBottom: "1px solid var(--border)" }}>
+            <div>
+              <h3 className="font-bold text-[16px]" style={{ color: "var(--text)" }}>
+                Escolha o segmento da empresa
+              </h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-3)" }}>
+                Preenche todos os campos com conteúdo pronto para editar
+              </p>
+              {temConteudo() && (
+                <div className="mt-2 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold inline-flex items-center gap-1.5"
+                  style={{ background: "rgba(251,191,36,.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.2)" }}>
+                  ⚠️ Os campos já preenchidos serão substituídos
+                </div>
+              )}
+            </div>
+            <button onClick={() => setSegmentoModal(null)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[13px] flex-shrink-0 transition-all hover:opacity-70"
+              style={{ background: "var(--card-2)", color: "var(--muted-2)", border: "1px solid var(--border)" }}>
+              ✕
+            </button>
+          </div>
+
+          {/* Segment grid */}
+          <div className="p-5 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3">
+              {SEGMENTOS.map((seg) => (
+                <button key={seg.id} type="button"
+                  onClick={() => aplicarTemplate(seg)}
+                  className="p-4 rounded-2xl text-left transition-all group"
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", cursor: "pointer" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(99,102,241,.4)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(99,102,241,.06)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.background = "var(--card)"; }}>
+                  <div className="text-2xl mb-2">{seg.emoji}</div>
+                  <p className="text-[13px] font-bold mb-0.5" style={{ color: "var(--text)" }}>{seg.nome}</p>
+                  <p className="text-[11px] leading-snug" style={{ color: "var(--muted-3)" }}>{seg.desc}</p>
+                  <div className="mt-2.5 flex items-center gap-1.5">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                      style={{ background: seg.tipoAtendimento === "AGENDAMENTO" ? "rgba(99,102,241,.12)" : seg.tipoAtendimento === "ORCAMENTO" ? "rgba(34,211,238,.1)" : "rgba(52,211,153,.1)", color: seg.tipoAtendimento === "AGENDAMENTO" ? "#a5b4fc" : seg.tipoAtendimento === "ORCAMENTO" ? "#22d3ee" : "#34d399" }}>
+                      {seg.tipoAtendimento === "AGENDAMENTO" ? "Agendamento" : seg.tipoAtendimento === "ORCAMENTO" ? "Orçamento" : "Ambos"}
+                    </span>
+                    <span className="text-[10px]" style={{ color: "var(--muted-3)" }}>IA: {seg.nomeIA}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Help modal — "?" buttons */}
     {helpData && (
