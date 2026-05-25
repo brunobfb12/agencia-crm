@@ -37,6 +37,15 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   SEM_RESPOSTA:        { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Sem Resposta" },
 };
 
+const TAGS_PREDEFINIDAS = [
+  { key: "indicacao",        label: "Indicação",        color: "#22d3ee", bg: "rgba(34,211,238,.12)" },
+  { key: "anuncio_organico", label: "Anúncio Orgânico", color: "#60a5fa", bg: "rgba(96,165,250,.12)" },
+  { key: "VIP",              label: "VIP",              color: "#f59e0b", bg: "rgba(245,158,11,.12)"  },
+  { key: "Varejo",           label: "Varejo",           color: "#a78bfa", bg: "rgba(167,139,250,.12)"},
+  { key: "Atacado",          label: "Atacado",          color: "#10b981", bg: "rgba(16,185,129,.12)" },
+  { key: "Inadimplente",     label: "Inadimplente",     color: "#f87171", bg: "rgba(248,113,113,.12)"},
+];
+
 const formVazio = { nome: "", telefone: "", email: "", dataNascimento: "", empresaId: "", vendedorId: "" };
 
 export default function ClientesPage() {
@@ -68,6 +77,10 @@ export default function ClientesPage() {
   const [msgInicial, setMsgInicial] = useState("");
   const [ativando, setAtivando] = useState(false);
   const [ativarResultado, setAtivarResultado] = useState<{ ok: boolean; msg: string; upgrade?: boolean } | null>(null);
+  const [filtroTag, setFiltroTag] = useState("");
+  const [modalTags, setModalTags] = useState<Cliente | null>(null);
+  const [tagsDraft, setTagsDraft] = useState<string[]>([]);
+  const [salvandoTags, setSalvandoTags] = useState(false);
 
   useEffect(() => {
     fetch("/api/empresas").then((r) => r.json()).then((data) => {
@@ -165,6 +178,25 @@ export default function ClientesPage() {
     if (data.ok) fetch("/api/clientes").then(r => r.json()).then(setClientes);
   };
 
+  const salvarTags = async () => {
+    if (!modalTags) return;
+    setSalvandoTags(true);
+    await fetch(`/api/clientes/${modalTags.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: tagsDraft }),
+    });
+    setClientes(prev => prev.map(c => c.id === modalTags.id ? { ...c, tags: tagsDraft } : c));
+    setModalTags(null);
+    setSalvandoTags(false);
+  };
+
+  const toggleTagDraft = (key: string) => {
+    setTagsDraft(prev => prev.includes(key) ? prev.filter(t => t !== key) : [...prev, key]);
+  };
+
+  const clientesFiltrados = filtroTag ? clientes.filter(c => c.tags.includes(filtroTag)) : clientes;
+
   const TH = ({ children }: { children: React.ReactNode }) => (
     <th
       className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide"
@@ -235,6 +267,32 @@ export default function ClientesPage() {
           </div>
         </div>
 
+        {/* Tag filter bar */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          <button
+            onClick={() => setFiltroTag("")}
+            className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+            style={{ background: filtroTag === "" ? "rgba(99,102,241,.2)" : "var(--card)", border: `1px solid ${filtroTag === "" ? "rgba(99,102,241,.4)" : "var(--border)"}`, color: filtroTag === "" ? "#a5b4fc" : "var(--muted-2)" }}
+          >
+            Todos
+          </button>
+          {TAGS_PREDEFINIDAS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setFiltroTag(filtroTag === t.key ? "" : t.key)}
+              className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
+              style={{ background: filtroTag === t.key ? t.bg : "var(--card)", border: `1px solid ${filtroTag === t.key ? t.color : "var(--border)"}`, color: filtroTag === t.key ? t.color : "var(--muted-2)" }}
+            >
+              {t.label}
+              {filtroTag === t.key && (
+                <span className="ml-1.5" style={{ opacity: .7 }}>
+                  ({clientesFiltrados.length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
         {/* Table / Cards */}
         {loading ? (
           <div className="space-y-3">
@@ -253,7 +311,7 @@ export default function ClientesPage() {
           <>
             {/* Mobile: cards */}
             <div className="sm:hidden space-y-2 animate-fade-up">
-              {clientes.map((c) => {
+              {clientesFiltrados.map((c) => {
                 const badge = c.leads[0] ? STATUS_BADGE[c.leads[0].status] : null;
                 return (
                   <div
@@ -283,14 +341,36 @@ export default function ClientesPage() {
                         <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-3)" }}>
                           {c.empresa.nome} · {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
                         </p>
+                        {c.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {c.tags.map(tag => {
+                              const t = TAGS_PREDEFINIDAS.find(x => x.key === tag);
+                              return (
+                                <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                                  style={{ background: t?.bg ?? "rgba(148,163,184,.1)", color: t?.color ?? "#94a3b8" }}>
+                                  {t?.label ?? tag}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
-                        className="text-[12px] px-3 py-2 rounded-xl font-semibold flex-shrink-0"
-                        style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}
-                      >
-                        Ativar
-                      </button>
+                      <div className="flex flex-col gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
+                          className="text-[12px] px-3 py-2 rounded-xl font-semibold"
+                          style={{ background: "rgba(99,102,241,.08)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.15)" }}
+                        >
+                          Ativar
+                        </button>
+                        <button
+                          onClick={() => { setModalTags(c); setTagsDraft(c.tags); }}
+                          className="text-[11px] px-3 py-1.5 rounded-xl font-semibold"
+                          style={{ background: "var(--card)", color: "var(--muted-2)", border: "1px solid var(--border)" }}
+                        >
+                          Tags
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -311,12 +391,13 @@ export default function ClientesPage() {
                         <TH>E-mail</TH>
                         <TH>Empresa</TH>
                         <TH>Status</TH>
+                        <TH>Tags</TH>
                         <TH>Cadastro</TH>
                         <TH>{" "}</TH>
                       </tr>
                     </thead>
                     <tbody>
-                      {clientes.map((c, idx) => (
+                      {clientesFiltrados.map((c, idx) => (
                         <tr
                           key={c.id}
                           style={{
@@ -353,21 +434,45 @@ export default function ClientesPage() {
                               <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>
                             )}
                           </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {c.tags.map(tag => {
+                                const t = TAGS_PREDEFINIDAS.find(x => x.key === tag);
+                                return (
+                                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                                    style={{ background: t?.bg ?? "rgba(148,163,184,.1)", color: t?.color ?? "#94a3b8" }}>
+                                    {t?.label ?? tag}
+                                  </span>
+                                );
+                              })}
+                              {c.tags.length === 0 && <span style={{ color: "var(--muted-3)", fontSize: "12px" }}>—</span>}
+                            </div>
+                          </td>
                           <td className="px-4 py-3 text-[12px]" style={{ color: "var(--muted-3)" }}>
                             {new Date(c.criadoEm).toLocaleDateString("pt-BR")}
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
-                              style={{ background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.25)", color: "#a5b4fc" }}
-                              title="Enviar primeira mensagem e ativar lead"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                              </svg>
-                              Ativar
-                            </button>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => { setModalAtivar(c); setMsgInicial(""); setAtivarResultado(null); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                                style={{ background: "rgba(99,102,241,.12)", border: "1px solid rgba(99,102,241,.25)", color: "#a5b4fc" }}
+                                title="Enviar primeira mensagem e ativar lead"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                Ativar
+                              </button>
+                              <button
+                                onClick={() => { setModalTags(c); setTagsDraft(c.tags); }}
+                                className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                                style={{ background: "var(--card-2)", border: "1px solid var(--border)", color: "var(--muted-2)" }}
+                                title="Gerenciar tags"
+                              >
+                                🏷
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -678,6 +783,67 @@ export default function ClientesPage() {
                   {ativando ? "Enviando..." : "Enviar Mensagem"}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Gerenciar Tags */}
+      {modalTags && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-sm rounded-2xl overflow-hidden animate-fade-up" style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 24px 60px var(--shadow)" }}>
+            <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+              <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Gerenciar Tags</h3>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>
+                {modalTags.nome ?? modalTags.telefone}
+              </p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>ORIGEM</p>
+                <div className="flex flex-wrap gap-2">
+                  {TAGS_PREDEFINIDAS.filter(t => ["indicacao","anuncio_organico"].includes(t.key)).map(t => (
+                    <button
+                      key={t.key}
+                      onClick={() => toggleTagDraft(t.key)}
+                      className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                      style={{
+                        background: tagsDraft.includes(t.key) ? t.bg : "var(--card)",
+                        border: `1px solid ${tagsDraft.includes(t.key) ? t.color : "var(--border)"}`,
+                        color: tagsDraft.includes(t.key) ? t.color : "var(--muted-2)",
+                      }}
+                    >
+                      {tagsDraft.includes(t.key) ? "✓ " : ""}{t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>TIPO DE CLIENTE</p>
+                <div className="flex flex-wrap gap-2">
+                  {TAGS_PREDEFINIDAS.filter(t => ["VIP","Varejo","Atacado","Inadimplente"].includes(t.key)).map(t => (
+                    <button
+                      key={t.key}
+                      onClick={() => toggleTagDraft(t.key)}
+                      className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                      style={{
+                        background: tagsDraft.includes(t.key) ? t.bg : "var(--card)",
+                        border: `1px solid ${tagsDraft.includes(t.key) ? t.color : "var(--border)"}`,
+                        color: tagsDraft.includes(t.key) ? t.color : "var(--muted-2)",
+                      }}
+                    >
+                      {tagsDraft.includes(t.key) ? "✓ " : ""}{t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+              <button onClick={() => setModalTags(null)} className="px-4 py-2 rounded-xl text-[13px] font-medium" style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
+                Cancelar
+              </button>
+              <button onClick={salvarTags} disabled={salvandoTags} className="btn-primary px-5 py-2 text-[13px] disabled:opacity-40">
+                {salvandoTags ? "Salvando..." : "Salvar Tags"}
+              </button>
             </div>
           </div>
         </div>

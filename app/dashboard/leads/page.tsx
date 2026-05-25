@@ -11,7 +11,7 @@ interface Lead {
   empresaId: string;
   atualizadoEm: string;
   dataRecontato: string | null;
-  cliente: { nome: string | null; telefone: string; email: string | null; dataNascimento: string | null };
+  cliente: { nome: string | null; telefone: string; email: string | null; dataNascimento: string | null; tags: string[] };
   empresa: { nome: string; instanciaWhatsapp: string };
 }
 
@@ -20,6 +20,15 @@ interface Vendedor {
   nome: string;
   empresa: { nome: string };
 }
+
+const TAGS_PREDEFINIDAS = [
+  { key: "indicacao",        label: "Indicação"        },
+  { key: "anuncio_organico", label: "Anúncio Orgânico" },
+  { key: "VIP",              label: "VIP"              },
+  { key: "Varejo",           label: "Varejo"           },
+  { key: "Atacado",          label: "Atacado"          },
+  { key: "Inadimplente",     label: "Inadimplente"     },
+];
 
 const colunas = [
   { status: "LEAD",                label: "Novos Leads",          short: "Novos",       hex: "#9ca3af" },
@@ -83,6 +92,7 @@ export default function LeadsPage() {
   const [modoSelecao, setModoSelecao] = useState(false);
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [modalCampanha, setModalCampanha] = useState(false);
+  const [tagSeletor, setTagSeletor] = useState(false);
   const [mensagemCampanha, setMensagemCampanha] = useState("");
   const [disparando, setDisparando] = useState(false);
   const [campanhaOk, setCampanhaOk] = useState(false);
@@ -598,6 +608,33 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Tag selector dropdown */}
+      {modoSelecao && tagSeletor && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-2xl p-4 animate-fade-up" style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 16px 40px rgba(0,0,0,.6)", minWidth: 280 }}>
+          <p className="text-[11px] font-semibold mb-3" style={{ color: "var(--muted)" }}>SELECIONAR LEADS POR TAG</p>
+          <div className="flex flex-wrap gap-2">
+            {TAGS_PREDEFINIDAS.map(t => {
+              const count = leads.filter(l => l.cliente.tags?.includes(t.key)).length;
+              return (
+                <button
+                  key={t.key}
+                  disabled={count === 0}
+                  onClick={() => {
+                    setSelecionados(leads.filter(l => l.cliente.tags?.includes(t.key)).map(l => l.id));
+                    setTagSeletor(false);
+                  }}
+                  className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all disabled:opacity-30"
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--muted-2)" }}
+                >
+                  {t.label} {count > 0 ? `(${count})` : "(0)"}
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={() => setTagSeletor(false)} className="mt-3 text-[11px]" style={{ color: "var(--muted-3)" }}>Fechar</button>
+        </div>
+      )}
+
       {/* Floating campaign bar */}
       {modoSelecao && selecionados.length > 0 && (
         <div
@@ -611,6 +648,13 @@ export default function LeadsPage() {
           <span className="text-[13px] font-semibold" style={{ color: "#a5b4fc" }}>
             {selecionados.length} lead{selecionados.length !== 1 ? "s" : ""} selecionado{selecionados.length !== 1 ? "s" : ""}
           </span>
+          <button
+            onClick={() => setTagSeletor(v => !v)}
+            className="text-[12px] px-3 py-1.5 rounded-xl font-semibold transition-all"
+            style={{ background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", color: "var(--muted-2)" }}
+          >
+            🏷 Por tag
+          </button>
           <button
             onClick={() => { setSelecionados([]); }}
             className="text-[12px] transition-colors"
