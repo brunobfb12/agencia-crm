@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verificarLimiteLeads } from "@/lib/plano";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -92,6 +93,11 @@ export async function POST(req: Request) {
     include: { vendedor: { select: { id: true, nome: true, telefone: true, ativo: true } } },
   });
   if (!lead) {
+    const { bloqueado, total, limite } = await verificarLimiteLeads(empresa.id);
+    if (bloqueado) {
+      console.warn(`[webhook] limite de leads atingido — empresa=${empresa.id} total=${total} limite=${limite}`);
+      return NextResponse.json({ ok: false, motivo: "limite_leads", total, limite });
+    }
     lead = await prisma.lead.create({
       data: { clienteId: cliente.id, empresaId: empresa.id },
       include: { vendedor: { select: { id: true, nome: true, telefone: true, ativo: true } } },

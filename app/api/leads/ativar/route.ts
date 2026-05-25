@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verificarLimiteLeads } from "@/lib/plano";
 
 const EVOLUTION_URL = "http://201.76.43.149:8080";
 const EVOLUTION_KEY = "SuaChaveSecreta123";
@@ -23,6 +24,10 @@ export async function POST(req: Request) {
     orderBy: { criadoEm: "desc" },
   });
   if (!lead) {
+    const { bloqueado, total, limite, plano } = await verificarLimiteLeads(empresa.id);
+    if (bloqueado) {
+      return NextResponse.json({ error: "limite_leads", total, limite, plano }, { status: 402 });
+    }
     lead = await prisma.lead.create({
       data: { clienteId, empresaId: empresa.id, status: "LEAD" },
     });

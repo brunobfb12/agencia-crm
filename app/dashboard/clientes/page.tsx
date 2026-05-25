@@ -67,7 +67,7 @@ export default function ClientesPage() {
   const [modalAtivar, setModalAtivar] = useState<Cliente | null>(null);
   const [msgInicial, setMsgInicial] = useState("");
   const [ativando, setAtivando] = useState(false);
-  const [ativarResultado, setAtivarResultado] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [ativarResultado, setAtivarResultado] = useState<{ ok: boolean; msg: string; upgrade?: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/empresas").then((r) => r.json()).then((data) => {
@@ -156,7 +156,11 @@ export default function ClientesPage() {
       body: JSON.stringify({ clienteId: modalAtivar.id, mensagemInicial: msgInicial || undefined }),
     });
     const data = await res.json();
-    setAtivarResultado({ ok: data.ok, msg: data.ok ? `Mensagem enviada: "${data.mensagem}"` : (data.error ?? "Erro ao enviar") });
+    if (data.error === "limite_leads") {
+      setAtivarResultado({ ok: false, upgrade: true, msg: `Limite de ${data.limite?.toLocaleString("pt-BR")} leads do plano ${data.plano} atingido (${data.total?.toLocaleString("pt-BR")} cadastrados). Faça upgrade para continuar.` });
+    } else {
+      setAtivarResultado({ ok: data.ok, msg: data.ok ? `Mensagem enviada: "${data.mensagem}"` : (data.error ?? "Erro ao enviar") });
+    }
     setAtivando(false);
     if (data.ok) fetch("/api/clientes").then(r => r.json()).then(setClientes);
   };
@@ -657,6 +661,11 @@ export default function ClientesPage() {
               {ativarResultado && (
                 <div className="rounded-xl px-4 py-3 text-[12px]" style={{ background: ativarResultado.ok ? "rgba(52,211,153,.1)" : "rgba(248,113,113,.1)", border: `1px solid ${ativarResultado.ok ? "rgba(52,211,153,.2)" : "rgba(248,113,113,.2)"}`, color: ativarResultado.ok ? "#34d399" : "#f87171" }}>
                   {ativarResultado.msg}
+                  {ativarResultado.upgrade && (
+                    <a href="/dashboard/assinatura" className="block mt-2 font-semibold underline" style={{ color: "#818cf8" }}>
+                      Ver planos e fazer upgrade →
+                    </a>
+                  )}
                 </div>
               )}
             </div>

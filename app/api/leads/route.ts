@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { LeadStatus } from "@prisma/client";
 import { getUsuarioLogado } from "@/lib/auth";
+import { verificarLimiteLeads } from "@/lib/plano";
 
 export async function GET(req: Request) {
   const me = await getUsuarioLogado();
@@ -28,6 +29,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
+
+  const { bloqueado, total, limite, plano } = await verificarLimiteLeads(body.empresaId);
+  if (bloqueado) {
+    return NextResponse.json(
+      { error: "limite_leads", total, limite, plano },
+      { status: 402 }
+    );
+  }
+
   const lead = await prisma.lead.create({
     data: {
       clienteId: body.clienteId,
