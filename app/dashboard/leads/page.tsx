@@ -23,7 +23,8 @@ interface Vendedor {
 
 const TAGS_PREDEFINIDAS = [
   { key: "indicacao",        label: "Indicação"        },
-  { key: "anuncio_organico", label: "Anúncio Orgânico" },
+  { key: "anuncio",          label: "Anúncio"          },
+  { key: "organico",         label: "Orgânico"         },
   { key: "VIP",              label: "VIP"              },
   { key: "Varejo",           label: "Varejo"           },
   { key: "Atacado",          label: "Atacado"          },

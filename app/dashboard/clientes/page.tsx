@@ -39,7 +39,8 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
 
 const TAGS_PREDEFINIDAS = [
   { key: "indicacao",        label: "Indicação",        color: "#22d3ee", bg: "rgba(34,211,238,.12)" },
-  { key: "anuncio_organico", label: "Anúncio Orgânico", color: "#60a5fa", bg: "rgba(96,165,250,.12)" },
+  { key: "anuncio",          label: "Anúncio",          color: "#60a5fa", bg: "rgba(96,165,250,.12)" },
+  { key: "organico",         label: "Orgânico",         color: "#34d399", bg: "rgba(52,211,153,.12)" },
   { key: "VIP",              label: "VIP",              color: "#f59e0b", bg: "rgba(245,158,11,.12)"  },
   { key: "Varejo",           label: "Varejo",           color: "#a78bfa", bg: "rgba(167,139,250,.12)"},
   { key: "Atacado",          label: "Atacado",          color: "#10b981", bg: "rgba(16,185,129,.12)" },
@@ -801,7 +802,7 @@ export default function ClientesPage() {
               <div>
                 <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>ORIGEM</p>
                 <div className="flex flex-wrap gap-2">
-                  {TAGS_PREDEFINIDAS.filter(t => ["indicacao","anuncio_organico"].includes(t.key)).map(t => (
+                  {TAGS_PREDEFINIDAS.filter(t => ["indicacao","anuncio","organico"].includes(t.key)).map(t => (
                     <button
                       key={t.key}
                       onClick={() => toggleTagDraft(t.key)}
