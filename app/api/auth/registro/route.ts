@@ -72,6 +72,7 @@ export async function POST(req: Request) {
     empresaId: usuario.empresaId,
     planStatus: "TRIAL",
     trialFim: trialFim.toISOString(),
+    isenta: false,
   });
 
   const response = NextResponse.json({ ok: true });
