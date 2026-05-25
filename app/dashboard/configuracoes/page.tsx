@@ -3,6 +3,56 @@
 import { useEffect, useState, useRef } from "react";
 import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
+/* ── Typewriter phrases ──────────────────────────────────────────────── */
+const AGENT_PHRASES = [
+  "O que você preenche aqui é o que seu Agente vai falar para os seus clientes.",
+  "Agente bem configurado vende. Agente mal configurado afasta.",
+  "A qualidade do atendimento automático depende 100% do que você preenche aqui.",
+  "Quanto mais rico o contexto, mais inteligente o seu Agente de IA.",
+];
+
+function TypewriterPhrases() {
+  const [idx,    setIdx]    = useState(0);
+  const [text,   setText]   = useState("");
+  const [phase,  setPhase]  = useState<"typing" | "paused" | "deleting">("typing");
+  const [cursor, setCursor] = useState(true);
+
+  useEffect(() => {
+    const t = setInterval(() => setCursor(c => !c), 530);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const full = AGENT_PHRASES[idx];
+    if (phase === "typing") {
+      if (text.length < full.length) {
+        const t = setTimeout(() => setText(full.slice(0, text.length + 1)), 50);
+        return () => clearTimeout(t);
+      }
+      const t = setTimeout(() => setPhase("paused"), 2400);
+      return () => clearTimeout(t);
+    }
+    if (phase === "paused") {
+      const t = setTimeout(() => setPhase("deleting"), 10);
+      return () => clearTimeout(t);
+    }
+    // deleting
+    if (text.length > 0) {
+      const t = setTimeout(() => setText(full.slice(0, text.length - 1)), 22);
+      return () => clearTimeout(t);
+    }
+    setIdx(i => (i + 1) % AGENT_PHRASES.length);
+    setPhase("typing");
+  }, [text, phase, idx]);
+
+  return (
+    <span>
+      {text}
+      <span style={{ opacity: cursor ? 1 : 0, transition: "opacity 0.1s", fontWeight: 300 }}>|</span>
+    </span>
+  );
+}
+
 /* ── Qualidade do Agente ─────────────────────────────────────────────── */
 type QItem = { ok: boolean; msg: string; peso: "alta" | "media" | "baixa" };
 type QualidadeResult = { score: number; nivel: string; cor: string; corBg: string; corBorder: string; itens: QItem[] };
@@ -860,6 +910,16 @@ export default function ConfiguracoesPage() {
                           return (
                             <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                               <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>🤖 Qualidade do Agente de IA</p>
+
+                              {/* Typewriter warning banner */}
+                              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl mb-4"
+                                style={{ background: "rgba(251,191,36,.07)", border: "1px solid rgba(251,191,36,.18)" }}>
+                                <span className="text-[15px] flex-shrink-0 mt-[1px]">⚠️</span>
+                                <p className="text-[12.5px] font-semibold leading-snug" style={{ color: "#fbbf24", minHeight: "1.25rem" }}>
+                                  <TypewriterPhrases />
+                                </p>
+                              </div>
+
                               <div className="rounded-2xl p-4" style={{ background: q.corBg, border: `1px solid ${q.corBorder}` }}>
                                 {/* Score row */}
                                 <div className="flex items-center gap-4 mb-4">
