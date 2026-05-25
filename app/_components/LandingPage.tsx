@@ -660,7 +660,7 @@ const HTML = `
         <div class="panual">Cobrado R$ 8.970/ano · 2 meses grátis</div>
         <ul class="pfl">
           <li>Até 2 WhatsApp conectados</li><li>IA respondendo 24/7</li><li>Kanban de leads</li>
-          <li>Follow-up automático</li><li>Clientes ilimitados</li><li>Campanhas em massa</li>
+          <li>Follow-up automático</li><li>Até 1.000 leads</li><li>Campanhas em massa</li>
           <li>Analytics completo</li><li>Aniversário automático</li>
         </ul>
         <a href="https://www.ocrmfacil.com.br/registro?plano=PRO" class="btn bp pcta">Começar grátis — 30 dias</a>
@@ -673,6 +673,7 @@ const HTML = `
         <ul class="pfl">
           <li class="star">Fazemos a implantação por você</li>
           <li>3 WhatsApp conectados</li><li>Tudo do Pro incluso</li>
+          <li>Até 5.000 leads (acima: a combinar)</li>
           <li>Suporte prioritário</li><li>Gerente de conta dedicado</li>
           <li class="note">Seu ponto de contato direto para dúvidas, ajustes e estratégia</li>
           <li class="note">Instâncias adicionais: valor a combinar com seu gerente de conta</li>
