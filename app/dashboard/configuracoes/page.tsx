@@ -957,12 +957,23 @@ export default function ConfiguracoesPage() {
     const pq = perguntasQualificacao.trim() || null;
     const mpv = mensagemPosVenda.trim() || null;
     const maniv = mensagemAniversario.trim() || null;
-    await fetch(`/api/empresas/${empresaId}`, {
+
+    const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv }),
     });
-    setEmpresas((prev) => prev.map((e) => e.id === empresaId ? { ...e, informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv } : e));
+
+    if (!res.ok) {
+      showMsg("Erro ao salvar. Tente novamente.", true);
+      setSalvando(false);
+      return;
+    }
+
+    // Re-busca do servidor para garantir que UI reflete o estado real
+    const fresh = await fetch("/api/empresas").then(r => r.json());
+    if (Array.isArray(fresh)) setEmpresas(fresh);
+
     setEditEmpresa(null);
     setSalvando(false);
     showMsg("Informações salvas!");
