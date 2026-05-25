@@ -156,13 +156,13 @@ const PLANOS = [
   },
 ];
 
-const HOTMART: Record<string,string|undefined> = {
-  STARTER_MENSAL: process.env.NEXT_PUBLIC_HOTMART_URL_STARTER_MENSAL,
-  STARTER_ANUAL:  process.env.NEXT_PUBLIC_HOTMART_URL_STARTER_ANUAL,
-  PRO_MENSAL:     process.env.NEXT_PUBLIC_HOTMART_URL_PRO_MENSAL,
-  PRO_ANUAL:      process.env.NEXT_PUBLIC_HOTMART_URL_PRO_ANUAL,
-  AGENCY_MENSAL:  process.env.NEXT_PUBLIC_HOTMART_URL_AGENCY_MENSAL,
-  AGENCY_ANUAL:   process.env.NEXT_PUBLIC_HOTMART_URL_AGENCY_ANUAL,
+const HOTMART: Record<string,string> = {
+  STARTER_MENSAL: "https://pay.hotmart.com/X105970507I?off=gl10cife",
+  STARTER_ANUAL:  "https://pay.hotmart.com/X105970507I?off=4vylb80p",
+  PRO_MENSAL:     "https://pay.hotmart.com/D105975567P?off=aeumfwka",
+  PRO_ANUAL:      "https://pay.hotmart.com/D105975567P?off=7vl7g284",
+  AGENCY_MENSAL:  "https://pay.hotmart.com/M105975917J",
+  AGENCY_ANUAL:   "https://pay.hotmart.com/M105975917J?off=i6ul1rjy",
 };
 const WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "5562985974090";
 

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getUsuarioLogado } from "@/lib/auth";
 
-const LINKS: Record<string, string | undefined> = {
-  STARTER_MENSAL: process.env.HOTMART_CHECKOUT_STARTER_MENSAL,
-  STARTER_ANUAL:  process.env.HOTMART_CHECKOUT_STARTER_ANUAL,
-  PRO_MENSAL:     process.env.HOTMART_CHECKOUT_PRO_MENSAL,
-  PRO_ANUAL:      process.env.HOTMART_CHECKOUT_PRO_ANUAL,
-  AGENCY_MENSAL:  process.env.HOTMART_CHECKOUT_AGENCY_MENSAL,
-  AGENCY_ANUAL:   process.env.HOTMART_CHECKOUT_AGENCY_ANUAL,
+const LINKS: Record<string, string> = {
+  STARTER_MENSAL: "https://pay.hotmart.com/X105970507I?off=gl10cife",
+  STARTER_ANUAL:  "https://pay.hotmart.com/X105970507I?off=4vylb80p",
+  PRO_MENSAL:     "https://pay.hotmart.com/D105975567P?off=aeumfwka",
+  PRO_ANUAL:      "https://pay.hotmart.com/D105975567P?off=7vl7g284",
+  AGENCY_MENSAL:  "https://pay.hotmart.com/M105975917J",
+  AGENCY_ANUAL:   "https://pay.hotmart.com/M105975917J?off=i6ul1rjy",
 };
 
 export async function GET(req: Request) {
