@@ -50,3 +50,9 @@ scripts/wf_fix_body.json
 # Workflows N8N — contêm chaves de API embutidas, deploy via script separado
 workflow_current.json
 workflow_followup.json
+
+# Arquivos temporários locais
+patch_vendor.js
+patch_vendor2.js
+wf_main.json
+facilcrm-review.html
