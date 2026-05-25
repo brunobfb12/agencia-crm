@@ -779,7 +779,7 @@ export default function LandingPage() {
       let active = false;
       const tick = () => {
         if (!active) return;
-        strip.scrollLeft += 1;
+        strip.scrollLeft += 2;
         if (strip.scrollLeft >= strip.scrollWidth - strip.clientWidth) strip.scrollLeft = 0;
         stripRaf = requestAnimationFrame(tick);
       };
