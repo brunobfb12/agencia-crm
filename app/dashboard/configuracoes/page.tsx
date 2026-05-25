@@ -287,6 +287,109 @@ const LABELS: Record<string, string> = {
   DIFERENCIAIS: "Diferenciais", HORARIO: "Horário de Atendimento",
 };
 
+const FIELD_HELP: Record<string, { title: string; desc: string; examples: string[]; dica: string }> = {
+  PRODUTOS: {
+    title: "Produtos / Serviços",
+    desc: "Descreva tudo o que sua empresa vende ou oferece. A IA usa essas informações para responder dúvidas dos clientes e fazer recomendações.",
+    examples: [
+      "Camisetas básicas algodão (P ao GG) · Calças jeans femininas · Conjuntos atacado",
+      "Design de sobrancelha Henna 1h · Limpeza de pele 45min · Micropigmentação",
+      "Purificador Hoken H2 · Refil H2 · Purificador compacto",
+    ],
+    dica: "Liste todos os itens principais. Quanto mais específico, mais preciso o atendimento da IA.",
+  },
+  PRECOS: {
+    title: "Preços",
+    desc: "Informe os valores dos seus produtos ou serviços. A IA vai usar esses dados para responder dúvidas sobre preço.",
+    examples: [
+      "Camiseta R$29,90 · kit 3 por R$79 · desconto 20% acima de 10 peças",
+      "Design sobrancelha R$80 · Henna R$100 · Pacote 5 sessões R$350",
+      "Purificador H2 R$1.200 · Refil R$90 · Instalação inclusa",
+    ],
+    dica: "Não precisa ser exato — uma faixa de preço já ajuda muito a filtrar clientes.",
+  },
+  PAGAMENTO: {
+    title: "Formas de Pagamento",
+    desc: "Liste como o cliente pode pagar. A IA vai informar isso automaticamente quando o cliente perguntar.",
+    examples: [
+      "PIX · Cartão débito/crédito até 12x sem juros · Dinheiro",
+      "PIX com 5% desconto · Boleto atacado (mín. R$500)",
+      "PIX ou cartão — parcelado até 6x",
+    ],
+    dica: "Se tiver desconto no PIX, mencione — é um ótimo gatilho de conversão.",
+  },
+  ENTREGA: {
+    title: "Entrega / Frete",
+    desc: "Como funciona a entrega ou retirada do produto. Evita surpresas e frustrações do cliente.",
+    examples: [
+      "Frete grátis acima de R$300 · Jadlog e Correios para todo Brasil",
+      "Retirada na loja: Av. Rio Verde 1200, Goiânia · Entrega só região",
+      "Produto digital — acesso imediato após pagamento",
+    ],
+    dica: "Se for serviço presencial, coloque o endereço da loja aqui.",
+  },
+  DIFERENCIAIS: {
+    title: "Diferenciais",
+    desc: "O que faz você melhor que a concorrência? A IA usa isso para convencer clientes e rebater objeções como 'tá caro' ou 'vou pensar'.",
+    examples: [
+      "Atacado a partir de 5 peças · nota fiscal garantida · troca sem burocracia",
+      "10 anos de experiência · materiais importados · studio climatizado e exclusivo",
+      "Técnico certificado Hoken · atendimento 7 dias · garantia de 1 ano",
+    ],
+    dica: "Seja específico. '10 anos de experiência' convence mais do que 'qualidade superior'.",
+  },
+  HORARIO: {
+    title: "Horário de Atendimento",
+    desc: "Quando você ou o estabelecimento está disponível. A IA usa isso para criar expectativas corretas nos clientes.",
+    examples: [
+      "Seg–Sex 9h–18h · Sáb 9h–13h · Dom fechado",
+      "Ter–Sáb 8h–20h — agendamento obrigatório",
+      "Atendimento 24h online · loja física seg–sex 8h–17h",
+    ],
+    dica: "Informe o dia de folga para evitar clientes esperando resposta no domingo.",
+  },
+  nomeIA: {
+    title: "Nome da IA (persona)",
+    desc: "A IA vai se apresentar com este nome para todos os clientes. Escolha algo que combine com a identidade da sua empresa.",
+    examples: [
+      "Sofia — para lojas de moda feminina ou beleza",
+      "Bella — para studios e clínicas estéticas",
+      "Max — para lojas de materiais ou produtos técnicos",
+    ],
+    dica: "Um nome humano e amigável cria mais confiança do que 'assistente virtual'.",
+  },
+  qualificacao: {
+    title: "Roteiro de Qualificação",
+    desc: "Perguntas que a IA deve fazer para entender o que o lead precisa antes de passar para o vendedor. Uma por linha.",
+    examples: [
+      "Você compra para revenda ou uso próprio?",
+      "Qual serviço você tem interesse? (sobrancelha, cílios, pele...)",
+      "Você já tem purificador em casa ou é a primeira vez?",
+    ],
+    dica: "Perguntas boas filtram leads desqualificados e poupam muito tempo do vendedor.",
+  },
+  posVenda: {
+    title: "Mensagem de Pós-Venda",
+    desc: "Enviada automaticamente 2 dias após uma venda ser registrada. Serve para coletar feedback e fortalecer o relacionamento.",
+    examples: [
+      "Oi {nome}! Como ficou o design da sobrancelha? Ficou feliz? 😊",
+      "Olá {nome}! Sua encomenda chegou certinho? Tudo certo com os produtos?",
+      "Oi {nome}! Já teve chance de testar o purificador? Precisando de algo, é só chamar!",
+    ],
+    dica: "Mensagens curtas e calorosas têm muito mais resposta. Use {nome} para personalizar.",
+  },
+  aniversario: {
+    title: "Mensagem de Aniversário",
+    desc: "Enviada automaticamente no aniversário do cliente (quando a data de nascimento estiver cadastrada).",
+    examples: [
+      "Feliz aniversário, {nome}! 🎂 A {empresa} te deseja um dia incrível!",
+      "Parabéns, {nome}! Que tal se presentear hoje com algo especial? 😊",
+      "Oi {nome}! Hoje é seu dia! Te esperamos no studio para um mimo de aniversário! 🥳",
+    ],
+    dica: "Inclua um desconto ou brinde — é uma ótima oportunidade de reativação do cliente.",
+  },
+};
+
 function parseInfo(texto: string | null): Record<string, string> {
   const result: Record<string, string> = {};
   if (!texto) return result;
@@ -461,8 +564,10 @@ export default function ConfiguracoesPage() {
   const [msg, setMsg] = useState("");
   const [deletandoEmpresa, setDeletandoEmpresa] = useState<Empresa | null>(null);
   const [confirmNomeEmpresa, setConfirmNomeEmpresa] = useState("");
+  const [helpOpen, setHelpOpen] = useState<string | null>(null);
 
   const isCentral = me?.perfil === "CENTRAL";
+  const helpData = helpOpen ? FIELD_HELP[helpOpen] : null;
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then(setMe);
@@ -779,9 +884,17 @@ export default function ConfiguracoesPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           {SECOES.map((sec) => (
                             <div key={sec}>
-                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                                {LABELS[sec].toUpperCase()}
-                              </label>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>
+                                  {LABELS[sec].toUpperCase()}
+                                </span>
+                                <button type="button" onClick={() => setHelpOpen(sec)}
+                                  className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                                  style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}
+                                  title={`Ajuda: ${LABELS[sec]}`}>
+                                  ?
+                                </button>
+                              </div>
                               <textarea rows={3} value={infoCampos[sec] ?? ""}
                                 onChange={(e) => setInfoCampos((p) => ({ ...p, [sec]: e.target.value }))}
                                 placeholder={`Ex: ${sec === "PRODUTOS" ? "camisetas, calças, vestidos" : sec === "PRECOS" ? "camiseta R$29,90" : sec === "PAGAMENTO" ? "PIX, cartão 12x" : sec === "ENTREGA" ? "frete grátis acima de R$200" : sec === "DIFERENCIAIS" ? "atacado a partir de 10 peças" : "seg-sex 9h-18h"}`}
@@ -807,7 +920,14 @@ export default function ConfiguracoesPage() {
                               </p>
                             </div>
                             <div>
-                              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted-2)" }}>NOME DA IA (persona)</label>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="text-[11px] font-semibold" style={{ color: "var(--muted-2)" }}>NOME DA IA (persona)</span>
+                                <button type="button" onClick={() => setHelpOpen("nomeIA")}
+                                  className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                                  style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                                  ?
+                                </button>
+                              </div>
                               <input value={nomeIA} onChange={e => setNomeIA(e.target.value)}
                                 placeholder="Ex: Sofia, Bella, Ana..." className={INPUT} />
                               <p className="text-[11px] mt-1" style={{ color: "var(--muted-3)" }}>A IA vai se apresentar com este nome. Deixe em branco para usar "assistente".</p>
@@ -856,9 +976,14 @@ export default function ConfiguracoesPage() {
                         </>)}
 
                         <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                            ROTEIRO DE QUALIFICAÇÃO DA IA
-                          </label>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>ROTEIRO DE QUALIFICAÇÃO DA IA</span>
+                            <button type="button" onClick={() => setHelpOpen("qualificacao")}
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                              ?
+                            </button>
+                          </div>
                           <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
                             Perguntas que a IA deve fazer para qualificar leads (uma por linha)
                           </p>
@@ -869,9 +994,14 @@ export default function ConfiguracoesPage() {
                         </div>
 
                         <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                            MENSAGEM DE PÓS-VENDA (automática 2 dias após venda)
-                          </label>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>MENSAGEM DE PÓS-VENDA (automática 2 dias após venda)</span>
+                            <button type="button" onClick={() => setHelpOpen("posVenda")}
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                              ?
+                            </button>
+                          </div>
                           <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
                             Use <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{nome}"}</code>,{" "}
                             <code style={{ background: "var(--card-2)", padding: "0 4px", borderRadius: 4 }}>{"{ia}"}</code> e{" "}
@@ -885,9 +1015,14 @@ export default function ConfiguracoesPage() {
                         </div>
 
                         <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
-                          <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>
-                            MENSAGEM DE ANIVERSÁRIO (automática no dia do aniversário do cliente)
-                          </label>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>MENSAGEM DE ANIVERSÁRIO (automática no dia do aniversário do cliente)</span>
+                            <button type="button" onClick={() => setHelpOpen("aniversario")}
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                              ?
+                            </button>
+                          </div>
                           <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
                             Mesmas variáveis disponíveis. Deixe vazio para usar a mensagem padrão.
                           </p>
@@ -1353,6 +1488,63 @@ export default function ConfiguracoesPage() {
 
       </div>
     </div>
+
+    {/* Help modal — "?" buttons */}
+    {helpData && (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        style={{ background: "rgba(0,0,0,.8)", backdropFilter: "blur(8px)" }}
+        onClick={() => setHelpOpen(null)}>
+        <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
+          style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.55)" }}
+          onClick={(e) => e.stopPropagation()}>
+
+          {/* Header */}
+          <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h3 className="font-bold text-[15px]" style={{ color: "var(--text)" }}>{helpData.title}</h3>
+            <button onClick={() => setHelpOpen(null)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[13px] transition-all hover:opacity-70"
+              style={{ background: "var(--card-2)", color: "var(--muted-2)", border: "1px solid var(--border)" }}>
+              ✕
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-5 py-4 space-y-4">
+            <p className="text-[13px] leading-relaxed" style={{ color: "var(--muted-2)" }}>{helpData.desc}</p>
+
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-2.5" style={{ color: "var(--muted-3)" }}>
+                Exemplos práticos
+              </p>
+              <div className="space-y-2">
+                {helpData.examples.map((ex, i) => (
+                  <div key={i} className="px-3 py-2.5 rounded-xl text-[12.5px] leading-snug"
+                    style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.13)", color: "var(--muted)" }}>
+                    &ldquo;{ex}&rdquo;
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-3.5 py-3 rounded-xl text-[12px] leading-snug"
+              style={{ background: "rgba(251,191,36,.07)", border: "1px solid rgba(251,191,36,.15)", color: "#fbbf24" }}>
+              💡 {helpData.dica}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 py-3.5 text-center" style={{ borderTop: "1px solid var(--border)" }}>
+            <p className="text-[12px]" style={{ color: "var(--muted-3)" }}>
+              Ainda com dúvida?{" "}
+              <a href="mailto:suporte@ocrmfacil.com.br" className="font-semibold transition-colors hover:opacity-80"
+                style={{ color: "#a5b4fc" }}>
+                Falar com suporte →
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Modal Transferir Carteira */}
 

@@ -113,6 +113,7 @@ export default function LeadsPage() {
   const [filtroStatus, setFiltroStatus] = useState("LEAD");
   const [filtroEmpresa, setFiltroEmpresa] = useState("");
   const [empresas, setEmpresas] = useState<{ id: string; nome: string }[]>([]);
+  const [showWelcome, setShowWelcome] = useState(false);
   const kanbanRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
   const topScrollInnerRef = useRef<HTMLDivElement>(null);
@@ -152,9 +153,13 @@ export default function LeadsPage() {
 
   useEffect(() => {
     if (!setup) return;
-    // Brand-new account: no clients and no vendors → redirect to onboarding
     if (!setup.clientesOk && !setup.vendedoresOk) {
-      router.replace("/dashboard/configuracoes");
+      const seen = typeof window !== "undefined" && localStorage.getItem("facilcrm_welcome_seen");
+      if (seen) {
+        router.replace("/dashboard/configuracoes");
+      } else {
+        setShowWelcome(true);
+      }
     }
   }, [setup]);
 
@@ -913,6 +918,90 @@ export default function LeadsPage() {
                 }}
               >
                 {registrandoVenda ? "Registrando..." : "Confirmar Venda"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome modal — brand-new accounts */}
+      {showWelcome && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)" }}>
+          <div className="w-full max-w-lg rounded-2xl overflow-hidden animate-fade-up"
+            style={{ background: "var(--modal)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.7)" }}>
+
+            {/* Header */}
+            <div className="px-6 py-5"
+              style={{ borderBottom: "1px solid var(--border)", background: "linear-gradient(135deg,rgba(99,102,241,.12),rgba(79,70,229,.03))" }}>
+              <div className="flex items-center gap-3 mb-1.5">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                  style={{ background: "rgba(99,102,241,.2)" }}>
+                  🎉
+                </div>
+                <h2 className="text-[19px] font-black" style={{ color: "var(--text)" }}>Bem-vindo ao FácilCRM!</h2>
+              </div>
+              <p className="text-[13px]" style={{ color: "var(--muted-2)" }}>
+                Você está a <strong style={{ color: "var(--text)" }}>3 passos</strong> de ativar o atendimento automático da sua empresa.
+              </p>
+            </div>
+
+            {/* Red warning block */}
+            <div className="px-6 py-3.5 text-[12.5px] font-semibold leading-snug"
+              style={{ background: "rgba(239,68,68,.09)", borderBottom: "1px solid rgba(239,68,68,.14)", color: "#f87171" }}>
+              ⚠️ Sem completar estas etapas, seu Agente de IA vai atender clientes com respostas genéricas e erradas — e isso prejudica a reputação da sua empresa.
+            </div>
+
+            {/* Steps */}
+            <div className="px-6 py-5 space-y-3">
+              {[
+                {
+                  icon: "🏢",
+                  title: "Informações da Empresa",
+                  desc: "Produtos, preços, horários e diferenciais. É exatamente o que a IA vai falar para os seus clientes.",
+                },
+                {
+                  icon: "📱",
+                  title: "WhatsApp Conectado",
+                  desc: "Sem conexão, a IA não recebe mensagens. Nenhum atendimento automático acontece.",
+                },
+                {
+                  icon: "👤",
+                  title: "Pelo menos 1 Vendedor",
+                  desc: "O CRM precisa de um responsável para receber os leads qualificados pela IA.",
+                },
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl"
+                  style={{ background: "rgba(255,255,255,.02)", border: "1px solid var(--border)" }}>
+                  <div className="text-[22px] flex-shrink-0 mt-[1px]">{step.icon}</div>
+                  <div>
+                    <p className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{step.title}</p>
+                    <p className="text-[12px] mt-0.5 leading-snug" style={{ color: "var(--muted-2)" }}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer CTAs */}
+            <div className="px-6 py-4 flex flex-col sm:flex-row gap-2 items-center" style={{ borderTop: "1px solid var(--border)" }}>
+              <button
+                onClick={() => {
+                  localStorage.setItem("facilcrm_welcome_seen", "1");
+                  router.replace("/dashboard/configuracoes");
+                }}
+                className="btn-primary py-3 text-[14px] font-bold w-full sm:flex-1"
+              >
+                Configurar agora →
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem("facilcrm_welcome_seen", "1");
+                  setShowWelcome(false);
+                }}
+                className="text-[12px] px-4 py-2 rounded-xl transition-colors w-full sm:w-auto text-center"
+                style={{ color: "var(--muted-3)", background: "var(--card-2)", border: "1px solid var(--border)" }}
+              >
+                Explorar primeiro
               </button>
             </div>
           </div>
