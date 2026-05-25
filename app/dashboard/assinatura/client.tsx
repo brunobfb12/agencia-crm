@@ -25,22 +25,22 @@ const HOTMART: Record<string, string | undefined> = {
 const PLANOS = [
   {
     key:"STARTER", nome:"Starter",
-    desc:"Para quem está começando a profissionalizar vendas",
-    mensal:397, anualMes:330,
-    features:["1 WhatsApp conectado","IA respondendo 24/7","Pipeline Kanban","Follow-up automático","Até 500 clientes","Aniversário automático"],
+    desc:"Para empresas que estão começando",
+    mensal:497, anualMes:414,
+    features:["1 WhatsApp conectado","IA respondendo 24/7","Kanban de leads","Follow-up automático","Até 500 clientes/leads","Aniversário automático"],
   },
   {
     key:"PRO", nome:"Pro",
-    desc:"Para empresas que querem escalar sem contratar",
-    mensal:697, anualMes:580,
-    features:["Até 2 WhatsApp conectados","Tudo do Starter","Clientes ilimitados","Campanhas em massa","Analytics completo"],
+    desc:"Para empresas em crescimento",
+    mensal:897, anualMes:748,
+    features:["Até 2 WhatsApp conectados","IA respondendo 24/7","Kanban de leads","Follow-up automático","Clientes ilimitados","Campanhas em massa","Analytics completo","Aniversário automático"],
     destaque:true,
   },
   {
     key:"AGENCY", nome:"Agency",
-    desc:"Para agências com múltiplos clientes",
-    mensal:997, anualMes:830,
-    features:["3 WhatsApp conectados","Tudo do Pro","Suporte prioritário","Gerente de conta dedicado","Implantação assistida"],
+    desc:"Para agências e múltiplas empresas",
+    mensal:1497, anualMes:1248,
+    features:["★ Fazemos a implantação por você","3 WhatsApp conectados","Tudo do Pro incluso","Suporte prioritário","Gerente de conta dedicado"],
   },
 ];
 
