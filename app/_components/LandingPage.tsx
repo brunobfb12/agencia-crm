@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 const CSS = `
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;overflow-x:hidden}
+html{scroll-behavior:smooth}
 :root{
   --bg:#04040c;--bg2:#080815;--indigo:#6366f1;--indigo-l:#818cf8;--violet:#7c3aed;
   --cyan:#22d3ee;--emerald:#10b981;--amber:#f59e0b;--red:#ef4444;--txt:#f0f0ff;
@@ -96,7 +96,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 0;backdrop-fil
 .tk-dot{width:4px;height:4px;background:var(--indigo);border-radius:50%;flex-shrink:0}
 .tk-icon{width:16px;height:16px;color:var(--indigo-l);flex-shrink:0}
 @keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-#pain{padding:100px 0}
+#pain{padding:100px 0;overflow:hidden}
 .pain-header{text-align:center;margin-bottom:56px}
 .pain-sub{color:var(--txt2);margin-top:14px;max-width:540px;margin-left:auto;margin-right:auto;font-size:1.05rem}
 .pain-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
@@ -123,7 +123,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 0;backdrop-fil
 .st2{font-size:.95rem;font-weight:700;margin-bottom:7px;font-family:'Syne',sans-serif}
 .sd{font-size:.8rem;color:var(--txt2);line-height:1.5}
 .sarr{width:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--indigo-l);opacity:.35;align-self:center}
-#features{padding:100px 0}
+#features{padding:100px 0;overflow:hidden}
 .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:56px}
 .fcard{padding:28px}
 .fcard .ni{margin-bottom:18px}
@@ -146,7 +146,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:14px 0;backdrop-fil
 .tav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.88rem;color:#fff;flex-shrink:0;background:linear-gradient(135deg,var(--indigo),var(--violet))}
 .tn{font-weight:600;font-size:.88rem}
 .tr2{font-size:.73rem;color:var(--txt3)}
-#pricing{padding:100px 0}
+#pricing{padding:100px 0;overflow:hidden}
 .pg{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:56px}
 .pcard{padding:32px;position:relative}
 .pcard.feat{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.36);box-shadow:0 0 70px rgba(99,102,241,.15)}
