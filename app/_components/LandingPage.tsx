@@ -772,12 +772,35 @@ export default function LandingPage() {
 
     document.documentElement.setAttribute("data-theme", "dark");
 
+    // Auto-scroll on hover for .sw and .tw strips
+    const stripCleanups: (() => void)[] = [];
+    document.querySelectorAll<HTMLElement>(".sw, .tw").forEach((strip) => {
+      let stripRaf = 0;
+      let active = false;
+      const tick = () => {
+        if (!active) return;
+        strip.scrollLeft += 1;
+        if (strip.scrollLeft >= strip.scrollWidth - strip.clientWidth) strip.scrollLeft = 0;
+        stripRaf = requestAnimationFrame(tick);
+      };
+      const start = () => { active = true; stripRaf = requestAnimationFrame(tick); };
+      const stop  = () => { active = false; cancelAnimationFrame(stripRaf); };
+      strip.addEventListener("mouseenter", start);
+      strip.addEventListener("mouseleave", stop);
+      stripCleanups.push(() => {
+        strip.removeEventListener("mouseenter", start);
+        strip.removeEventListener("mouseleave", stop);
+        cancelAnimationFrame(stripRaf);
+      });
+    });
+
     return () => {
       document.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(rafId);
       obs.disconnect();
       window.removeEventListener("scroll", onScroll);
       delete (window as any).toggleFaq;
+      stripCleanups.forEach((fn) => fn());
     };
   }, []);
 
