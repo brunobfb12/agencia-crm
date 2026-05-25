@@ -321,6 +321,13 @@ export default function LeadsPage() {
                   <div className="h-full rounded-full transition-all duration-700"
                     style={{ width: `${setupPct}%`, background: "linear-gradient(90deg,#6366f1,#818cf8)" }} />
                 </div>
+                <p className="text-[11px] font-medium mt-1.5" style={{ color: "#fbbf24" }}>
+                  ⚠️ {!setup?.informacoesOk
+                    ? "Sem as informações da empresa, seu Agente de IA não sabe o que vender."
+                    : !setup?.whatsappOk
+                      ? "WhatsApp desconectado — mensagens de clientes não estão chegando."
+                      : "Configurações incompletas comprometem o desempenho do seu Agente de IA."}
+                </p>
               </div>
             </div>
             <span className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all"

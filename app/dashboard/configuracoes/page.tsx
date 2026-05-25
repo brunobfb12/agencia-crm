@@ -3,6 +3,98 @@
 import { useEffect, useState, useRef } from "react";
 import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
 
+/* ── Qualidade do Agente ─────────────────────────────────────────────── */
+type QItem = { ok: boolean; msg: string; peso: "alta" | "media" | "baixa" };
+type QualidadeResult = { score: number; nivel: string; cor: string; corBg: string; corBorder: string; itens: QItem[] };
+
+function calcQualidadeAgente(
+  infoCampos: Record<string, string>, nomeIA: string, tipoAtendimento: string,
+  perguntasQualificacao: string, calendlyUrl: string,
+  mensagemPosVenda: string, mensagemAniversario: string
+): QualidadeResult {
+  const prod  = (infoCampos["PRODUTOS"]     ?? "").trim();
+  const preco = (infoCampos["PRECOS"]       ?? "").trim();
+  const pgto  = (infoCampos["PAGAMENTO"]    ?? "").trim();
+  const entrg = (infoCampos["ENTREGA"]      ?? "").trim();
+  const hor   = (infoCampos["HORARIO"]      ?? "").trim();
+  const difer = (infoCampos["DIFERENCIAIS"] ?? "").trim();
+  const needCalendly = tipoAtendimento === "AGENDAMENTO" || tipoAtendimento === "AMBOS";
+
+  let raw = 0; let max = 0;
+  const itens: QItem[] = [];
+
+  // PRODUTOS — peso 2.5
+  max += 2.5;
+  if (!prod)             { itens.push({ ok: false, msg: "Produtos/serviços não descritos — a IA não sabe o que vender", peso: "alta" }); }
+  else if (prod.length < 80)  { raw += 0.8; itens.push({ ok: false, msg: "Descreva seus produtos com mais detalhes — quanto mais específico, melhor a IA atende", peso: "alta" }); }
+  else if (prod.length < 200) { raw += 1.8; itens.push({ ok: true,  msg: "Produtos descritos", peso: "alta" }); }
+  else                        { raw += 2.5; itens.push({ ok: true,  msg: "Catálogo de produtos bem detalhado", peso: "alta" }); }
+
+  // PRECOS — peso 1.5
+  max += 1.5;
+  if (!preco)              { itens.push({ ok: false, msg: "Preços não informados — a IA não consegue responder sobre valores", peso: "alta" }); }
+  else if (preco.length < 50) { raw += 0.7; itens.push({ ok: false, msg: "Detalhe mais os preços para respostas precisas", peso: "alta" }); }
+  else                        { raw += 1.5; itens.push({ ok: true,  msg: "Tabela de preços informada", peso: "alta" }); }
+
+  // PAGAMENTO — peso 0.5
+  max += 0.5;
+  if (!pgto) { itens.push({ ok: false, msg: "Formas de pagamento não informadas", peso: "media" }); }
+  else       { raw += 0.5; itens.push({ ok: true, msg: "Formas de pagamento configuradas", peso: "media" }); }
+
+  // ENTREGA — peso 0.5
+  max += 0.5;
+  if (!entrg) { itens.push({ ok: false, msg: "Entrega/frete não informado", peso: "baixa" }); }
+  else        { raw += 0.5; }
+
+  // HORARIO — peso 0.5
+  max += 0.5;
+  if (!hor) { itens.push({ ok: false, msg: "Horário de atendimento não informado — IA pode criar expectativas erradas", peso: "media" }); }
+  else      { raw += 0.5; itens.push({ ok: true, msg: "Horário de atendimento definido", peso: "media" }); }
+
+  // DIFERENCIAIS — peso 1.0
+  max += 1.0;
+  if (!difer) { itens.push({ ok: false, msg: "Diferenciais em branco — IA não consegue rebater objeções nem se destacar", peso: "media" }); }
+  else        { raw += 1.0; itens.push({ ok: true, msg: "Diferenciais configurados — IA sabe como se destacar", peso: "media" }); }
+
+  // NOME DA IA — peso 0.5
+  max += 0.5;
+  if (!nomeIA.trim()) { itens.push({ ok: false, msg: "Nome da IA não definido — vai se apresentar como \"assistente\"", peso: "baixa" }); }
+  else                { raw += 0.5; itens.push({ ok: true, msg: `IA se apresenta como "${nomeIA}"`, peso: "baixa" }); }
+
+  // QUALIFICACAO — peso 1.5
+  max += 1.5;
+  if (!perguntasQualificacao.trim())          { itens.push({ ok: false, msg: "Roteiro de qualificação vazio — IA qualifica leads de forma genérica", peso: "alta" }); }
+  else if (perguntasQualificacao.length < 50) { raw += 0.7; itens.push({ ok: false, msg: "Adicione mais perguntas para qualificar leads com mais precisão", peso: "alta" }); }
+  else                                        { raw += 1.5; itens.push({ ok: true,  msg: "Roteiro de qualificação configurado", peso: "alta" }); }
+
+  // CALENDLY — peso 0.5 (só se aplica agendamento)
+  if (needCalendly) {
+    max += 0.5;
+    if (!calendlyUrl.trim()) { itens.push({ ok: false, msg: "Link do Calendly vazio — IA não consegue agendar", peso: "alta" }); }
+    else                     { raw += 0.5; itens.push({ ok: true, msg: "Link de agendamento configurado", peso: "alta" }); }
+  }
+
+  // POS-VENDA — peso 0.5
+  max += 0.5;
+  if (!mensagemPosVenda.trim()) { itens.push({ ok: false, msg: "Mensagem pós-venda em branco", peso: "baixa" }); }
+  else                          { raw += 0.5; itens.push({ ok: true, msg: "Mensagem pós-venda personalizada", peso: "baixa" }); }
+
+  // ANIVERSARIO — peso 0.5
+  max += 0.5;
+  if (!mensagemAniversario.trim()) { itens.push({ ok: false, msg: "Mensagem de aniversário em branco", peso: "baixa" }); }
+  else                             { raw += 0.5; itens.push({ ok: true, msg: "Mensagem de aniversário personalizada", peso: "baixa" }); }
+
+  const score = Math.round((raw / max) * 100) / 10;
+  let nivel: string; let cor: string; let corBg: string; let corBorder: string;
+  if (score < 3)       { nivel = "Agente Inativo";    cor = "#f87171"; corBg = "rgba(248,113,113,.07)"; corBorder = "rgba(248,113,113,.2)"; }
+  else if (score < 5)  { nivel = "Agente Fraco";      cor = "#fb923c"; corBg = "rgba(251,146,60,.07)";  corBorder = "rgba(251,146,60,.2)"; }
+  else if (score < 7)  { nivel = "Agente Básico";     cor = "#fbbf24"; corBg = "rgba(251,191,36,.07)";  corBorder = "rgba(251,191,36,.2)"; }
+  else if (score < 8.5){ nivel = "Agente Bom";        cor = "#34d399"; corBg = "rgba(52,211,153,.07)";  corBorder = "rgba(52,211,153,.2)"; }
+  else                 { nivel = "Agente Excelente";  cor = "#10b981"; corBg = "rgba(16,185,129,.07)";  corBorder = "rgba(16,185,129,.2)"; }
+
+  return { score, nivel, cor, corBg, corBorder, itens };
+}
+
 /* ── Setup Checklist ─────────────────────────────────────────────────── */
 interface SetupStatus {
   informacoesOk: boolean; whatsappOk: boolean; vendedoresOk: boolean;
@@ -754,6 +846,83 @@ export default function ConfiguracoesPage() {
                             placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
                             className={`${INPUT} resize-none`} />
                         </div>
+
+                        {/* ── Termômetro do Agente ── */}
+                        {(() => {
+                          const q = calcQualidadeAgente(
+                            infoCampos, nomeIA, tipoAtendimento, perguntasQualificacao,
+                            calendarFields.calendlyUrl, mensagemPosVenda, mensagemAniversario
+                          );
+                          const ruins = q.itens.filter(i => !i.ok).sort((a, b) =>
+                            a.peso === "alta" ? -1 : b.peso === "alta" ? 1 : 0
+                          );
+                          const bons = q.itens.filter(i => i.ok);
+                          return (
+                            <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                              <p className="text-[12px] font-semibold mb-3" style={{ color: "var(--muted)" }}>🤖 Qualidade do Agente de IA</p>
+                              <div className="rounded-2xl p-4" style={{ background: q.corBg, border: `1px solid ${q.corBorder}` }}>
+                                {/* Score row */}
+                                <div className="flex items-center gap-4 mb-4">
+                                  <div className="flex-shrink-0 text-center w-14">
+                                    <div className="text-[2.2rem] font-black leading-none tabular-nums" style={{ color: q.cor }}>
+                                      {q.score.toFixed(1)}
+                                    </div>
+                                    <div className="text-[10px] font-semibold" style={{ color: "var(--muted-3)" }}>/10</div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <span className="text-[13px] font-bold" style={{ color: q.cor }}>{q.nivel}</span>
+                                      <span className="text-[10px]" style={{ color: "var(--muted-3)" }}>{bons.length}/{q.itens.length} itens OK</span>
+                                    </div>
+                                    <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,.07)" }}>
+                                      <div className="h-full rounded-full transition-all duration-700"
+                                        style={{ width: `${(q.score / 10) * 100}%`, background: `linear-gradient(90deg,${q.cor}66,${q.cor})` }} />
+                                    </div>
+                                  </div>
+                                </div>
+                                {/* Feedback columns */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {ruins.length > 0 && (
+                                    <div>
+                                      <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--muted-3)" }}>O que falta</p>
+                                      <div className="space-y-1.5">
+                                        {ruins.slice(0, 5).map((item, idx) => (
+                                          <div key={idx} className="flex items-start gap-1.5">
+                                            <span className="flex-shrink-0 mt-[3px] text-[10px]"
+                                              style={{ color: item.peso === "alta" ? "#f87171" : item.peso === "media" ? "#fbbf24" : "var(--muted-3)" }}>
+                                              {item.peso === "alta" ? "▲" : item.peso === "media" ? "◆" : "◇"}
+                                            </span>
+                                            <span className="text-[11.5px] leading-snug" style={{ color: "var(--muted)" }}>{item.msg}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {bons.length > 0 && (
+                                    <div>
+                                      <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--muted-3)" }}>O que está bem</p>
+                                      <div className="space-y-1.5">
+                                        {bons.map((item, idx) => (
+                                          <div key={idx} className="flex items-start gap-1.5">
+                                            <span className="flex-shrink-0 mt-[3px] text-[10px]" style={{ color: "#34d399" }}>✓</span>
+                                            <span className="text-[11.5px] leading-snug" style={{ color: "var(--muted)" }}>{item.msg}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Alert if score too low */}
+                                {q.score < 5 && (
+                                  <div className="mt-3 px-3 py-2.5 rounded-xl text-[11.5px] font-semibold"
+                                    style={{ background: "rgba(248,113,113,.1)", color: "#f87171", border: "1px solid rgba(248,113,113,.2)" }}>
+                                    ⚠️ Com esta configuração, seu Agente vai frustrar clientes com respostas genéricas. Preencha os campos marcados com ▲ antes de ativar o atendimento.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         <div className="flex flex-col sm:flex-row gap-2 pt-2">
                           <button onClick={() => salvarInfoEmpresa(emp.id)} disabled={salvando}
