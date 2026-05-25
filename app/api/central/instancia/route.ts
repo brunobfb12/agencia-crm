@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const EVO_URL = "http://201.76.43.149:8080";
-const EVO_KEY = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+const EVO_KEY = process.env.AUTHENTICATION_API_KEY ?? "";
 const WEBHOOK_URL = "https://n8n-n8n.6jgzku.easypanel.host/webhook/whatsapp";
 
 export async function POST(req: Request) {

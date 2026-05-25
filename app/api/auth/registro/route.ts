@@ -3,6 +3,38 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 
+const EVO_URL = "http://201.76.43.149:8080";
+const EVO_KEY = process.env.AUTHENTICATION_API_KEY ?? "";
+const WEBHOOK_URL = "https://n8n-n8n.6jgzku.easypanel.host/webhook/whatsapp";
+
+async function criarInstanciaEvo(instancia: string) {
+  try {
+    await fetch(`${EVO_URL}/instance/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({ instanceName: instancia, integration: "WHATSAPP-BAILEYS", qrcode: true }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch { /* Evolution API indisponível — não bloqueia o registro */ }
+
+  try {
+    await fetch(`${EVO_URL}/webhook/set/${instancia}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVO_KEY },
+      body: JSON.stringify({
+        webhook: {
+          enabled: true,
+          url: WEBHOOK_URL,
+          events: ["MESSAGES_UPSERT"],
+          webhook_by_events: false,
+          webhook_base64: false,
+        },
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch { /* ignora falha no webhook */ }
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -52,6 +84,9 @@ export async function POST(req: Request) {
       trialFim,
     },
   });
+
+  // Cria instância na Evolution API em background — falha silenciosa
+  criarInstanciaEvo(instancia);
 
   const usuario = await prisma.usuario.create({
     data: {
