@@ -11,6 +11,7 @@ export interface JwtPayload {
   empresaId: string | null;
   planStatus: string | null;
   trialFim: string | null;
+  isenta: boolean;
 }
 
 export function signToken(payload: JwtPayload): string {

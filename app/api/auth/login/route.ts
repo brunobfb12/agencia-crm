@@ -18,13 +18,15 @@ export async function POST(req: Request) {
 
   let planStatus: string | null = null;
   let trialFim: string | null = null;
+  let isenta = false;
   if (usuario.empresaId) {
     const empresa = await prisma.empresa.findUnique({
       where: { id: usuario.empresaId },
-      select: { planStatus: true, trialFim: true },
+      select: { planStatus: true, trialFim: true, isenta: true },
     });
     planStatus = empresa?.planStatus ?? null;
     trialFim = empresa?.trialFim?.toISOString() ?? null;
+    isenta = empresa?.isenta ?? false;
   }
 
   const token = signToken({
@@ -35,6 +37,7 @@ export async function POST(req: Request) {
     empresaId: usuario.empresaId,
     planStatus,
     trialFim,
+    isenta,
   });
 
   const response = NextResponse.json({ ok: true, perfil: usuario.perfil });
