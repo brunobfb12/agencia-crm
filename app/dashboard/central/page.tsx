@@ -882,8 +882,6 @@ export default function CentralPage() {
         {/* ── USUÁRIOS ── */}
         {aba === "usuarios" && (
           <div className="space-y-6 animate-fade-up">
-            <MigracaoBtn />
-
             {msgUser && (
               <div
                 className="text-[13px] rounded-xl px-4 py-3 font-medium"
@@ -1017,30 +1015,6 @@ export default function CentralPage() {
   );
 }
 
-function MigracaoBtn() {
-  const [status, setStatus] = useState<"idle" | "loading" | "ok" | "erro">("idle");
-  const rodar = async () => {
-    setStatus("loading");
-    const res = await fetch("/api/admin/migrate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ secret: "crm2026migra" }) });
-    setStatus(res.ok ? "ok" : "erro");
-  };
-  return (
-    <div
-      className="px-5 py-4 rounded-2xl flex items-center gap-4"
-      style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)" }}
-    >
-      <div className="flex-1">
-        <div className="text-[14px] font-semibold" style={{ color: "#fbbf24" }}>Atualizar banco de dados</div>
-        <div className="text-[12px] mt-0.5" style={{ color: "rgba(251,191,36,.6)" }}>Rode uma vez após cada deploy com mudanças no schema.</div>
-      </div>
-      <button onClick={rodar} disabled={status === "loading"}
-        className="text-[13px] px-4 py-2 rounded-xl font-semibold disabled:opacity-50 transition-all"
-        style={{ background: "rgba(251,191,36,.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.25)" }}>
-        {status === "loading" ? "Rodando..." : status === "ok" ? "Concluído ✓" : status === "erro" ? "Erro — tente novamente" : "Executar migração"}
-      </button>
-    </div>
-  );
-}
 
 function NovaInstancia({ onCriada }: { onCriada: () => void }) {
   const [form, setForm] = useState({ instanciaNome: "", empresaNome: "" });
