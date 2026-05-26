@@ -91,6 +91,12 @@ if (agendamentos.some(a => a.status === 'PENDENTE')) {
   agendamentoSection = '\nAGENDAMENTO: Este cliente ja tem um agendamento pendente. NAO ofereça agendar novamente.';
 }
 
+// Modo aguardando vendedor: lead já está em PRONTO_PARA_COMPRAR, vendedor já foi notificado
+const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR';
+const aguardandoVendedorSection = aguardandoVendedor
+  ? '\nMODO AGUARDANDO VENDEDOR:\n- O vendedor ' + nomeVendedor + ' ja foi notificado e vai entrar em contato em breve.\n- Sua funcao agora: manter o cliente aquecido, responder duvidas e reforcar a expectativa positiva.\n- A cada mensagem do cliente reforce levemente: "' + nomeVendedor + ' vai te chamar logo pra finalizar tudo!"\n- Responda duvidas com entusiasmo — mantenha o interesse alto ate o vendedor agir.\n- NAO tente fechar preco ou negociar voce mesmo — isso e papel do vendedor.\n- NAO volte a notificar o vendedor (notificarVendedor: false obrigatoriamente).\n- NAO mude novoStatus — ele ja esta em PRONTO_PARA_COMPRAR.'
+  : '';
+
 const isClienteRetornante = historico.length > 4;
 const retornanteSection = isClienteRetornante
   ? '\nCLIENTE RETORNANTE: voce ja conversou com ' + (cliente.nome || 'este cliente') + ' antes. NAO pergunte se e primeira vez. Reconheca o historico e mencione o interesse anterior de forma natural.'
@@ -242,6 +248,7 @@ const sistemaParts = [
   calendlySection,
   orcamentoSection,
   agendamentoSection,
+  aguardandoVendedorSection,
   reativacaoSection,
   fastTrackSection,
   roteiroSection,
