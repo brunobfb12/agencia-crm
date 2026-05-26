@@ -6,15 +6,21 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const me = await getUsuarioLogado();
-  if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-
   const { id } = await params;
 
-  if (me.perfil !== "CENTRAL" && me.empresaId) {
-    const cliente = await prisma.cliente.findUnique({ where: { id }, select: { empresaId: true } });
-    if (!cliente || cliente.empresaId !== me.empresaId) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+  // Chamadas internas do N8N usam secret — sem sessão de usuário
+  const secret = req.nextUrl.searchParams.get("secret");
+  const isInternal = secret === "crm2026migra";
+
+  if (!isInternal) {
+    const me = await getUsuarioLogado();
+    if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
+    if (me.perfil !== "CENTRAL" && me.empresaId) {
+      const cliente = await prisma.cliente.findUnique({ where: { id }, select: { empresaId: true } });
+      if (!cliente || cliente.empresaId !== me.empresaId) {
+        return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+      }
     }
   }
 
