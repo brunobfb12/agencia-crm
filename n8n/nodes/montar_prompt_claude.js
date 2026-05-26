@@ -18,8 +18,11 @@ const histStr = historico
   .map(m => (m.direcao === 'ENTRADA' ? 'Cliente' : 'Assistente') + ': ' + m.conteudo)
   .join('\n') || 'Primeira mensagem';
 
-const infoEmpresa = empresa.informacoes
-  ? 'INFORMACOES DA EMPRESA (use para responder duvidas):\n' + empresa.informacoes
+// Cap em 3000 chars para evitar prompt gigante que derruba o JSON do Haiku
+const infoRaw = empresa.informacoes || '';
+const infoCap = infoRaw.length > 3000 ? infoRaw.slice(0, 3000) + '\n[...informacoes truncadas — edite o campo para deixa-lo objetivo e curto]' : infoRaw;
+const infoEmpresa = infoCap
+  ? 'INFORMACOES DA EMPRESA (use para responder duvidas):\n' + infoCap
   : 'ATENCAO: Informacoes da empresa nao cadastradas. Se perguntarem sobre preco, estoque ou pagamento, diga que vai verificar e que um atendente entrara em contato.';
 
 const nomeIA = empresa.nomeIA || 'Assistente';
@@ -75,8 +78,11 @@ const roteiroSection = (empresa.perguntasQualificacao && modoConversa === 'VENDE
   : '';
 
 let coletaSection = '';
-// Só pede dados após pelo menos 3 mensagens — não interrompe o primeiro contato do cliente
-if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao && !isClienteEmInicio) {
+// Só pede dados após 3+ mensagens, não em modo de fechamento (score alto ou status avançado)
+const statusAvancado = ['PRONTO_PARA_COMPRAR', 'NEGOCIACAO', 'AGENDADO', 'VENDA_REALIZADA'].includes(lead.status);
+const scoreAlto = (lead.score || 0) >= 7;
+const emFechamento = statusAvancado || scoreAlto;
+if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao && !isClienteEmInicio && !emFechamento) {
   coletaSection = '\nCOLETA DE DADOS (colete naturalmente, nunca de forma burocrática):\n- Dados faltando: ' + dadosFaltando.join(', ') + '\n- Para email: Posso anotar seu email para te enviar o catalogo?\n- Para aniversario: Qual sua data de nascimento? Temos surpresas para nossos clientes!\n- Quando coletar, inclua em atualizarCliente no JSON.';
 }
 

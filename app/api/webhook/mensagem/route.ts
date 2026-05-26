@@ -126,7 +126,7 @@ export async function POST(req: Request) {
   const historico = await prisma.mensagem.findMany({
     where: { conversaId: conversa.id },
     orderBy: { criadoEm: "asc" },
-    take: 20,
+    take: 30,
     select: { direcao: true, conteudo: true },
   });
 
