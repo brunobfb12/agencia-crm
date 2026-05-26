@@ -37,6 +37,7 @@ const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA
 const isReativacao = statusReativacao.includes(lead.status);
 const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
 const isPrimeiraMensagem = mensagensEntrada <= 1;
+const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocadas
 
 let reativacaoSection = '';
 if (isReativacao && isPrimeiraMensagem) {
@@ -74,7 +75,8 @@ const roteiroSection = (empresa.perguntasQualificacao && modoConversa === 'VENDE
   : '';
 
 let coletaSection = '';
-if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao) {
+// Só pede dados após pelo menos 3 mensagens — não interrompe o primeiro contato do cliente
+if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao && !isClienteEmInicio) {
   coletaSection = '\nCOLETA DE DADOS (colete naturalmente, nunca de forma burocrática):\n- Dados faltando: ' + dadosFaltando.join(', ') + '\n- Para email: Posso anotar seu email para te enviar o catalogo?\n- Para aniversario: Qual sua data de nascimento? Temos surpresas para nossos clientes!\n- Quando coletar, inclua em atualizarCliente no JSON.';
 }
 
@@ -162,6 +164,45 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + '- Avance para CONCORRENTE somente apos o cliente confirmar os itens.' + NL
     + '- Notifique o vendedor somente apos o cliente responder sobre concorrente (mesmo que diga "nao fiz").' + NL
     + '- Em memoriaCliente registre: "ORCAMENTO ENVIADO: [itens] | Concorrente: [valor ou N/A]"';
+}
+
+// Se a empresa não tem informações configuradas, entra em modo de espera — não tenta vender
+const semConfiguracao = !empresa.informacoes || !empresa.informacoes.trim();
+if (semConfiguracao) {
+  const promptSimples = [
+    'Voce e ' + nomeIA + ', assistente da empresa ' + empresa.nome + '.',
+    'MODO: Esta empresa ainda esta em configuracao. NAO tente vender, qualificar ou responder sobre produtos.',
+    'OBJETIVO: Ser simpatico, registrar o nome do cliente (se nao souber) e informar que um atendente vai entrar em contato em breve.',
+    'NAO pergunte email, data de nascimento nem qualquer dado extra.',
+    'Responda SOMENTE com JSON valido, sem markdown.',
+    '',
+    'Formato obrigatorio:',
+    '{ "resposta": "...", "novoStatus": null, "notificarVendedor": false, "mensagemVendedor": null, "notificarGerente": false, "mensagemGerente": null, "observacoes": null, "atualizarCliente": null, "dataRecontato": null, "midia": null, "score": null }',
+    '',
+    'NOME DO CLIENTE: ' + (cliente.nome || 'desconhecido'),
+    'HISTORICO:\n' + histStr,
+    '',
+    'REGRAS:',
+    '- Cumprimente na primeira mensagem.',
+    '- Se cliente perguntar sobre produto/preco: diga "Estamos finalizando nossa configuracao e em breve um atendente te retorna com todas as informacoes!"',
+    '- Se nao souber o nome: pergunte apenas o nome, nada mais.',
+    '- Se ja souber o nome: confirme que vai repassar o contato para o atendente.',
+    '- Seja breve, simpatico e transmita confianca.',
+  ];
+  return [{ json: {
+    ...crm,
+    instancia,
+    telefone,
+    mensagemAtual,
+    nomeVendedor,
+    clienteId: cliente.id,
+    claudePayload: {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: promptSimples.join('\n'),
+      messages: [{ role: 'user', content: 'NOVA MENSAGEM DO CLIENTE: ' + mensagemAtual }]
+    }
+  }}];
 }
 
 const sistemaParts = [

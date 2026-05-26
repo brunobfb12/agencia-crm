@@ -37,6 +37,7 @@ const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA
 const isReativacao = statusReativacao.includes(lead.status);
 const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
 const isPrimeiraMensagem = mensagensEntrada <= 1;
+const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocadas
 
 let reativacaoSection = '';
 if (isReativacao && isPrimeiraMensagem) {
@@ -74,7 +75,8 @@ const roteiroSection = (empresa.perguntasQualificacao && modoConversa === 'VENDE
   : '';
 
 let coletaSection = '';
-if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao) {
+// Só pede dados após pelo menos 3 mensagens — não interrompe o primeiro contato do cliente
+if (dadosFaltando.length > 0 && !empresa.perguntasQualificacao && !isClienteEmInicio) {
   coletaSection = '\nCOLETA DE DADOS (colete naturalmente, nunca de forma burocrática):\n- Dados faltando: ' + dadosFaltando.join(', ') + '\n- Para email: Posso anotar seu email para te enviar o catalogo?\n- Para aniversario: Qual sua data de nascimento? Temos surpresas para nossos clientes!\n- Quando coletar, inclua em atualizarCliente no JSON.';
 }
 
@@ -164,6 +166,45 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + '- Em memoriaCliente registre: "ORCAMENTO ENVIADO: [itens] | Concorrente: [valor ou N/A]"';
 }
 
+// Se a empresa não tem informações configuradas, entra em modo de espera — não tenta vender
+const semConfiguracao = !empresa.informacoes || !empresa.informacoes.trim();
+if (semConfiguracao) {
+  const promptSimples = [
+    'Voce e ' + nomeIA + ', assistente da empresa ' + empresa.nome + '.',
+    'MODO: Esta empresa ainda esta em configuracao. NAO tente vender, qualificar ou responder sobre produtos.',
+    'OBJETIVO: Ser simpatico, registrar o nome do cliente (se nao souber) e informar que um atendente vai entrar em contato em breve.',
+    'NAO pergunte email, data de nascimento nem qualquer dado extra.',
+    'Responda SOMENTE com JSON valido, sem markdown.',
+    '',
+    'Formato obrigatorio:',
+    '{ "resposta": "...", "novoStatus": null, "notificarVendedor": false, "mensagemVendedor": null, "notificarGerente": false, "mensagemGerente": null, "observacoes": null, "atualizarCliente": null, "dataRecontato": null, "midia": null, "score": null }',
+    '',
+    'NOME DO CLIENTE: ' + (cliente.nome || 'desconhecido'),
+    'HISTORICO:\n' + histStr,
+    '',
+    'REGRAS:',
+    '- Cumprimente na primeira mensagem.',
+    '- Se cliente perguntar sobre produto/preco: diga "Estamos finalizando nossa configuracao e em breve um atendente te retorna com todas as informacoes!"',
+    '- Se nao souber o nome: pergunte apenas o nome, nada mais.',
+    '- Se ja souber o nome: confirme que vai repassar o contato para o atendente.',
+    '- Seja breve, simpatico e transmita confianca.',
+  ];
+  return [{ json: {
+    ...crm,
+    instancia,
+    telefone,
+    mensagemAtual,
+    nomeVendedor,
+    clienteId: cliente.id,
+    claudePayload: {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: promptSimples.join('\n'),
+      messages: [{ role: 'user', content: 'NOVA MENSAGEM DO CLIENTE: ' + mensagemAtual }]
+    }
+  }}];
+}
+
 const sistemaParts = [
   'Voce e ' + nomeIA + ', o assistente de vendas da empresa ' + empresa.nome + '.',
   'Responda SOMENTE com JSON valido, sem markdown, sem texto fora do JSON.',
@@ -171,13 +212,14 @@ const sistemaParts = [
   'Formato obrigatorio:',
   '{',
   '  "resposta": "mensagem curta e natural para WhatsApp",',
-  '  "novoStatus": "LEAD|AQUECIMENTO|PRONTO_PARA_COMPRAR|null",',
+  '  "novoStatus": "LEAD|AQUECIMENTO|PRONTO_PARA_COMPRAR|SEM_INTERESSE|null",',
   '  "notificarVendedor": false,',
   '  "mensagemVendedor": null,',
   '  "notificarGerente": false,',
   '  "mensagemGerente": null,',
   '  "observacoes": null,',
   '  "atualizarCliente": null,',
+  '  "dataRecontato": null,',
   '  "midia": null,',
   '  "score": null',
   '}',
@@ -185,6 +227,7 @@ const sistemaParts = [
   'atualizarCliente: null OU {"email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve"}',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
+  'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP".',
   '',
   infoEmpresa,
   modoAtualSection,
@@ -220,7 +263,10 @@ const sistemaParts = [
   '- PRONTO_PARA_COMPRAR: so marque quando (1) lista de pedido confirmada pelo cliente ("nao, so isso" / "pode encaminhar") OU agendamento feito no link; E (2) voce ja perguntou "tem mais alguma coisa?" e o cliente respondeu. Curiosidade, interesse generico ou pergunta de preco nao sao suficientes — qualifique ate ter os dois criterios.',
   '- notificarVendedor=true SOMENTE quando novoStatus=PRONTO_PARA_COMPRAR ou novoStatus=AGENDADO. Em QUALQUER outro momento da conversa — duvida, qualificacao, upsell, IA sem resposta, cliente pensando — notificarVendedor=false obrigatoriamente. O vendedor recebe UMA mensagem, no momento certo, com tudo dentro.',
   '- memoriaCliente em atualizarCliente: registre o que aprendeu sobre o cliente (interesses, orcamento, preferencias, objecoes). Cumulativo, max 300 chars.',
-  '- Se o cliente desistir ou insultar: novoStatus=PERDIDO',
+  '- Se o cliente disser explicitamente que NAO quer ser cliente, NAO quer o servico ou NAO quer mais ser contactado: novoStatus=SEM_INTERESSE. Responda com empatia: "Entendo! Fico a disposicao caso mude de ideia. Tenha um otimo dia!" e NAO contate mais.',
+  '- Se o cliente demonstrar que nao quer AGORA mas pode querer no futuro ou pedir para ligar em outro momento: defina dataRecontato com a data calculada e novoStatus=FOLLOW_UP.',
+  '- Se o cliente insultar gravemente: novoStatus=SEM_INTERESSE.',
+  '- NUNCA use novoStatus=PERDIDO — esse status nao existe mais para a IA.',
   '- NUNCA diga que vai verificar a agenda, consultar a profissional ou checar disponibilidade — voce nao tem acesso a agenda. Sempre use o link do Cal.com diretamente.',
   '- Se o cliente nao conseguir usar o link 2 vezes ou mais: PARE de mandar o link. Use notificarVendedor=true e explique a situacao na mensagemVendedor.',
   '- Se receber uma imagem: analise visualmente o que ve, descreva brevemente relacionando ao produto/servico da empresa e avance no atendimento.',
@@ -242,8 +288,9 @@ const sistemaParts = [
   '  - Tom: animado, hesitante, com pressa, comparando concorrentes, etc',
   '  - Onde retomar: proximo passo ESPECIFICO para o vendedor fechar (ex: "informar preco do kit", "confirmar disponibilidade de horario", "enviar formas de pagamento")',
   'QUANDO notificarGerente=true, mensagemGerente DEVE conter nome do cliente, natureza do problema e urgencia.',
-  'observacoes: quando o lead avancar de status ou notificarVendedor=true, preencha observacoes com briefing estruturado:',
+  'observacoes: quando o lead avancar de status ou notificarVendedor=true, preencha observacoes com briefing estruturado separado por pipe:',
   '  Exemplo: "[Nome] | Pedido: [itens confirmados + complementares aceitos/recusados] | Interesse: [servico especifico] | Preco: [perguntou sim/nao + valor se houver] | IA respondeu: [argumentos usados, complementares oferecidos, objecoes ja tratadas] | Pendente: [objecoes ainda abertas] | Tom: [animado/hesitante] | Retomar em: [proximo passo — onde vendedor deve comecar]"',
+  '  Use dados reais da conversa. Seja especifico nos servicos (ex: nao escreva sobrancelha, escreva reconstrucao de sobrancelha com fio a fio). Atualize a cada mensagem importante.',
   '',
   'DATA E HORA ATUAL (Brasil): ' + new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
   'STATUS ATUAL: ' + (lead.status || 'LEAD'),
