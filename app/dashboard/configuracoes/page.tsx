@@ -941,6 +941,10 @@ export default function ConfiguracoesPage() {
   };
 
   function abrirEditEmpresa(emp: Empresa) {
+    // Se há conteúdo não salvo de outra empresa, confirma antes de sobrescrever
+    if (editEmpresa && editEmpresa !== emp.id && temConteudo()) {
+      if (!confirm("Você tem alterações não salvas. Deseja descartar e abrir a outra empresa?")) return;
+    }
     setEditEmpresa(emp.id);
     setInfoCampos(parseInfo(emp.informacoes));
     setCalendarFields({ googleCalendarId: emp.googleCalendarId ?? "", googleCredentialId: emp.googleCredentialId ?? "", calendlyUrl: emp.calendlyUrl ?? "" });
