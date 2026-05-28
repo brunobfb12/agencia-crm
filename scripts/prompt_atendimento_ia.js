@@ -18,9 +18,8 @@ const histStr = historico
   .map(m => (m.direcao === 'ENTRADA' ? 'Cliente' : 'Assistente') + ': ' + m.conteudo)
   .join('\n') || 'Primeira mensagem';
 
-// Cap em 3000 chars para evitar prompt gigante que derruba o JSON do Haiku
 const infoRaw = empresa.informacoes || '';
-const infoCap = infoRaw.length > 3000 ? infoRaw.slice(0, 3000) + '\n[...informacoes truncadas — edite o campo para deixa-lo objetivo e curto]' : infoRaw;
+const infoCap = infoRaw.length > 8000 ? infoRaw.slice(0, 8000) + '\n[...informacoes truncadas]' : infoRaw;
 const infoEmpresa = infoCap
   ? 'INFORMACOES DA EMPRESA (use para responder duvidas):\n' + infoCap
   : 'ATENCAO: Informacoes da empresa nao cadastradas. Se perguntarem sobre preco, estoque ou pagamento, diga que vai verificar e que um atendente entrara em contato.';
@@ -159,29 +158,40 @@ const tipoAtend = empresa.tipoAtendimento || 'AGENDAMENTO';
 let orcamentoSection = '';
 if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
   const NL = String.fromCharCode(10);
+  const temCatalogo = !!(infoCap && infoCap.indexOf('PRODUTOS') !== -1);
   const introAmbo = tipoAtend === 'AMBOS'
     ? 'EMPRESA OFERECE AGENDAMENTO E ORCAMENTO: No inicio da conversa, entenda o que o cliente precisa. Se quiser AGENDAR: use o link Calendly. Se quiser ORCAMENTO: siga o fluxo abaixo.' + NL + NL
     : '';
-  orcamentoSection = NL + introAmbo
-    + 'FLUXO DE ORCAMENTO (ative quando o cliente pedir orcamento, preco, cotacao ou valor):' + NL
-    + 'ETAPA 1 — ESCUTA: Receba o pedido completo. O cliente pode enviar texto, [AUDIO], foto ou PDF com os itens desejados. Analise e monte a lista.' + NL
-    + 'ETAPA 2 — CONFIRMACAO: Apresente o resumo: "Voce esta precisando de [lista de itens], correto?"' + NL
-    + 'ETAPA 3 — COMPLETAR: Apos confirmacao, pergunte: "Precisa de mais algum item ou posso finalizar seu orcamento?"' + NL
-    + 'ETAPA 4 — CONCORRENTE: Pergunte: "Ja fez orcamento com outra empresa? Quanto ficou? Isso nos ajuda a oferecer a melhor condicao!"' + NL
-    + 'ETAPA 5 — ENVIO: Notifique o vendedor com o resumo completo:' + NL
-    + '  novoStatus: "NEGOCIACAO"' + NL
-    + '  notificarVendedor: true' + NL
-    + '  mensagemVendedor: "Orcamento de [nome]: [lista de itens]. Referencia concorrente: [valor ou nao informado]. -- Me avisa se fechou e o valor!"' + NL
-    + '  Resposta ao cliente: "Perfeito! Ja enviei para ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve! 😊"' + NL
+
+  const catalogoSection = temCatalogo
+    ? 'DISPONIBILIDADE DE PRODUTOS:' + NL
+      + '- Use a secao PRODUTOS das informacoes da empresa para responder "tem X?" ou "voces trabalham com Y?"' + NL
+      + '- Se estiver na lista: confirme com entusiasmo e ja ofereça complementares (rolo, lixa, fundo, fita).' + NL
+      + '- Se nao estiver: "Esse especifico nao temos, mas posso ver uma opcao equivalente com nosso especialista — te retorno em minutos!"' + NL + NL
+    : '';
+
+  orcamentoSection = NL + introAmbo + catalogoSection
+    + 'FLUXO DE ORCAMENTO:' + NL
     + NL
-    + 'REGRAS DO ORCAMENTO:' + NL
-    + '- Avance UMA etapa por vez. Nao pule fases.' + NL
-    + '- Foto: analise visualmente, liste os itens identificados, confirme com o cliente.' + NL
+    + '🚀 MODO LISTA (USE QUANDO: cliente ja manda uma lista de produtos/quantidades na primeira mensagem):' + NL
+    + '- Identifique: mensagem com 2+ itens, quantidades, marcas ou medidas (m², kg, latas, litros, galoes).' + NL
+    + '- Nao confirme, nao pergunte sobre concorrente — va direto para o vendedor.' + NL
+    + '- Resposta: "Anotei sua lista! Ja passei pro ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em minutos. Se voce tiver orcamento de outro lugar, manda pra gente — a gente cobre qualquer oferta! 💪"' + NL
+    + '- novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
+    + '- mensagemVendedor: "LISTA RECEBIDA de [nome] ([numero]): [itens da lista]. Cliente pode estar pesquisando em outros lugares — ligue RAPIDO! -- Me avisa se fechou e o valor!"' + NL
+    + NL
+    + '💬 MODO CONVERSA (USE QUANDO: cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
+    + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
+    + 'ETAPA 2 — COMPLETAR: "Precisa de mais algum item ou posso encaminhar sua lista?"' + NL
+    + 'ETAPA 3 — CONCORRENTE: "Ja fez orcamento em outro lugar? Nos cobrimos qualquer oferta!"' + NL
+    + 'ETAPA 4 — ENVIO: novoStatus "NEGOCIACAO", notificarVendedor true.' + NL
+    + '  Resposta: "Perfeito! Ja passei pro ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve! 😊"' + NL
+    + NL
+    + 'REGRAS:' + NL
+    + '- Foto/PDF: liste os itens identificados e siga o modo correspondente.' + NL
     + '- [AUDIO]: responda ao conteudo da transcricao como se fosse texto.' + NL
-    + '- PDF: leia o conteudo, extraia os itens, confirme com o cliente.' + NL
-    + '- Avance para CONCORRENTE somente apos o cliente confirmar os itens.' + NL
-    + '- Notifique o vendedor somente apos o cliente responder sobre concorrente (mesmo que diga "nao fiz").' + NL
-    + '- Em memoriaCliente registre: "ORCAMENTO ENVIADO: [itens] | Concorrente: [valor ou N/A]"';
+    + '- NUNCA prometa preco voce mesmo — o vendedor fecha o preco.' + NL
+    + '- Em memoriaCliente registre: "ORCAMENTO: [itens] | Concorrente: [valor ou N/A]"';
 }
 
 // Se a empresa não tem informações configuradas, entra em modo de espera — não tenta vender
