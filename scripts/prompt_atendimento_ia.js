@@ -29,7 +29,7 @@ const nomeIA = empresa.nomeIA || 'Assistente';
 const nomeVendedor = vendedor.nome || 'nosso atendente';
 
 const conhecimentoBaseRaw = empresa.conhecimentoBase || '';
-const conhecimentoBaseCap = conhecimentoBaseRaw.length > 10000 ? conhecimentoBaseRaw.slice(0, 10000) + '\n[...base truncada]' : conhecimentoBaseRaw;
+const conhecimentoBaseCap = conhecimentoBaseRaw.length > 22000 ? conhecimentoBaseRaw.slice(0, 22000) + '\n[...base truncada]' : conhecimentoBaseRaw;
 const conhecimentoBaseSection = conhecimentoBaseCap
   ? '\nBASE DE CONHECIMENTO TECNICO (use para responder duvidas tecnicas, recomendar produtos, quebrar objecoes e fazer venda cruzada):\n' + conhecimentoBaseCap
   : '';
