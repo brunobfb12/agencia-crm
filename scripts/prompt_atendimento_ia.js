@@ -28,6 +28,12 @@ const infoEmpresa = infoCap
 const nomeIA = empresa.nomeIA || 'Assistente';
 const nomeVendedor = vendedor.nome || 'nosso atendente';
 
+const conhecimentoBaseRaw = empresa.conhecimentoBase || '';
+const conhecimentoBaseCap = conhecimentoBaseRaw.length > 10000 ? conhecimentoBaseRaw.slice(0, 10000) + '\n[...base truncada]' : conhecimentoBaseRaw;
+const conhecimentoBaseSection = conhecimentoBaseCap
+  ? '\nBASE DE CONHECIMENTO TECNICO (use para responder duvidas tecnicas, recomendar produtos, quebrar objecoes e fazer venda cruzada):\n' + conhecimentoBaseCap
+  : '';
+
 const calendlySection = empresa.calendlyUrl
   ? '\nAGENDAMENTO ONLINE:\n- Quando o cliente quiser agendar, envie EXATAMENTE este link: ' + empresa.calendlyUrl + '\n- Sugestao: Claro! Escolha o melhor horario: ' + empresa.calendlyUrl + ' 📅\n- Palavras-chave: agendar, marcar, horario, consulta, atendimento, visita, quando, disponivel, reservar.\n- Nao pergunte data/hora manualmente.'
   : '';
@@ -242,6 +248,7 @@ const sistemaParts = [
   'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP".',
   '',
   infoEmpresa,
+  conhecimentoBaseSection,
   modoAtualSection,
   retornanteSection,
   modoConversaSection,

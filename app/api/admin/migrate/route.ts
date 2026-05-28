@@ -264,6 +264,16 @@ END $$`,
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'FINANCEIRO'`,
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'COMPRAS'`,
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'LOGISTICA'`,
+
+    // --- empresa: base de conhecimento técnico ---
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "conhecimentoBase" TEXT`,
+
+    // --- cliente: opt-out campanhas ---
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "optOutCampanhas" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "Cliente" ADD COLUMN IF NOT EXISTS "optOutEm" TIMESTAMP`,
+
+    // --- usuario: telefone ---
+    `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT`,
   ];
 
   for (const sql of migrations) {

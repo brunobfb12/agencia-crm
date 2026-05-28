@@ -22,6 +22,7 @@ export async function PATCH(
       ...(body.nomeIA !== undefined && { nomeIA: body.nomeIA || null }),
       ...(body.mensagemPosVenda !== undefined && { mensagemPosVenda: body.mensagemPosVenda || null }),
       ...(body.mensagemAniversario !== undefined && { mensagemAniversario: body.mensagemAniversario || null }),
+      ...(body.conhecimentoBase !== undefined && { conhecimentoBase: body.conhecimentoBase || null }),
       // Campos de monetização — só CENTRAL pode alterar
       ...(body.planStatus !== undefined && { planStatus: body.planStatus }),
       ...(body.plano !== undefined && { plano: body.plano }),

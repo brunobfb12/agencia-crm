@@ -24,6 +24,7 @@ model Empresa {
   mensagemPosVenda         String?
   mensagemAniversario      String?
   aprendizados             String?
+  conhecimentoBase         String?
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)

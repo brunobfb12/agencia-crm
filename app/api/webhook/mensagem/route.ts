@@ -195,6 +195,7 @@ export async function POST(req: Request) {
       tipoAtendimento: empresa.tipoAtendimento,
       nomeIA: empresa.nomeIA ?? null,
       aprendizados: empresa.aprendizados ?? null,
+      conhecimentoBase: empresa.conhecimentoBase ?? null,
     },
     cliente: {
       id: cliente.id,
