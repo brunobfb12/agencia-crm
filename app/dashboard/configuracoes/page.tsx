@@ -832,6 +832,10 @@ export default function ConfiguracoesPage() {
   const [mensagemAniversario, setMensagemAniversario] = useState("");
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
+  const [modalLogin, setModalLogin] = useState<Empresa | null>(null);
+  const [loginForm, setLoginForm] = useState({ nome: "", email: "", senha: "" });
+  const [criandoLogin, setCriandoLogin] = useState(false);
+  const [loginMsg, setLoginMsg] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1, cargo: "VENDEDOR" });
@@ -1204,6 +1208,13 @@ export default function ConfiguracoesPage() {
                           : { background: "rgba(99,102,241,.1)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.2)" }}>
                         {editEmpresa === emp.id ? "Fechar" : "Editar"}
                       </button>
+                      {isCentral && (
+                        <button onClick={() => { setModalLogin(emp); setLoginForm({ nome: "", email: "", senha: "" }); setLoginMsg(""); }}
+                          className="text-[13px] px-3 py-2 rounded-xl font-semibold"
+                          style={{ background: "rgba(34,211,238,.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,.2)" }}>
+                          + Login
+                        </button>
+                      )}
                       {isCentral && (
                         <button onClick={() => { setDeletandoEmpresa(emp); setConfirmNomeEmpresa(""); }}
                           className="text-[13px] px-3 py-2 rounded-xl font-semibold"
@@ -2019,6 +2030,70 @@ export default function ConfiguracoesPage() {
                 Falar com suporte →
               </a>
             </p>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Modal Criar Login */}
+    {modalLogin && (
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: "var(--overlay)", backdropFilter: "blur(8px)" }}>
+        <div className="w-full max-w-sm rounded-2xl overflow-hidden animate-fade-up"
+          style={{ background: "var(--bg)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.4)" }}>
+          <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Criar Acesso</h3>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-2)" }}>{modalLogin.nome}</p>
+          </div>
+          <div className="px-6 py-5 space-y-3">
+            <div>
+              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>NOME DO RESPONSÁVEL</label>
+              <input type="text" value={loginForm.nome} onChange={e => setLoginForm(f => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome completo" className={`w-full ${INPUT} `} />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>E-MAIL DE ACESSO</label>
+              <input type="email" value={loginForm.email} onChange={e => setLoginForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@empresa.com" className={`w-full ${INPUT}`} />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>SENHA</label>
+              <input type="text" value={loginForm.senha} onChange={e => setLoginForm(f => ({ ...f, senha: e.target.value }))}
+                placeholder="Senha de acesso" className={`w-full ${INPUT}`} />
+            </div>
+            {loginMsg && (
+              <p className="text-[12px] px-3 py-2 rounded-xl" style={{
+                background: loginMsg.startsWith("✅") ? "rgba(52,211,153,.1)" : "rgba(248,113,113,.1)",
+                color: loginMsg.startsWith("✅") ? "#34d399" : "#f87171",
+                border: `1px solid ${loginMsg.startsWith("✅") ? "rgba(52,211,153,.2)" : "rgba(248,113,113,.2)"}`,
+              }}>{loginMsg}</p>
+            )}
+          </div>
+          <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+            <button onClick={() => setModalLogin(null)} className="px-4 py-2 rounded-xl text-[13px] font-medium"
+              style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
+              Fechar
+            </button>
+            <button disabled={criandoLogin || !loginForm.nome || !loginForm.email || !loginForm.senha}
+              onClick={async () => {
+                setCriandoLogin(true);
+                setLoginMsg("");
+                const res = await fetch("/api/usuarios", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ nome: loginForm.nome, email: loginForm.email, senha: loginForm.senha, empresaId: modalLogin.id }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setLoginMsg("✅ Login criado! E-mail: " + loginForm.email);
+                  setLoginForm({ nome: "", email: "", senha: "" });
+                } else {
+                  setLoginMsg("Erro: " + (data.error ?? "Tente novamente"));
+                }
+                setCriandoLogin(false);
+              }}
+              className="btn-primary px-5 py-2 text-[13px] disabled:opacity-40">
+              {criandoLogin ? "Criando..." : "Criar Login"}
+            </button>
           </div>
         </div>
       </div>
