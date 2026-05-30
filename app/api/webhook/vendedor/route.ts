@@ -250,6 +250,36 @@ export async function POST(req: Request) {
       });
     }
 
+    // "1" = Lead não respondeu → FOLLOW_UP + reengajamento automático via WhatsApp
+    if (numMotivo === "1" || motivo.toLowerCase().includes("não respondeu") || motivo.toLowerCase().includes("nao respondeu")) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: "FOLLOW_UP", observacoes: setEstado(lead.observacoes, null) + `\nVendedor: lead não respondeu`.trim() },
+      });
+
+      const primeiroNome = lead.cliente.nome ? lead.cliente.nome.split(" ")[0] : "";
+      const nomeIA = empresa.nomeIA ?? "Eu";
+      const msgReengajamento = `Oi${primeiroNome ? ` ${primeiroNome}` : ""}! ${nomeIA} aqui, da ${empresa.nome}. Vi que nosso time tentou falar com você sobre seu pedido. Ainda tem interesse? Já fechou em outro lugar? O que precisa acontecer para fecharmos esse pedido? 😊`;
+
+      const evoUrl = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
+      const evoKey = process.env.AUTHENTICATION_API_KEY ?? process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+
+      await fetch(`${evoUrl}/message/sendText/${empresa.instanciaWhatsapp}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: evoKey },
+        body: JSON.stringify({
+          number: lead.cliente.telefone,
+          text: msgReengajamento,
+          options: { presence: "composing", delay: 3000 },
+        }),
+      }).catch(() => null);
+
+      return NextResponse.json({
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
+        resposta: `Anotado! Já mandei uma mensagem pro *${nomeCliente}* perguntando se ainda tem interesse. Se ele responder, te aviso! 🎯`,
+      });
+    }
+
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
