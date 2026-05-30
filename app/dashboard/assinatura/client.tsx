@@ -73,7 +73,7 @@ function getDiasRestantes(trialFim: string | null): number {
 }
 
 export default function AssinaturaClient({ empresaId, nome, planStatus, plano, trialFim, isenta }: Props) {
-  const dias = planStatus === "TRIAL" ? getDiasRestantes(trialFim) : null;
+  const dias = (planStatus === "TRIAL" && !isenta) ? getDiasRestantes(trialFim) : null;
   const isBloqueado = planStatus === "BLOQUEADO" || planStatus === "CANCELADO";
   const [anual, setAnual] = useState(false);
 
