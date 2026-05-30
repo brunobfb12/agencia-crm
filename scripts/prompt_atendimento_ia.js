@@ -27,6 +27,16 @@ const infoEmpresa = infoCap
 const nomeIA = empresa.nomeIA || 'Assistente';
 const nomeVendedor = vendedor.nome || 'nosso atendente';
 
+const tagsCustomizadas = empresa.tagsCustomizadas || [];
+const tagsSection = tagsCustomizadas.length > 0
+  ? '\nTAGS DO CLIENTE (aplique automaticamente quando identificar o perfil durante a conversa):\n'
+    + 'Tags disponíveis: ' + tagsCustomizadas.map(function(t) { return '"' + t + '"'; }).join(', ') + '\n'
+    + '- Quando identificar o perfil, inclua "addTags": ["NomeDaTag"] em atualizarCliente.\n'
+    + '- Aplique apenas tags com alta confiança — nao aplique por suposicao.\n'
+    + '- Pode aplicar mais de uma tag quando o contexto confirmar.\n'
+    + '- Exemplo: cliente diz "compro para revender" → addTags: ["Revendedor"]'
+  : '';
+
 const conhecimentoBaseRaw = empresa.conhecimentoBase || '';
 const conhecimentoBaseCap = conhecimentoBaseRaw.length > 22000 ? conhecimentoBaseRaw.slice(0, 22000) + '\n[...base truncada]' : conhecimentoBaseRaw;
 const conhecimentoBaseSection = conhecimentoBaseCap
@@ -252,7 +262,8 @@ const sistemaParts = [
   '  "score": null',
   '}',
   '',
-  'atualizarCliente: null OU {"email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve"}',
+  'atualizarCliente: null OU {"email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"]}',
+  '- addTags: lista de tags para ADICIONAR ao cliente (nao substitui as existentes). Use apenas tags definidas pela empresa.',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
   'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP".',
@@ -270,6 +281,7 @@ const sistemaParts = [
   fastTrackSection,
   roteiroSection,
   coletaSection,
+  tagsSection,
   midiasSection,
   memoriaSection,
   vendasSection,

@@ -17,6 +17,7 @@ interface Cliente {
 interface Empresa {
   id: string;
   nome: string;
+  tagsCustomizadas: string[];
 }
 
 interface Vendedor {
@@ -37,15 +38,24 @@ const STATUS_BADGE: Record<string, { bg: string; color: string; label: string }>
   SEM_RESPOSTA:        { bg: "rgba(251,191,36,.1)",   color: "#fbbf24", label: "Sem Resposta" },
 };
 
-const TAGS_PREDEFINIDAS = [
-  { key: "indicacao",        label: "Indicação",        color: "#22d3ee", bg: "rgba(34,211,238,.12)" },
-  { key: "anuncio",          label: "Anúncio",          color: "#60a5fa", bg: "rgba(96,165,250,.12)" },
-  { key: "organico",         label: "Orgânico",         color: "#34d399", bg: "rgba(52,211,153,.12)" },
-  { key: "VIP",              label: "VIP",              color: "#f59e0b", bg: "rgba(245,158,11,.12)"  },
-  { key: "Varejo",           label: "Varejo",           color: "#a78bfa", bg: "rgba(167,139,250,.12)"},
-  { key: "Atacado",          label: "Atacado",          color: "#10b981", bg: "rgba(16,185,129,.12)" },
-  { key: "Inadimplente",     label: "Inadimplente",     color: "#f87171", bg: "rgba(248,113,113,.12)"},
+const TAG_PALETTE = [
+  { color: "#22d3ee", bg: "rgba(34,211,238,.12)" },
+  { color: "#a78bfa", bg: "rgba(167,139,250,.12)" },
+  { color: "#34d399", bg: "rgba(52,211,153,.12)" },
+  { color: "#f59e0b", bg: "rgba(245,158,11,.12)" },
+  { color: "#60a5fa", bg: "rgba(96,165,250,.12)" },
+  { color: "#10b981", bg: "rgba(16,185,129,.12)" },
+  { color: "#f87171", bg: "rgba(248,113,113,.12)" },
+  { color: "#fb923c", bg: "rgba(251,146,60,.12)" },
+  { color: "#e879f9", bg: "rgba(232,121,249,.12)" },
+  { color: "#fbbf24", bg: "rgba(251,191,36,.12)" },
 ];
+
+function tagStyle(tag: string, allTags: string[]) {
+  const idx = allTags.indexOf(tag);
+  const p = TAG_PALETTE[(idx >= 0 ? idx : 0) % TAG_PALETTE.length];
+  return { key: tag, label: tag, color: p.color, bg: p.bg };
+}
 
 const formVazio = { nome: "", telefone: "", email: "", dataNascimento: "", empresaId: "", vendedorId: "" };
 
@@ -198,6 +208,21 @@ export default function ClientesPage() {
 
   const clientesFiltrados = filtroTag ? clientes.filter(c => c.tags.includes(filtroTag)) : clientes;
 
+  // Tags disponíveis: da empresa filtrada, ou union de todas as empresas
+  const tagsDisponiveis: string[] = (() => {
+    if (filtroEmpresa) {
+      return empresas.find(e => e.id === filtroEmpresa)?.tagsCustomizadas ?? [];
+    }
+    const all = new Set<string>();
+    empresas.forEach(e => (e.tagsCustomizadas ?? []).forEach(t => all.add(t)));
+    return [...all];
+  })();
+
+  // Tags para o modal de edição: usa as tags da empresa do cliente em questão
+  const tagsDoModal: string[] = modalTags
+    ? (empresas.find(e => e.nome === modalTags.empresa.nome)?.tagsCustomizadas ?? tagsDisponiveis)
+    : tagsDisponiveis;
+
   const TH = ({ children }: { children: React.ReactNode }) => (
     <th
       className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wide"
@@ -277,21 +302,22 @@ export default function ClientesPage() {
           >
             Todos
           </button>
-          {TAGS_PREDEFINIDAS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setFiltroTag(filtroTag === t.key ? "" : t.key)}
-              className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap"
-              style={{ background: filtroTag === t.key ? t.bg : "var(--card)", border: `1px solid ${filtroTag === t.key ? t.color : "var(--border)"}`, color: filtroTag === t.key ? t.color : "var(--muted-2)" }}
-            >
-              {t.label}
-              {filtroTag === t.key && (
-                <span className="ml-1.5" style={{ opacity: .7 }}>
-                  ({clientesFiltrados.length})
-                </span>
-              )}
-            </button>
-          ))}
+          {tagsDisponiveis.map(tag => {
+            const t = tagStyle(tag, tagsDisponiveis);
+            return (
+              <button
+                key={t.key}
+                onClick={() => setFiltroTag(filtroTag === t.key ? "" : t.key)}
+                className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap"
+                style={{ background: filtroTag === t.key ? t.bg : "var(--card)", border: `1px solid ${filtroTag === t.key ? t.color : "var(--border)"}`, color: filtroTag === t.key ? t.color : "var(--muted-2)" }}
+              >
+                {t.label}
+                {filtroTag === t.key && (
+                  <span className="ml-1.5" style={{ opacity: .7 }}>({clientesFiltrados.length})</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Table / Cards */}
@@ -345,11 +371,11 @@ export default function ClientesPage() {
                         {c.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
                             {c.tags.map(tag => {
-                              const t = TAGS_PREDEFINIDAS.find(x => x.key === tag);
+                              const t = tagStyle(tag, tagsDisponiveis);
                               return (
                                 <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
-                                  style={{ background: t?.bg ?? "rgba(148,163,184,.1)", color: t?.color ?? "#94a3b8" }}>
-                                  {t?.label ?? tag}
+                                  style={{ background: t.bg, color: t.color }}>
+                                  {tag}
                                 </span>
                               );
                             })}
@@ -438,11 +464,11 @@ export default function ClientesPage() {
                           <td className="px-4 py-3">
                             <div className="flex flex-wrap gap-1">
                               {c.tags.map(tag => {
-                                const t = TAGS_PREDEFINIDAS.find(x => x.key === tag);
+                                const t = tagStyle(tag, tagsDisponiveis);
                                 return (
                                   <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
-                                    style={{ background: t?.bg ?? "rgba(148,163,184,.1)", color: t?.color ?? "#94a3b8" }}>
-                                    {t?.label ?? tag}
+                                    style={{ background: t.bg, color: t.color }}>
+                                    {tag}
                                   </span>
                                 );
                               })}
@@ -798,45 +824,36 @@ export default function ClientesPage() {
                 {modalTags.nome ?? modalTags.telefone}
               </p>
             </div>
-            <div className="px-6 py-5 space-y-4">
-              <div>
-                <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>ORIGEM</p>
+            <div className="px-6 py-5">
+              {tagsDoModal.length === 0 ? (
+                <p className="text-[13px]" style={{ color: "var(--muted-2)" }}>
+                  Nenhuma tag configurada para esta empresa.
+                  <a href="/dashboard/configuracoes" className="ml-1 underline" style={{ color: "#a5b4fc" }}>
+                    Configurar tags →
+                  </a>
+                </p>
+              ) : (
                 <div className="flex flex-wrap gap-2">
-                  {TAGS_PREDEFINIDAS.filter(t => ["indicacao","anuncio","organico"].includes(t.key)).map(t => (
-                    <button
-                      key={t.key}
-                      onClick={() => toggleTagDraft(t.key)}
-                      className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-                      style={{
-                        background: tagsDraft.includes(t.key) ? t.bg : "var(--card)",
-                        border: `1px solid ${tagsDraft.includes(t.key) ? t.color : "var(--border)"}`,
-                        color: tagsDraft.includes(t.key) ? t.color : "var(--muted-2)",
-                      }}
-                    >
-                      {tagsDraft.includes(t.key) ? "✓ " : ""}{t.label}
-                    </button>
-                  ))}
+                  {tagsDoModal.map(tag => {
+                    const t = tagStyle(tag, tagsDoModal);
+                    const ativo = tagsDraft.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTagDraft(tag)}
+                        className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                        style={{
+                          background: ativo ? t.bg : "var(--card)",
+                          border: `1px solid ${ativo ? t.color : "var(--border)"}`,
+                          color: ativo ? t.color : "var(--muted-2)",
+                        }}
+                      >
+                        {ativo ? "✓ " : ""}{tag}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold mb-2" style={{ color: "var(--muted)" }}>TIPO DE CLIENTE</p>
-                <div className="flex flex-wrap gap-2">
-                  {TAGS_PREDEFINIDAS.filter(t => ["VIP","Varejo","Atacado","Inadimplente"].includes(t.key)).map(t => (
-                    <button
-                      key={t.key}
-                      onClick={() => toggleTagDraft(t.key)}
-                      className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-                      style={{
-                        background: tagsDraft.includes(t.key) ? t.bg : "var(--card)",
-                        border: `1px solid ${tagsDraft.includes(t.key) ? t.color : "var(--border)"}`,
-                        color: tagsDraft.includes(t.key) ? t.color : "var(--muted-2)",
-                      }}
-                    >
-                      {tagsDraft.includes(t.key) ? "✓ " : ""}{t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
             <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
               <button onClick={() => setModalTags(null)} className="px-4 py-2 rounded-xl text-[13px] font-medium" style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>

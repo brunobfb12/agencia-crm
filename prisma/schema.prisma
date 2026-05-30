@@ -25,6 +25,7 @@ model Empresa {
   mensagemAniversario      String?
   aprendizados             String?
   conhecimentoBase         String?
+  tagsCustomizadas         String[] @default([])
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)

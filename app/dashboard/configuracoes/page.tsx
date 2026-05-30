@@ -268,6 +268,7 @@ interface Empresa {
   tipoAtendimento: string; nomeIA: string | null;
   mensagemPosVenda: string | null;
   mensagemAniversario: string | null;
+  tagsCustomizadas: string[];
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -829,6 +830,8 @@ export default function ConfiguracoesPage() {
   const [nomeIA, setNomeIA] = useState("");
   const [mensagemPosVenda, setMensagemPosVenda] = useState("");
   const [mensagemAniversario, setMensagemAniversario] = useState("");
+  const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
+  const [novaTag, setNovaTag] = useState("");
 
   const [editVendedor, setEditVendedor] = useState<string | null>(null);
   const [editVendedorData, setEditVendedorData] = useState({ nome: "", telefone: "", ordemChamada: 1, cargo: "VENDEDOR" });
@@ -953,6 +956,8 @@ export default function ConfiguracoesPage() {
     setNomeIA(emp.nomeIA ?? "");
     setMensagemPosVenda(emp.mensagemPosVenda ?? "");
     setMensagemAniversario(emp.mensagemAniversario ?? "");
+    setTagsCustomizadas(emp.tagsCustomizadas ?? []);
+    setNovaTag("");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -962,10 +967,24 @@ export default function ConfiguracoesPage() {
     const mpv = mensagemPosVenda.trim() || null;
     const maniv = mensagemAniversario.trim() || null;
 
+    // Detectar tags removidas e migrar clientes se necessário
+    const empAtual = empresas.find(e => e.id === empresaId);
+    const tagsRemovidas = (empAtual?.tagsCustomizadas ?? []).filter(t => !tagsCustomizadas.includes(t));
+    for (const tagRemovida of tagsRemovidas) {
+      const migrar = confirm(`A tag "${tagRemovida}" foi removida. Deseja removê-la também de todos os clientes que a possuem?`);
+      if (migrar) {
+        await fetch(`/api/empresas/${empresaId}/migrar-tags`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ de: tagRemovida, para: null }),
+        });
+      }
+    }
+
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, tagsCustomizadas }),
     });
 
     if (!res.ok) {
@@ -1367,6 +1386,67 @@ export default function ConfiguracoesPage() {
                             onChange={(e) => setMensagemAniversario(e.target.value)}
                             placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
                             className={`${INPUT} resize-none`} />
+                        </div>
+
+                        {/* ── Tags da Empresa ── */}
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted)" }}>TAGS DE CLIENTES</p>
+                          <p className="text-[11px] mb-3" style={{ color: "var(--muted-3)" }}>
+                            A IA aplica automaticamente durante a conversa. Operadores podem editar manualmente na página Clientes.
+                          </p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {tagsCustomizadas.map((tag, idx) => {
+                              const cores = ["#22d3ee","#a78bfa","#34d399","#f59e0b","#60a5fa","#10b981","#f87171","#fb923c","#e879f9","#fbbf24"];
+                              const bgs = ["rgba(34,211,238,.12)","rgba(167,139,250,.12)","rgba(52,211,153,.12)","rgba(245,158,11,.12)","rgba(96,165,250,.12)","rgba(16,185,129,.12)","rgba(248,113,113,.12)","rgba(251,146,60,.12)","rgba(232,121,249,.12)","rgba(251,191,36,.12)"];
+                              const cor = cores[idx % cores.length];
+                              const bg = bgs[idx % bgs.length];
+                              return (
+                                <span key={tag} className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full text-[12px] font-semibold"
+                                  style={{ background: bg, border: `1px solid ${cor}40`, color: cor }}>
+                                  {tag}
+                                  <button onClick={() => setTagsCustomizadas(prev => prev.filter(t => t !== tag))}
+                                    className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] transition-all hover:opacity-70"
+                                    style={{ background: `${cor}30`, color: cor }}>
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
+                            {tagsCustomizadas.length === 0 && (
+                              <p className="text-[12px]" style={{ color: "var(--muted-3)" }}>Nenhuma tag configurada ainda.</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={novaTag}
+                              onChange={e => setNovaTag(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter" && novaTag.trim()) {
+                                  const t = novaTag.trim();
+                                  if (!tagsCustomizadas.includes(t)) setTagsCustomizadas(prev => [...prev, t]);
+                                  setNovaTag("");
+                                  e.preventDefault();
+                                }
+                              }}
+                              placeholder="Nova tag... (Enter para adicionar)"
+                              className={`${INPUT} flex-1`}
+                              maxLength={30}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const t = novaTag.trim();
+                                if (t && !tagsCustomizadas.includes(t)) setTagsCustomizadas(prev => [...prev, t]);
+                                setNovaTag("");
+                              }}
+                              disabled={!novaTag.trim()}
+                              className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40"
+                              style={{ background: "rgba(99,102,241,.15)", border: "1px solid rgba(99,102,241,.3)", color: "#a5b4fc" }}
+                            >
+                              + Adicionar
+                            </button>
+                          </div>
                         </div>
 
                         {/* ── Termômetro do Agente ── */}

@@ -38,6 +38,14 @@ export async function PATCH(
   }
   if (body.tags !== undefined) data.tags = body.tags;
   if (body.memoriaCliente !== undefined) data.memoriaCliente = body.memoriaCliente;
+  if (body.optOutCampanhas !== undefined) data.optOutCampanhas = body.optOutCampanhas;
+
+  // addTags: union — adiciona tags sem remover as existentes (usado pela IA)
+  if (body.addTags && Array.isArray(body.addTags) && body.addTags.length > 0) {
+    const current = await prisma.cliente.findUnique({ where: { id }, select: { tags: true } });
+    const merged = [...new Set([...(current?.tags ?? []), ...body.addTags])];
+    data.tags = merged;
+  }
 
   const cliente = await prisma.cliente.update({ where: { id }, data });
   return NextResponse.json(cliente);

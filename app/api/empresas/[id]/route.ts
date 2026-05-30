@@ -23,6 +23,7 @@ export async function PATCH(
       ...(body.mensagemPosVenda !== undefined && { mensagemPosVenda: body.mensagemPosVenda || null }),
       ...(body.mensagemAniversario !== undefined && { mensagemAniversario: body.mensagemAniversario || null }),
       ...(body.conhecimentoBase !== undefined && { conhecimentoBase: body.conhecimentoBase || null }),
+      ...(body.tagsCustomizadas !== undefined && { tagsCustomizadas: body.tagsCustomizadas }),
       // Campos de monetização — só CENTRAL pode alterar
       ...(body.planStatus !== undefined && { planStatus: body.planStatus }),
       ...(body.plano !== undefined && { plano: body.plano }),
