@@ -381,36 +381,56 @@ export async function GET(req: Request) {
     }
   }
 
-  for (const l of pressao24h) {
-    if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+  // Deduplicação de pressão: só envia se o flag ainda não estiver no observacoes
+  const p24Novos = pressao24h.filter(l =>
+    l.empresa.instanciaWhatsapp && l.vendedor?.telefone &&
+    !(((l as any).observacoes ?? "").includes("[P24]"))
+  );
+  const p48Novos = pressao48h.filter(l =>
+    l.empresa.instanciaWhatsapp && l.vendedor?.telefone &&
+    !(((l as any).observacoes ?? "").includes("[P48]"))
+  );
+  const p72Novos = pressao72h.filter(l =>
+    l.empresa.instanciaWhatsapp &&
+    !(((l as any).observacoes ?? "").includes("[P72]"))
+  );
+
+  // Marcar todos como enviados antes de retornar (evita duplicatas em crons simultâneos)
+  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0) {
+    await Promise.all([
+      ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
+      ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
+      ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
+    ]);
+  }
+
+  for (const l of p24Novos) {
     const nc = l.cliente.nome || l.cliente.telefone;
     items.push({
       tipo: "pressao_vendedor_24h", leadId: l.id,
-      clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
-      instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
-      mensagem: msgPressao(l.vendedor.nome, nc, 24, (l as any).observacoes),
+      clienteTelefone: l.vendedor!.telefone, clienteNome: l.vendedor!.nome,
+      instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
+      mensagem: msgPressao(l.vendedor!.nome, nc, 24, (l as any).observacoes),
     });
   }
 
-  for (const l of pressao48h) {
-    if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+  for (const l of p48Novos) {
     const nc = l.cliente.nome || l.cliente.telefone;
     items.push({
       tipo: "pressao_vendedor_48h", leadId: l.id,
-      clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
-      instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
-      mensagem: msgPressao(l.vendedor.nome, nc, 48, (l as any).observacoes),
+      clienteTelefone: l.vendedor!.telefone, clienteNome: l.vendedor!.nome,
+      instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
+      mensagem: msgPressao(l.vendedor!.nome, nc, 48, (l as any).observacoes),
     });
   }
 
-  for (const l of pressao72h) {
-    if (!l.empresa.instanciaWhatsapp) continue;
+  for (const l of p72Novos) {
     const nc = l.cliente.nome || l.cliente.telefone;
     if (l.vendedor?.telefone) {
       items.push({
         tipo: "pressao_vendedor_72h", leadId: l.id,
         clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
-        instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+        instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
         mensagem: msgPressao(l.vendedor.nome, nc, 72, (l as any).observacoes) + "\n\n⚠️ *72h sem resposta* — agora ou nunca!",
       });
     }
@@ -419,7 +439,7 @@ export async function GET(req: Request) {
       items.push({
         tipo: "pressao_gerente_72h", leadId: l.id,
         clienteTelefone: gerente.telefone, clienteNome: gerente.nome,
-        instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
+        instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
         mensagem: `🚨 Lead *${nc}* (vendedor: ${l.vendedor?.nome ?? "não atribuído"}) sem atualização há +72h. Verifique antes de perder essa oportunidade.`,
       });
     }
