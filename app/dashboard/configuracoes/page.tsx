@@ -283,15 +283,15 @@ interface Midia {
 
 const SECOES = ["PRODUTOS", "PRECOS", "PAGAMENTO", "ENTREGA", "DIFERENCIAIS", "HORARIO"] as const;
 const LABELS: Record<string, string> = {
-  PRODUTOS: "Produtos / Serviços", PRECOS: "Preços",
+  PRODUTOS: "O que sua empresa oferece ou faz", PRECOS: "Produtos, Serviços e Preços",
   PAGAMENTO: "Formas de Pagamento", ENTREGA: "Entrega / Frete",
   DIFERENCIAIS: "Diferenciais", HORARIO: "Horário de Atendimento",
 };
 
 const FIELD_HELP: Record<string, { title: string; desc: string; examples: string[]; dica: string }> = {
   PRODUTOS: {
-    title: "Produtos / Serviços",
-    desc: "Descreva tudo o que sua empresa vende ou oferece. A IA usa essas informações para responder dúvidas dos clientes e fazer recomendações.",
+    title: "O que sua empresa oferece ou faz",
+    desc: "Descreva o segmento e o que sua empresa faz. A IA usa isso para se apresentar e contextualizar o atendimento — não precisa listar preços aqui.",
     examples: [
       "Camisetas básicas algodão (P ao GG) · Calças jeans femininas · Conjuntos atacado",
       "Design de sobrancelha Henna 1h · Limpeza de pele 45min · Micropigmentação",
