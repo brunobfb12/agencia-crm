@@ -21,15 +21,22 @@ function setEstado(obs: string | null, estado: string | null): string {
   return estado ? `${base}\n${estado}`.trim() : base;
 }
 
-function detectarIntencao(msg: string): "VENDA" | "PERDA" | "VALOR" | null {
+const MOTIVOS_NUMERADOS: Record<string, string> = {
+  "1": "Lead não respondeu",
+  "2": "Falou que está caro",
+  "3": "Não tinha o produto que ele queria",
+  "4": "Ainda negociando — retomar depois",
+};
+
+function detectarIntencao(msg: string): "VENDA" | "PERDA" | "NEGOCIANDO" | "VALOR" | null {
   const m = msg.toLowerCase().trim();
-  // Monetary value anywhere in message
   if (/[\d]/.test(m) && /[,.]?\d{2}$|^\d+$/.test(m.replace(/[r$\s.]/g, ""))) {
     const num = parseValor(msg);
     if (num && num > 0) return "VALOR";
   }
-  if (/\b(sim|s\b|yes|vend|fechei|fechou|deu certo|aconteceu|confirmo|efetuei)\b/.test(m)) return "VENDA";
-  if (/\b(não|nao|n\b|no\b|perdeu|perdi|não rolou|nao rolou|desistiu|cancelou|sem interesse)\b/.test(m)) return "PERDA";
+  if (/\b(sim|s\b|yes|vend|fechei|fechou|deu certo|aconteceu|confirmo|efetuei|1\b)\b/.test(m)) return "VENDA";
+  if (/\b(ainda|negociando|negociação|pensando|prazo|retornar|depois|volto|3\b)\b/.test(m)) return "NEGOCIANDO";
+  if (/\b(não|nao|n\b|no\b|perdeu|perdi|não rolou|nao rolou|desistiu|cancelou|sem interesse|2\b)\b/.test(m)) return "PERDA";
   return null;
 }
 
@@ -110,7 +117,16 @@ export async function POST(req: Request) {
 
   // ── ESTADO: INICIAL — ainda não perguntamos ──────────────────────────────
   if (estado === "INICIAL") {
-    // Vendedor already saying something about the lead without being asked
+    if (intencao === "NEGOCIANDO") {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { observacoes: setEstado(lead.observacoes, null) },
+      });
+      return NextResponse.json({
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
+        resposta: `Ok ${vendedor.nome}! Anotei que *${nomeCliente}* ainda está em negociação. Te aviso novamente em 24h. 💪`,
+      });
+    }
     if (intencao === "VENDA") {
       // Update to awaiting value
       await prisma.lead.update({
@@ -156,7 +172,14 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_VALOR",
-        resposta: `Arrasou ${vendedor.nome}! 🎉 Qual foi o valor da venda com ${nomeCliente}?`,
+        resposta: `Arrasou ${vendedor.nome}! 🎉 Qual foi o valor da venda com *${nomeCliente}*? (só o número, ex: 1500)`,
+      });
+    }
+    if (intencao === "NEGOCIANDO") {
+      await prisma.lead.update({ where: { id: lead.id }, data: { observacoes: setEstado(lead.observacoes, null) } });
+      return NextResponse.json({
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
+        resposta: `Ok! *${nomeCliente}* continua em negociação. Te lembro novamente em 24h. 💪`,
       });
     }
     if (intencao === "PERDA") {
@@ -167,13 +190,13 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
         estado: "AGUARDANDO_MOTIVO",
-        resposta: `Tudo bem ${vendedor.nome}, acontece! Qual foi o motivo da perda com ${nomeCliente}?`,
+        resposta: `Tudo bem, acontece! Qual foi o motivo da perda com *${nomeCliente}*?\n\n*1* Lead não respondeu\n*2* Falou que está caro\n*3* Não tinha o produto\n*4* Outro motivo`,
       });
     }
     return NextResponse.json({
       ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "AGUARDANDO_CONFIRMACAO",
-      resposta: `${vendedor.nome}, a venda com *${nomeCliente}* aconteceu? Responda sim ou não 😊`,
+      resposta: `${vendedor.nome}, a venda com *${nomeCliente}* aconteceu?\n\n*1* ✅ Sim — me fala o valor\n*2* ❌ Não fechei\n*3* ⏳ Ainda negociando`,
     });
   }
 
@@ -214,11 +237,24 @@ export async function POST(req: Request) {
 
   // ── ESTADO: AGUARDANDO_MOTIVO ────────────────────────────────────────────
   if (estado === "AGUARDANDO_MOTIVO") {
+    const numMotivo = mensagem.trim();
+    const motivoNumerado = MOTIVOS_NUMERADOS[numMotivo];
+    const motivo = motivoNumerado ?? mensagem.trim();
+
+    // "4" ou "ainda negociando" → mantém em negociação
+    if (numMotivo === "4" || intencao === "NEGOCIANDO") {
+      await prisma.lead.update({ where: { id: lead.id }, data: { observacoes: setEstado(lead.observacoes, null) } });
+      return NextResponse.json({
+        ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
+        resposta: `Ok! *${nomeCliente}* continua em negociação. Vou lembrar você novamente em 24h. 💪`,
+      });
+    }
+
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
         status: "PERDIDO",
-        observacoes: setEstado(lead.observacoes, null) + `\nMotivo perda: ${mensagem}`.trim(),
+        observacoes: setEstado(lead.observacoes, null) + `\nMotivo perda: ${motivo}`.trim(),
       },
     });
     await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? "https://ocrmfacil.com.br"}/api/webhook/derrota`, {
@@ -229,7 +265,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id, clienteNome: nomeCliente,
       estado: "PERDA_REGISTRADA",
-      resposta: `Anotado, ${vendedor.nome}. Registrei *${nomeCliente}* como perdido. Obrigado pelo feedback — vou usar isso pra melhorar o próximo atendimento! 💪`,
+      resposta: `Anotado! *${nomeCliente}* registrado como perdido — motivo: _${motivo}_. Obrigado pelo feedback, isso vai melhorar os próximos atendimentos! 💪`,
     });
   }
 

@@ -169,6 +169,19 @@ export async function GET(req: Request) {
     empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
     vendedor: { select: { nome: true, telefone: true } },
   };
+
+  function resumoPedido(obs: string | null): string {
+    if (!obs) return "";
+    const match = obs.match(/[Pp]edido[:\s]+([^|\\n]+)/);
+    if (match) return match[1].trim().slice(0, 120);
+    return obs.split(/[|\n]/)[0].trim().slice(0, 120);
+  }
+
+  function msgPressao(vendedorNome: string, clienteNome: string, horas: number, obs: string | null): string {
+    const pedido = resumoPedido(obs);
+    const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}\n` : "\n";
+    return `Oi ${vendedorNome}! 👋\n\nO lead *${clienteNome}* aguarda há ${horas}h.${pedidoStr}\nFechou a venda?\n*1* ✅ Sim — me fala o valor\n*2* ❌ Não fechei\n*3* ⏳ Ainda negociando`;
+  }
   const h24 = new Date(now); h24.setHours(h24.getHours() - 24);
   const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
   const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
@@ -375,7 +388,7 @@ export async function GET(req: Request) {
       tipo: "pressao_vendedor_24h", leadId: l.id,
       clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
       instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
-      mensagem: `Oi ${l.vendedor.nome}! 👋 Lembrete rápido: o cliente *${nc}* está no seu funil há mais de 24h sem atualização. Conseguiu falar com ele? Me avisa como foi! 😊`,
+      mensagem: msgPressao(l.vendedor.nome, nc, 24, (l as any).observacoes),
     });
   }
 
@@ -386,7 +399,7 @@ export async function GET(req: Request) {
       tipo: "pressao_vendedor_48h", leadId: l.id,
       clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
       instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
-      mensagem: `⏰ ${l.vendedor.nome}, o cliente *${nc}* está sem resposta há mais de 48h! Uma mensagem certeira agora pode salvar essa venda! 💪`,
+      mensagem: msgPressao(l.vendedor.nome, nc, 48, (l as any).observacoes),
     });
   }
 
@@ -398,7 +411,7 @@ export async function GET(req: Request) {
         tipo: "pressao_vendedor_72h", leadId: l.id,
         clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
         instancia: l.empresa.instanciaWhatsapp, empresaNome: l.empresa.nome,
-        mensagem: `⚠️ ${l.vendedor.nome}, o cliente *${nc}* está parado há mais de 72h! Atualize o status ou entre em contato hoje. Não deixe essa oportunidade esfriar!`,
+        mensagem: msgPressao(l.vendedor.nome, nc, 72, (l as any).observacoes) + "\n\n⚠️ *72h sem resposta* — agora ou nunca!",
       });
     }
     const gerente = gerenteMap.get(l.empresa.id);
