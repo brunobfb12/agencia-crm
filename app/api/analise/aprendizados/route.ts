@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
+  try {
   const body = await req.json();
   const { empresaId, secret } = body;
 
@@ -172,4 +173,7 @@ Regras:
     conversasAnalisadas: vitorias.length + derrotas.length,
     padroesExtraidos: padroes.split("\n---\n").length,
   });
+  } catch (e: any) {
+    return NextResponse.json({ error: "erro_interno", detalhe: e?.message ?? String(e) }, { status: 500 });
+  }
 }
