@@ -49,6 +49,11 @@ const calendlySection = empresa.calendlyUrl
   ? '\nAGENDAMENTO ONLINE:\n- Quando o cliente quiser agendar, envie EXATAMENTE este link: ' + empresa.calendlyUrl + '\n- Sugestao: Claro! Escolha o melhor horario: ' + empresa.calendlyUrl + ' 📅\n- Palavras-chave: agendar, marcar, horario, consulta, atendimento, visita, quando, disponivel, reservar.\n- Nao pergunte data/hora manualmente.'
   : '';
 
+const nomeDesconhecido = !cliente.nome || cliente.nome.trim() === '';
+const nomeSection = (nomeDesconhecido && mensagensEntrada <= 1)
+  ? '\nNOME DO CLIENTE: Voce nao sabe o nome deste cliente. Na sua primeira resposta, apos cumprimentar, pergunte o nome naturalmente antes de prosseguir. Ex: "Tudo bem! Antes de tudo, qual o seu nome?" Quando souber, salve em atualizarCliente: {"nome": "Nome Completo"}.'
+  : '';
+
 const dadosFaltando = [];
 if (!cliente.email) dadosFaltando.push('email');
 if (!cliente.dataNascimento) dadosFaltando.push('data de nascimento');
@@ -278,7 +283,8 @@ const sistemaParts = [
   '  "score": null',
   '}',
   '',
-  'atualizarCliente: null OU {"email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"]}',
+  'atualizarCliente: null OU {"nome":"Nome Completo","email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"]}',
+  '- nome: salve quando o cliente informar o nome pela primeira vez.',
   '- addTags: lista de tags para ADICIONAR ao cliente (nao substitui as existentes). Use apenas tags definidas pela empresa.',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
@@ -286,6 +292,7 @@ const sistemaParts = [
   '',
   infoEmpresa,
   conhecimentoBaseSection,
+  nomeSection,
   modoAtualSection,
   retornanteSection,
   modoConversaSection,
