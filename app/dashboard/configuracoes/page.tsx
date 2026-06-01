@@ -149,7 +149,7 @@ function calcQualidadeAgente(
 interface SetupStatus {
   informacoesOk: boolean; whatsappOk: boolean; vendedoresOk: boolean;
   clientesOk: boolean; nomeIAOk: boolean; posVendaOk: boolean;
-  aniversarioOk: boolean; qualificacaoOk: boolean;
+  aniversarioOk: boolean; indicacaoOk: boolean; qualificacaoOk: boolean;
 }
 
 function SetupChecklist({ onNavigate }: { onNavigate?: (tab: string) => void }) {
@@ -172,6 +172,7 @@ function SetupChecklist({ onNavigate }: { onNavigate?: (tab: string) => void }) 
     { ok: status.qualificacaoOk,  label: "Roteiro de qualificação da IA preenchido", tab: "empresas",  extHref: null },
     { ok: status.posVendaOk,      label: "Mensagem de pós-venda personalizada",      tab: "empresas",  extHref: null },
     { ok: status.aniversarioOk,   label: "Mensagem de aniversário personalizada",    tab: "empresas",  extHref: null },
+    { ok: status.indicacaoOk,     label: "Mensagem de indicação configurada",         tab: "empresas",  extHref: null },
   ];
 
   const done = steps.filter(s => s.ok).length;
@@ -1001,7 +1002,7 @@ export default function ConfiguracoesPage() {
     setNomeIA(emp.nomeIA ?? "");
     setMensagemPosVenda(emp.mensagemPosVenda ?? "");
     setMensagemAniversario(emp.mensagemAniversario ?? "");
-    setMensagemIndicacao(emp.mensagemIndicacao ?? "");
+    setMensagemIndicacao(emp.mensagemIndicacao ?? "Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)");
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
   }
@@ -1445,9 +1446,10 @@ export default function ConfiguracoesPage() {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>Mensagem de indicação</p>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#818cf8" }}>Sugerida pelo FácilCRM</span>
                           </div>
                           <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
-                            Enviada automaticamente quando um cliente indica um amigo. Variáveis: {"{nome}"} {"{ia}"} {"{empresa}"} {"{indicador}"}
+                            Enviada automaticamente quando um cliente indica um amigo. Edite à vontade! Variáveis: {"{nome}"} {"{ia}"} {"{empresa}"} {"{indicador}"}
                           </p>
                           <textarea rows={4} value={mensagemIndicacao}
                             onChange={(e) => setMensagemIndicacao(e.target.value)}

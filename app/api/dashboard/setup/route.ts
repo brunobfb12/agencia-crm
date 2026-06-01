@@ -19,6 +19,7 @@ export async function GET() {
       nomeIA: true,
       mensagemPosVenda: true,
       mensagemAniversario: true,
+      mensagemIndicacao: true,
       perguntasQualificacao: true,
       _count: { select: { clientes: true } },
     },
@@ -46,6 +47,7 @@ export async function GET() {
     nomeIAOk:         !!empresa.nomeIA?.trim(),
     posVendaOk:       !!empresa.mensagemPosVenda?.trim(),
     aniversarioOk:    !!empresa.mensagemAniversario?.trim(),
+    indicacaoOk:      !!empresa.mensagemIndicacao?.trim(),
     qualificacaoOk:   !!empresa.perguntasQualificacao?.trim(),
   });
 }
