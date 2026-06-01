@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const since = new Date(Date.now() - horas * 60 * 60 * 1000);
 
   const empresas = await prisma.empresa.findMany({
-    where: { ativa: true, instanciaWhatsapp: { not: null } },
+    where: { ativa: true, NOT: { instanciaWhatsapp: null } },
     select: { id: true, nome: true, instanciaWhatsapp: true, aprendizados: true, nomeIA: true },
   });
 
