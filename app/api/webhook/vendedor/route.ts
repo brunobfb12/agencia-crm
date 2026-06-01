@@ -115,6 +115,16 @@ export async function POST(req: Request) {
   const estado = getEstado(lead.observacoes);
   const intencao = detectarIntencao(mensagem);
 
+  // Só inicia fluxo de confirmação se o lead está em negociação há mais de 12h.
+  // Antes disso o vendedor pode estar respondendo ao PEDIDO PRONTO — não perguntar "fechou?".
+  const horasEmNegociacao = (Date.now() - new Date((lead as any).atualizadoEm).getTime()) / (1000 * 60 * 60);
+  if (estado === "INICIAL" && horasEmNegociacao < 12) {
+    return NextResponse.json({
+      ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
+      resposta: `Oi ${vendedor.nome}! 👋 Recebi sua mensagem sobre *${nomeCliente}*. O pedido já está no sistema — quando fechar, é só me avisar aqui! 💪`,
+    });
+  }
+
   // ── ESTADO: INICIAL — ainda não perguntamos ──────────────────────────────
   if (estado === "INICIAL") {
     if (intencao === "NEGOCIANDO") {
