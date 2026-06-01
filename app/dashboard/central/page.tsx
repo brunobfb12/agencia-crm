@@ -793,28 +793,15 @@ export default function CentralPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 items-end">
-                        {w.state !== "open" && (() => {
-                          const faltaVendedor = !w.setup?.vendedores;
-                          const faltaInfo = !w.setup?.informacoes;
-                          const bloqueado = faltaVendedor || faltaInfo;
-                          if (bloqueado) return (
-                            <div className="flex flex-col items-end gap-1">
-                              <button disabled
-                                className="text-[12px] px-3 py-1.5 rounded-lg font-semibold opacity-30 cursor-not-allowed"
+                        {w.state !== "open" && (
+                          (!w.setup?.vendedores || !w.setup?.informacoes)
+                            ? <span className="text-[11px] font-semibold px-2 py-1 rounded-lg" style={{ background: "rgba(251,146,60,.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,.2)" }}>🔒 Complete o setup</span>
+                            : <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
+                                className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
                                 style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
-                                Ver QR Code
+                                {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
                               </button>
-                              <span className="text-[10px] font-semibold" style={{ color: "#fb923c" }}>🔒 Setup incompleto</span>
-                            </div>
-                          );
-                          return (
-                            <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
-                              className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
-                              style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
-                              {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
-                            </button>
-                          );
-                        })()}
+                        )}
                         {w.state === "open" && (
                           <button onClick={() => desconectar(w.instancia)}
                             className="text-[12px] px-3 py-1.5 rounded-lg font-semibold"
