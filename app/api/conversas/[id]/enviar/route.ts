@@ -76,6 +76,12 @@ export async function POST(
   if (tipo === "imagem" || tipo === "documento") {
     if (!base64 || !mimeType) return NextResponse.json({ ok: false, erro: "base64/mimeType ausente" }, { status: 400 });
 
+    const limiteMB = tipo === "imagem" ? 5 : 10;
+    const tamanhoBytes = Math.ceil((base64.length * 3) / 4);
+    if (tamanhoBytes > limiteMB * 1024 * 1024) {
+      return NextResponse.json({ ok: false, erro: `Arquivo muito grande. Limite: ${limiteMB} MB para ${tipo === "imagem" ? "imagens" : "documentos"}.` }, { status: 413 });
+    }
+
     const mediaBase64 = base64.includes(",") ? base64.split(",")[1] : base64;
     const mediatype = tipo === "imagem" ? "image" : "document";
 

@@ -235,13 +235,26 @@ export default function ConversasPage() {
   };
 
   // ── File picker ───────────────────────────────────────────────────────
+  const LIMITES = { imagem: 5 * 1024 * 1024, documento: 10 * 1024 * 1024 }; // 5MB / 10MB
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
+
+    const isImage = file.type.startsWith("image/");
+    const limite = isImage ? LIMITES.imagem : LIMITES.documento;
+    const limiteMB = (limite / 1024 / 1024).toFixed(0);
+
+    if (file.size > limite) {
+      setErroEnvio(`Arquivo muito grande: ${(file.size / 1024 / 1024).toFixed(1)} MB. Limite: ${limiteMB} MB para ${isImage ? "imagens" : "documentos"}.`);
+      return;
+    }
+
+    setErroEnvio("");
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
-      const isImage = file.type.startsWith("image/");
       setMediaPreview({
         tipo: isImage ? "imagem" : "documento",
         base64: dataUrl,
@@ -252,7 +265,6 @@ export default function ConversasPage() {
       });
     };
     reader.readAsDataURL(file);
-    e.target.value = "";
   };
 
   // ── Audio recording ───────────────────────────────────────────────────
