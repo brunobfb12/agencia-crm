@@ -690,7 +690,7 @@ function composeInfo(campos: Record<string, string>): string {
 const INPUT = "w-full input-dark px-3 py-2.5 text-[13px]";
 
 /* ── WhatsApp connection tab ──────────────────────────────────────── */
-function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk }: { instancia: string; vendedoresOk: boolean; informacoesOk: boolean }) {
+function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk, onIrVendedores, onIrEmpresa }: { instancia: string; vendedoresOk: boolean; informacoesOk: boolean; onIrVendedores: () => void; onIrEmpresa: () => void }) {
   const setupOk = vendedoresOk && informacoesOk;
   const [state, setState] = useState<"loading" | "open" | "connecting" | "close" | "unknown">("loading");
   const [qrcode, setQrcode] = useState<string | null>(null);
@@ -749,8 +749,8 @@ function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk }: { instancia: st
             </div>
             <div className="flex flex-col gap-2">
               {!vendedoresOk && (
-                <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
-                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                <button onClick={onIrVendedores} className="flex items-center gap-2.5 rounded-lg px-3 py-2 w-full text-left transition-all"
+                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
                   <span className="text-[16px]">👤</span>
@@ -759,11 +759,11 @@ function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk }: { instancia: st
                     <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>Nenhum vendedor ativo para esta empresa</p>
                   </div>
                   <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Ir para Vendedores →</span>
-                </a>
+                </button>
               )}
               {!informacoesOk && (
-                <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
-                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                <button onClick={onIrEmpresa} className="flex items-center gap-2.5 rounded-lg px-3 py-2 w-full text-left transition-all"
+                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
                   <span className="text-[16px]">📋</span>
@@ -772,7 +772,7 @@ function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk }: { instancia: st
                     <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>A IA precisa das informações para atender</p>
                   </div>
                   <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Ir para Empresa →</span>
-                </a>
+                </button>
               )}
             </div>
           </div>
@@ -1954,6 +1954,8 @@ export default function ConfiguracoesPage() {
             instancia={empresas[0].instanciaWhatsapp}
             vendedoresOk={vendedores.filter(v => v.ativo && v.empresaId === empresas[0].id).length > 0}
             informacoesOk={!!empresas[0].informacoes?.trim()}
+            onIrVendedores={() => setAba("vendedores")}
+            onIrEmpresa={() => setAba("empresas")}
           />
         )}
 
