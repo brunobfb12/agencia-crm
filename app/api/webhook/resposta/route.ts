@@ -71,9 +71,10 @@ export async function POST(req: Request) {
     if (lead) {
       aprendizados = lead.empresa.aprendizados ?? null;
       if (notificarVendedor) {
+        // Round-robin: quem foi atribuído há mais tempo (ou nunca) recebe o próximo
         vendedor = await prisma.vendedor.findFirst({
           where: { empresaId: lead.empresaId, ativo: true },
-          orderBy: { ordemChamada: "asc" },
+          orderBy: [{ ultimaAtribuicaoEm: "asc" }, { ordemChamada: "asc" }],
           select: { id: true, nome: true, telefone: true },
         });
         // Atribui o vendedor ao lead para que a pressão P24/P48/P72 funcione
