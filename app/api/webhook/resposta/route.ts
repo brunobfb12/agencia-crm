@@ -71,24 +71,27 @@ export async function POST(req: Request) {
     if (lead) {
       aprendizados = lead.empresa.aprendizados ?? null;
       if (notificarVendedor) {
-        // Round-robin: quem foi atribuído há mais tempo (ou nunca) recebe o próximo
-        vendedor = await prisma.vendedor.findFirst({
-          where: { empresaId: lead.empresaId, ativo: true },
-          orderBy: [{ ultimaAtribuicaoEm: "asc" }, { ordemChamada: "asc" }],
-          select: { id: true, nome: true, telefone: true },
-        });
-        // Atribui o vendedor ao lead para que a pressão P24/P48/P72 funcione
-        if (vendedor && !lead.vendedorId) {
-          await Promise.all([
-            prisma.lead.update({
-              where: { id: lead.id },
-              data: { vendedorId: vendedor.id },
-            }),
-            prisma.vendedor.update({
-              where: { id: vendedor.id },
-              data: { ultimaAtribuicaoEm: new Date() },
-            }),
-          ]).catch(() => null);
+        if (lead.vendedorId) {
+          // Lead já tem vendedor — notifica ele diretamente (ex: acompanhamento, NF, entrega)
+          vendedor = await prisma.vendedor.findFirst({
+            where: { id: lead.vendedorId, ativo: true },
+            select: { id: true, nome: true, telefone: true },
+          });
+        }
+        if (!vendedor) {
+          // Round-robin: quem foi atribuído há mais tempo (ou nunca) recebe o próximo lead novo
+          vendedor = await prisma.vendedor.findFirst({
+            where: { empresaId: lead.empresaId, ativo: true },
+            orderBy: [{ ultimaAtribuicaoEm: "asc" }, { ordemChamada: "asc" }],
+            select: { id: true, nome: true, telefone: true },
+          });
+          // Atribui ao lead para que pressão P24/P48/P72 funcione
+          if (vendedor) {
+            await Promise.all([
+              prisma.lead.update({ where: { id: lead.id }, data: { vendedorId: vendedor.id } }),
+              prisma.vendedor.update({ where: { id: vendedor.id }, data: { ultimaAtribuicaoEm: new Date() } }),
+            ]).catch(() => null);
+          }
         }
       }
       if (notificarGerente) {
