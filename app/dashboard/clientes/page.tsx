@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ScrollHint, GradientFade } from "../components/table-scroll-hint";
+import { ScrollHint, GradientFade, TopScrollbar } from "../components/table-scroll-hint";
 
 interface Cliente {
   id: string;
@@ -75,6 +75,7 @@ export default function ClientesPage() {
   const [importando, setImportando] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; importados: number; ignorados: number; erros: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   // modal novo cliente
   const [modalNovo, setModalNovo] = useState(false);
@@ -407,9 +408,10 @@ export default function ClientesPage() {
             {/* Desktop: table */}
             <div className="hidden sm:block">
               <ScrollHint />
+              <TopScrollbar tableRef={tableScrollRef} />
               <div className="relative">
                 <GradientFade />
-                <div className="bento-card overflow-x-auto animate-fade-up" style={{ animationDelay: "80ms" }}>
+                <div ref={tableScrollRef} className="bento-card overflow-x-auto animate-fade-up" style={{ animationDelay: "80ms" }}>
                   <table className="w-full text-sm min-w-[520px]">
                     <thead>
                       <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--card)" }}>
