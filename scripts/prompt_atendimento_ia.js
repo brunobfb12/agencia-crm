@@ -1,4 +1,20 @@
 const crm = $input.item.json;
+
+// Corta string por codepoints sem quebrar par surrogate de emojis
+function safeSlice(str, maxLen) {
+  if (!str || str.length <= maxLen) return str || '';
+  var out = [], i = 0, count = 0;
+  while (i < str.length && count < maxLen) {
+    var code = str.charCodeAt(i);
+    if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
+      out.push(str[i], str[i + 1]); i += 2;
+    } else {
+      out.push(str[i]); i++;
+    }
+    count++;
+  }
+  return out.join('');
+}
 const empresa = crm.empresa ?? {};
 const lead = crm.lead ?? {};
 const cliente = crm.cliente ?? {};
@@ -21,7 +37,7 @@ const histStr = historico
   .join('\n') || 'Primeira mensagem';
 
 const infoRaw = empresa.informacoes || '';
-const infoCap = infoRaw.length > 8000 ? infoRaw.slice(0, 8000) + '\n[...informacoes truncadas]' : infoRaw;
+const infoCap = infoRaw.length > 8000 ? safeSlice(infoRaw, 8000) + '\n[...informacoes truncadas]' : infoRaw;
 const infoEmpresa = infoCap
   ? 'INFORMACOES DA EMPRESA (use para responder duvidas):\n' + infoCap
   : 'ATENCAO: Informacoes da empresa nao cadastradas. Se perguntarem sobre preco, estoque ou pagamento, diga que vai verificar e que um atendente entrara em contato.';
@@ -127,7 +143,7 @@ const retornanteSection = isClienteRetornante
 // Modo da conversa: lê a última mensagem de saída para entender o contexto
 const ultimaSaida = historico.slice().reverse().find(function(m) { return m.direcao === 'SAIDA'; });
 const modoConversaSection = ultimaSaida
-  ? '\nMODO DA CONVERSA (leia antes de responder): A ultima mensagem que voce enviou foi: "' + ultimaSaida.conteudo.slice(0, 200) + '"\n- Se foi uma mensagem de cuidado, dica ou valor (sem oferta direta): mantenha esse tom. NAO ofereça produto ou tente fechar venda imediatamente. Deixe o cliente guiar.\n- Se foi uma mensagem de reativacao, novidade ou oferta: avance para entender a necessidade e oferecer o produto naturalmente.'
+  ? '\nMODO DA CONVERSA (leia antes de responder): A ultima mensagem que voce enviou foi: "' + safeSlice(ultimaSaida.conteudo, 200) + '"\n- Se foi uma mensagem de cuidado, dica ou valor (sem oferta direta): mantenha esse tom. NAO ofereça produto ou tente fechar venda imediatamente. Deixe o cliente guiar.\n- Se foi uma mensagem de reativacao, novidade ou oferta: avance para entender a necessidade e oferecer o produto naturalmente.'
   : '';
 
 let midiasSection = '';
@@ -288,7 +304,7 @@ const sistemaParts = [
   '- addTags: lista de tags para ADICIONAR ao cliente (nao substitui as existentes). Use apenas tags definidas pela empresa.',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
-  'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP".',
+  'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP". OBRIGATORIO: ao mover para FOLLOW_UP sempre pergunte "Quando posso entrar em contato novamente?" e defina dataRecontato com a data informada.',
   '',
   infoEmpresa,
   conhecimentoBaseSection,
