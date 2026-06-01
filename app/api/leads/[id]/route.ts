@@ -17,15 +17,17 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const me = await getUsuarioLogado();
-  if (!me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const { searchParams } = new URL(req.url);
+  const isCron = searchParams.get("secret") === SECRET;
+  const me = isCron ? null : await getUsuarioLogado();
+  if (!isCron && !me) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const { id } = await params;
 
   const leadAtual = await prisma.lead.findUnique({ where: { id }, select: { empresaId: true, status: true } });
   if (!leadAtual) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
-  if (me.perfil !== "CENTRAL" && me.empresaId && leadAtual.empresaId !== me.empresaId) {
+  if (!isCron && me?.perfil !== "CENTRAL" && me?.empresaId && leadAtual.empresaId !== me.empresaId) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
   }
 
