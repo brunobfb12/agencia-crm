@@ -794,8 +794,8 @@ export default function CentralPage() {
                       </div>
                       <div className="flex flex-col gap-1.5 items-end">
                         {w.state !== "open" && (() => {
-                          const faltaVendedor = w.setup && !w.setup.vendedores;
-                          const faltaInfo = w.setup && !w.setup.informacoes;
+                          const faltaVendedor = !w.setup?.vendedores;
+                          const faltaInfo = !w.setup?.informacoes;
                           const bloqueado = faltaVendedor || faltaInfo;
                           if (bloqueado) return (
                             <div className="flex flex-col items-end gap-1">
@@ -838,7 +838,7 @@ export default function CentralPage() {
                         </div>
                       </div>
                     )}
-                    {w.setup && (!w.setup.vendedores || !w.setup.informacoes) && w.state !== "open" && (
+                    {(!w.setup?.vendedores || !w.setup?.informacoes) && w.state !== "open" && (
                       <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                         <div className="rounded-xl p-3" style={{ background: "rgba(251,146,60,.06)", border: "1px solid rgba(251,146,60,.2)" }}>
                           <div className="flex items-center gap-2 mb-2.5">
