@@ -115,13 +115,21 @@ export async function POST(req: Request) {
   const estado = getEstado(lead.observacoes);
   const intencao = detectarIntencao(mensagem);
 
-  // Só inicia fluxo de confirmação se o lead está em negociação há mais de 12h.
-  // Antes disso o vendedor pode estar respondendo ao PEDIDO PRONTO — não perguntar "fechou?".
+  // Dentro de 12h do PEDIDO PRONTO o vendedor pode estar apenas reagindo à notificação.
+  // Só processa se: passou 12h OU mensagem contém valor explícito (venda imediata).
   const horasEmNegociacao = (Date.now() - new Date((lead as any).atualizadoEm).getTime()) / (1000 * 60 * 60);
-  if (estado === "INICIAL" && horasEmNegociacao < 12) {
+  const valorImediato = intencao === "VALOR" && parseValor(mensagem) !== null;
+  if (horasEmNegociacao < 12 && !valorImediato) {
+    // Limpar estado parcial para não travar em AGUARDANDO_CONFIRMACAO/VALOR
+    if (estado !== "INICIAL") {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { observacoes: setEstado(lead.observacoes, null) },
+      }).catch(() => null);
+    }
     return NextResponse.json({
       ok: true, isVendedor: true, vendedorTelefone: vendedor.telefone, leadId: lead.id,
-      resposta: `Oi ${vendedor.nome}! 👋 Recebi sua mensagem sobre *${nomeCliente}*. O pedido já está no sistema — quando fechar, é só me avisar aqui! 💪`,
+      resposta: `Oi ${vendedor.nome}! 👋 Recebi sua mensagem sobre *${nomeCliente}*. O pedido já está no sistema — quando fechar é só mandar o valor aqui! 💪`,
     });
   }
 
