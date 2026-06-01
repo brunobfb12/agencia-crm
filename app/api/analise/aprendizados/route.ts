@@ -28,18 +28,21 @@ export async function POST(req: Request) {
         atualizadoEm: { gte: since },
       },
       include: {
-        cliente: { select: { nome: true, tags: true } },
-        vendas: { orderBy: { criadoEm: "desc" }, take: 1 },
-        conversas: {
-          orderBy: { ultimaAtividade: "desc" },
-          take: 1,
+        cliente: {
           include: {
-            mensagens: {
-              orderBy: { criadoEm: "asc" },
-              select: { direcao: true, conteudo: true },
+            conversas: {
+              orderBy: { ultimaAtividade: "desc" },
+              take: 1,
+              include: {
+                mensagens: {
+                  orderBy: { criadoEm: "asc" },
+                  select: { direcao: true, conteudo: true },
+                },
+              },
             },
           },
         },
+        vendas: { orderBy: { criadoEm: "desc" }, take: 1 },
       },
       orderBy: { atualizadoEm: "desc" },
       take: 15,
@@ -51,14 +54,17 @@ export async function POST(req: Request) {
         atualizadoEm: { gte: since },
       },
       include: {
-        cliente: { select: { nome: true, tags: true } },
-        conversas: {
-          orderBy: { ultimaAtividade: "desc" },
-          take: 1,
+        cliente: {
           include: {
-            mensagens: {
-              orderBy: { criadoEm: "asc" },
-              select: { direcao: true, conteudo: true },
+            conversas: {
+              orderBy: { ultimaAtividade: "desc" },
+              take: 1,
+              include: {
+                mensagens: {
+                  orderBy: { criadoEm: "asc" },
+                  select: { direcao: true, conteudo: true },
+                },
+              },
             },
           },
         },
@@ -91,14 +97,14 @@ export async function POST(req: Request) {
   const blocoVitorias = vitorias.map((l, i) => {
     const valor = l.vendas[0]?.valor ? `R$${l.vendas[0].valor.toFixed(0)}` : "valor não registrado";
     const tags = l.cliente.tags.length > 0 ? ` [${l.cliente.tags.join(", ")}]` : "";
-    const msgs = l.conversas[0]?.mensagens ?? [];
+    const msgs = l.cliente.conversas[0]?.mensagens ?? [];
     return `[VITÓRIA ${i + 1}] ${valor}${tags}\n${condensa(msgs)}`;
   }).join("\n\n");
 
   const blocalDerrotas = derrotas.map((l, i) => {
     const motivo = (l.observacoes ?? "").match(/[Mm]otivo[^:]*:\s*([^\n]+)/)?.[1] ?? "não registrado";
     const tags = l.cliente.tags.length > 0 ? ` [${l.cliente.tags.join(", ")}]` : "";
-    const msgs = l.conversas[0]?.mensagens ?? [];
+    const msgs = l.cliente.conversas[0]?.mensagens ?? [];
     return `[PERDA ${i + 1}] Motivo: ${motivo}${tags}\n${condensa(msgs)}`;
   }).join("\n\n");
 
