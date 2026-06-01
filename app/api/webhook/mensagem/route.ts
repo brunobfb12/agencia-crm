@@ -12,6 +12,13 @@ export async function POST(req: Request) {
 
   const empresa = await prisma.empresa.findUnique({
     where: { instanciaWhatsapp: instancia },
+    select: {
+      id: true, nome: true, instanciaWhatsapp: true, ativa: true,
+      informacoes: true, calendlyUrl: true, perguntasQualificacao: true,
+      tipoAtendimento: true, nomeIA: true, aprendizados: true,
+      conhecimentoBase: true, mensagemIndicacao: true,
+      tagsCustomizadas: true,
+    },
   });
   if (!empresa) {
     return NextResponse.json({ ok: false, motivo: "empresa nao encontrada" });
@@ -57,7 +64,7 @@ export async function POST(req: Request) {
   // When @lid is detected, look for an existing client with the same name in this empresa.
   // If found, reuse that client so iPhone and WhatsApp Web share the same conversation.
   const isLid = !telefone.startsWith("55");
-  let clientePrincipal: { id: string; nome: string | null; telefone: string; email: string | null; dataNascimento: Date | null; memoriaCliente: string | null } | null = null;
+  let clientePrincipal: { id: string; nome: string | null; telefone: string; email: string | null; dataNascimento: Date | null; memoriaCliente: string | null; tags: string[] } | null = null;
   let telefonePrincipal = telefone;
 
   if (isLid && nomeContato) {
@@ -70,7 +77,7 @@ export async function POST(req: Request) {
           telefone: { startsWith: "55" },
         },
         orderBy: { criadoEm: "desc" },
-        select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true },
+        select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true, tags: true },
       });
       if (encontrado) {
         clientePrincipal = encontrado;
@@ -84,7 +91,7 @@ export async function POST(req: Request) {
     where: { telefone_empresaId: { telefone, empresaId: empresa.id } },
     create: { telefone, empresaId: empresa.id, nome: nomeContato || null },
     update: nomeContato ? { nome: nomeContato } : {},
-    select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true },
+    select: { id: true, nome: true, telefone: true, email: true, dataNascimento: true, memoriaCliente: true, tags: true },
   });
 
   let lead = await prisma.lead.findFirst({
@@ -196,6 +203,7 @@ export async function POST(req: Request) {
       nomeIA: empresa.nomeIA ?? null,
       aprendizados: empresa.aprendizados ?? null,
       conhecimentoBase: empresa.conhecimentoBase ?? null,
+      mensagemIndicacao: empresa.mensagemIndicacao ?? null,
     },
     cliente: {
       id: cliente.id,
@@ -204,6 +212,7 @@ export async function POST(req: Request) {
       email: cliente.email ?? null,
       dataNascimento: cliente.dataNascimento ?? null,
       memoriaCliente: cliente.memoriaCliente ?? null,
+      tags: cliente.tags ?? [],
     },
     lead: { id: lead.id, status: lead.status, observacoes: lead.observacoes, vendedorId: lead.vendedorId },
     conversa: { id: conversa.id },

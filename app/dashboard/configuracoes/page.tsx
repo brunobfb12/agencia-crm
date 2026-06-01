@@ -268,6 +268,7 @@ interface Empresa {
   tipoAtendimento: string; nomeIA: string | null;
   mensagemPosVenda: string | null;
   mensagemAniversario: string | null;
+  mensagemIndicacao: string | null;
   tagsCustomizadas: string[];
   _count: { clientes: number; leads: number };
 }
@@ -869,6 +870,7 @@ export default function ConfiguracoesPage() {
   const [nomeIA, setNomeIA] = useState("");
   const [mensagemPosVenda, setMensagemPosVenda] = useState("");
   const [mensagemAniversario, setMensagemAniversario] = useState("");
+  const [mensagemIndicacao, setMensagemIndicacao] = useState("");
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
   const [modalLogin, setModalLogin] = useState<Empresa | null>(null);
@@ -999,6 +1001,7 @@ export default function ConfiguracoesPage() {
     setNomeIA(emp.nomeIA ?? "");
     setMensagemPosVenda(emp.mensagemPosVenda ?? "");
     setMensagemAniversario(emp.mensagemAniversario ?? "");
+    setMensagemIndicacao(emp.mensagemIndicacao ?? "");
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
   }
@@ -1027,7 +1030,7 @@ export default function ConfiguracoesPage() {
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, tagsCustomizadas }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas }),
     });
 
     if (!res.ok) {
@@ -1435,6 +1438,20 @@ export default function ConfiguracoesPage() {
                           <textarea rows={3} value={mensagemAniversario}
                             onChange={(e) => setMensagemAniversario(e.target.value)}
                             placeholder={`Ex: Oi {nome}! 🎂 {ia} aqui, da {empresa}. Feliz aniversário! Que seu dia seja incrível! 🥳`}
+                            className={`${INPUT} resize-none`} />
+                        </div>
+
+                        {/* ── Mensagem de Indicação ── */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>Mensagem de indicação</p>
+                          </div>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Enviada automaticamente quando um cliente indica um amigo. Variáveis: {"{nome}"} {"{ia}"} {"{empresa}"} {"{indicador}"}
+                          </p>
+                          <textarea rows={4} value={mensagemIndicacao}
+                            onChange={(e) => setMensagemIndicacao(e.target.value)}
+                            placeholder={`Ex: Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)`}
                             className={`${INPUT} resize-none`} />
                         </div>
 
