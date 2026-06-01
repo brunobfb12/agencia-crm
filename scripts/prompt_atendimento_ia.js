@@ -8,6 +8,8 @@ const agendamentos = crm.agendamentos ?? [];
 const vendas = crm.vendas ?? [];
 const instancia = $('Filtrar e Extrair').item.json.instancia;
 const telefone = $('Filtrar e Extrair').item.json.telefone;
+// Número limpo para wa.me — usa telefone do CRM (já normalizado) como fonte primária
+const telefoneDigitos = (cliente.telefone || telefone || '').replace(/\D/g, '').replace(/^5555/, '55');
 const mensagemAtual = crm.mensagem || $('Filtrar e Extrair').item.json.mensagem;
 const imagemBase64 = crm.imagemBase64 || null;
 const imagemMimeType = crm.imagemMimeType || 'image/jpeg';
@@ -106,10 +108,10 @@ if (agendamentos.some(a => a.status === 'PENDENTE')) {
   agendamentoSection = '\nAGENDAMENTO: Este cliente ja tem um agendamento pendente. NAO ofereça agendar novamente.';
 }
 
-// Modo aguardando vendedor: lead já está em PRONTO_PARA_COMPRAR, vendedor já foi notificado
-const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR';
+// Modo aguardando vendedor: lead já está em PRONTO_PARA_COMPRAR ou NEGOCIACAO
+const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR' || lead.status === 'NEGOCIACAO';
 const aguardandoVendedorSection = aguardandoVendedor
-  ? '\nMODO AGUARDANDO VENDEDOR:\n- O vendedor ' + nomeVendedor + ' ja foi notificado e vai entrar em contato em breve.\n- Sua funcao agora: manter o cliente aquecido, responder duvidas e reforcar a expectativa positiva.\n- A cada mensagem do cliente reforce levemente: "' + nomeVendedor + ' vai te chamar logo pra finalizar tudo!"\n- Responda duvidas com entusiasmo — mantenha o interesse alto ate o vendedor agir.\n- NAO tente fechar preco ou negociar voce mesmo — isso e papel do vendedor.\n- NAO volte a notificar o vendedor (notificarVendedor: false obrigatoriamente).\n- NAO mude novoStatus — ele ja esta em PRONTO_PARA_COMPRAR.'
+  ? '\nMODO AGUARDANDO VENDEDOR:\n- O vendedor ja foi notificado com o pedido completo e vai entrar em contato em breve.\n- Sua funcao agora: manter o cliente aquecido e responder duvidas sobre produtos.\n- A cada mensagem reforce levemente: "Nosso time de vendas vai te chamar logo com o valor e prazo!"\n- Se o cliente perguntar preco: "Nosso time ja vai te passar o valor certinho, em breve!"\n- NAO volte a notificar o vendedor (notificarVendedor: false obrigatoriamente).\n- NAO mude novoStatus — ele ja esta em ' + lead.status + '.\n- Se o cliente quiser adicionar mais itens: anote e inclua em observacoes, mas NAO renotifique o vendedor.'
   : '';
 
 const isClienteRetornante = historico.length > 4;
@@ -181,27 +183,41 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     : '';
 
   orcamentoSection = NL + introAmbo + catalogoSection
-    + 'FLUXO DE ORCAMENTO:' + NL
+    + 'FLUXO DE FECHAMENTO — SEQUENCIA OBRIGATORIA apos lista confirmada:' + NL
     + NL
-    + '🚀 MODO LISTA (USE QUANDO: cliente ja manda uma lista de produtos/quantidades na primeira mensagem):' + NL
-    + '- Identifique: mensagem com 2+ itens, quantidades, marcas ou medidas (m², kg, latas, litros, galoes).' + NL
-    + '- Nao confirme, nao pergunte sobre concorrente — va direto para o vendedor.' + NL
-    + '- Resposta: "Anotei sua lista! Ja passei pro ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em minutos. Se voce tiver orcamento de outro lugar, manda pra gente — a gente cobre qualquer oferta! 💪"' + NL
-    + '- novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
-    + '- mensagemVendedor: "LISTA RECEBIDA de [nome] ([numero]): [itens da lista]. Cliente pode estar pesquisando em outros lugares — ligue RAPIDO! -- Me avisa se fechou e o valor!"' + NL
+    + 'PASSO 1 — ENTREGA: "Perfeito! Vai retirar na loja ou prefere entrega?"' + NL
+    + 'PASSO 2 — Se entrega: "Me passa o endereco completo com bairro e referencia que ja anoto aqui!"' + NL
+    + '          Se retirada: vai direto para PASSO 3.' + NL
+    + 'PASSO 3 — PAGAMENTO: "Como prefere pagar? PIX, cartao ou dinheiro?"' + NL
+    + 'PASSO 4 — CONFIRMAR E ENVIAR:' + NL
+    + '  Cliente: "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊"' + NL
+    + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
+    + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n📞 https://wa.me/' + telefoneDigitos + '\n\n📋 *Itens confirmados:*\n• [item 1]\n• [item 2]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
     + NL
-    + '💬 MODO CONVERSA (USE QUANDO: cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
+    + '🚀 MODO LISTA (cliente ja manda 2+ itens com quantidades na PRIMEIRA mensagem):' + NL
+    + '- Identificar: mensagem com 2+ itens, quantidades, marcas ou medidas (m2, kg, latas, litros, galoes).' + NL
+    + '- Confirmar com entusiasmo e ja pular para PASSO 1: "Recebi sua lista! So mais duas perguntinhas rapidas:"' + NL
+    + '- Nao faca upsell — cliente ja sabe o que quer. Execute PASSO 1 → 2 → 3 → 4.' + NL
+    + NL
+    + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
     + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
-    + 'ETAPA 2 — COMPLETAR: "Precisa de mais algum item ou posso encaminhar sua lista?"' + NL
-    + 'ETAPA 3 — CONCORRENTE: "Ja fez orcamento em outro lugar? Nos cobrimos qualquer oferta!"' + NL
-    + 'ETAPA 4 — ENVIO: novoStatus "NEGOCIACAO", notificarVendedor true.' + NL
-    + '  Resposta: "Perfeito! Ja passei pro ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve! 😊"' + NL
+    + 'ETAPA 2 — COMPLETAR + UPSELL: Confirme o item, ofereça complementares UM POR VEZ de forma natural.' + NL
+    + '  Apos cobrir complementares: "E so isso mesmo ou lembrou de mais alguma coisa?"' + NL
+    + '  Quando cliente confirmar lista → execute PASSO 1 → 2 → 3 → 4 acima.' + NL
     + NL
-    + 'REGRAS:' + NL
+    + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
+    + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
+    + '- PASSO JA RESPONDIDO = cliente mencionou o dado (ex: "vou retirar", "PIX", "Rua X") — marque como concluido e avance.' + NL
+    + '- ORDEM RIGIDA: lista → upsell → confirmar lista → PASSO1 → PASSO2 → PASSO3 → PASSO4. Proibido voltar atras.' + NL
+    + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute apenas PASSO 1 → 2 → 3 → 4.' + NL
+    + '- NUNCA pergunte entrega e pagamento na mesma mensagem — uma pergunta por vez.' + NL
+    + '- PRONTO_PARA_COMPRAR proibido neste modo — use sempre NEGOCIACAO.' + NL
+    + '- novoStatus NEGOCIACAO + notificarVendedor true SOMENTE no PASSO 4 (apos coletar entrega E pagamento).' + NL
+    + '- NUNCA prometa preco — o time de vendas fecha o preco.' + NL
+    + '- IDENTIDADE: voce e ' + nomeIA + ', assistente da ' + empresa.nome + '. NUNCA se identifique como outra empresa ou pessoa.' + NL
     + '- Foto/PDF: liste os itens identificados e siga o modo correspondente.' + NL
     + '- [AUDIO]: responda ao conteudo da transcricao como se fosse texto.' + NL
-    + '- NUNCA prometa preco voce mesmo — o vendedor fecha o preco.' + NL
-    + '- Em memoriaCliente registre: "ORCAMENTO: [itens] | Concorrente: [valor ou N/A]"';
+    + '- Em memoriaCliente registre: "PEDIDO: [itens] | Entrega: [retirada/endereco] | Pagamento: [forma]"';
 }
 
 // Se a empresa não tem informações configuradas, entra em modo de espera — não tenta vender
@@ -302,8 +318,8 @@ const sistemaParts = [
   '- Ao enviar uma midia, continue o atendimento normalmente logo em seguida — nao fique apenas enviando arquivos sem qualificar o lead',
   '- Mesmo ao mostrar fotos/videos, sempre avance no roteiro de qualificacao na mesma mensagem ou na seguinte',
   '- NUNCA marque PRONTO_PARA_COMPRAR apenas porque o cliente perguntou sobre preco',
-  '- PRONTO_PARA_COMPRAR: so marque quando (1) lista de pedido confirmada pelo cliente ("nao, so isso" / "pode encaminhar") OU agendamento feito no link; E (2) voce ja perguntou "tem mais alguma coisa?" e o cliente respondeu. Curiosidade, interesse generico ou pergunta de preco nao sao suficientes — qualifique ate ter os dois criterios.',
-  '- notificarVendedor=true SOMENTE quando novoStatus=PRONTO_PARA_COMPRAR ou novoStatus=AGENDADO. Em QUALQUER outro momento da conversa — duvida, qualificacao, upsell, IA sem resposta, cliente pensando — notificarVendedor=false obrigatoriamente. O vendedor recebe UMA mensagem, no momento certo, com tudo dentro.',
+  '- PRONTO_PARA_COMPRAR: so marque quando (1) lista de pedido confirmada pelo cliente ("nao, so isso" / "pode encaminhar") OU agendamento feito no link; E (2) voce ja perguntou "tem mais alguma coisa?" e o cliente respondeu. Curiosidade, interesse generico ou pergunta de preco nao sao suficientes — qualifique ate ter os dois criterios. EXCECAO: empresas com tipoAtendimento=ORCAMENTO ou AMBOS usam NEGOCIACAO (nao PRONTO_PARA_COMPRAR) — consulte o FLUXO DE FECHAMENTO acima.',
+  '- notificarVendedor=true SOMENTE quando novoStatus=PRONTO_PARA_COMPRAR, novoStatus=AGENDADO ou novoStatus=NEGOCIACAO (apenas apos completar todos os passos do FLUXO DE FECHAMENTO). Em QUALQUER outro momento — duvida, qualificacao, upsell, IA sem resposta, cliente pensando — notificarVendedor=false obrigatoriamente. O vendedor recebe UMA mensagem, no momento certo, com tudo dentro.',
   '- memoriaCliente em atualizarCliente: registre o que aprendeu sobre o cliente (interesses, orcamento, preferencias, objecoes). Cumulativo, max 300 chars.',
   '- Se o cliente disser explicitamente que NAO quer ser cliente, NAO quer o servico ou NAO quer mais ser contactado: novoStatus=SEM_INTERESSE. Responda com empatia: "Entendo! Fico a disposicao caso mude de ideia. Tenha um otimo dia!" e NAO contate mais.',
   '- Se o cliente demonstrar que nao quer AGORA mas pode querer no futuro ou pedir para ligar em outro momento: defina dataRecontato com a data calculada e novoStatus=FOLLOW_UP.',
