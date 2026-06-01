@@ -12,7 +12,7 @@ export default function SupportButton() {
       rel="noopener noreferrer"
       title="Suporte via WhatsApp"
       style={{
-        position:"fixed",bottom:24,right:40,zIndex:9999,
+        position:"fixed",bottom:24,right:150,zIndex:9999,
         width:56,height:56,borderRadius:"50%",
         background:"#25D366",
         display:"flex",alignItems:"center",justifyContent:"center",
