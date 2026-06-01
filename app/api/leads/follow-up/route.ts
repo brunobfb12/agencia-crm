@@ -36,7 +36,11 @@ export async function GET(req: Request) {
   const d90 = new Date(now);
   d90.setDate(d90.getDate() - 90);
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, semInteresse75d, reativacao90d] = await Promise.all([
+  const h24 = new Date(now); h24.setHours(h24.getHours() - 24);
+  const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
+  const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
+
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, semInteresse75d, reativacao90d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -98,11 +102,40 @@ export async function GET(req: Request) {
       },
       include: baseInclude,
     }),
-    // #4: LEAD/AQUECIMENTO sem atividade 30+ dias → auto SEM_RESPOSTA
+    // LEAD sem atividade 30+ dias → auto SEM_RESPOSTA (nunca chegou a ter contato)
     prisma.lead.findMany({
       where: {
-        status: { in: ["LEAD", "AQUECIMENTO"] },
+        status: "LEAD",
         atualizadoEm: { lt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+        empresa: { ativa: true },
+      },
+      select: { id: true },
+    }),
+    // AQUECIMENTO D+1: parado entre 24-48h → primeiro toque
+    prisma.lead.findMany({
+      where: {
+        status: "AQUECIMENTO",
+        atualizadoEm: { gte: h48, lt: h24 },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
+      },
+      include: baseInclude,
+    }),
+    // AQUECIMENTO D+2: parado entre 48-72h → segundo toque
+    prisma.lead.findMany({
+      where: {
+        status: "AQUECIMENTO",
+        atualizadoEm: { gte: h72, lt: h48 },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
+      },
+      include: baseInclude,
+    }),
+    // AQUECIMENTO 72h+ sem atividade → SEM_RESPOSTA (dois toques ignorados)
+    prisma.lead.findMany({
+      where: {
+        status: "AQUECIMENTO",
+        atualizadoEm: { lt: h72 },
         empresa: { ativa: true },
       },
       select: { id: true },
@@ -182,9 +215,6 @@ export async function GET(req: Request) {
     const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}\n` : "\n";
     return `Oi ${vendedorNome}! 👋\n\nO lead *${clienteNome}* aguarda há ${horas}h.${pedidoStr}\nFechou a venda?\n*1* ✅ Sim — me fala o valor\n*2* ❌ Não fechei\n*3* ⏳ Ainda negociando`;
   }
-  const h24 = new Date(now); h24.setHours(h24.getHours() - 24);
-  const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
-  const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
 
   const [pressao24h, pressao48h, pressao72h] = await Promise.all([
     prisma.lead.findMany({
@@ -245,10 +275,18 @@ export async function GET(req: Request) {
     });
   }
 
-  // #4: LEAD/AQUECIMENTO sem atividade 30+ dias → SEM_RESPOSTA
+  // LEAD sem atividade 30+ dias → SEM_RESPOSTA
   if (inativos30d.length > 0) {
     await prisma.lead.updateMany({
       where: { id: { in: inativos30d.map(l => l.id) } },
+      data: { status: "SEM_RESPOSTA" },
+    });
+  }
+
+  // AQUECIMENTO 72h+ → SEM_RESPOSTA (dois toques ignorados)
+  if (aquecimentoSemResposta.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: aquecimentoSemResposta.map((l: { id: string }) => l.id) } },
       data: { status: "SEM_RESPOSTA" },
     });
   }
@@ -335,6 +373,26 @@ export async function GET(req: Request) {
           `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Passando pra ver se consigo te ajudar a agendar ou se ficou alguma dúvida! Como posso te atender?`
         );
       }),
+
+    ...aquecimentoD1
+      .filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]")))
+      .map((l: typeof posVenda[0]) => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "aquecimento_d1",
+          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que conversamos ontem — ficou alguma dúvida ou posso te ajudar a finalizar? 😊`
+        );
+      }),
+
+    ...aquecimentoD2
+      .filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]")))
+      .map((l: typeof posVenda[0]) => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "aquecimento_d2",
+          `Oi${nome}! Última tentativa por aqui — se ainda precisar de algo da ${l.empresa.nome}, é só me chamar! 🙌`
+        );
+      }),
   ];
 
   // Birthday items
@@ -396,11 +454,16 @@ export async function GET(req: Request) {
   );
 
   // Marcar todos como enviados antes de retornar (evita duplicatas em crons simultâneos)
-  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0) {
+  const aq1Novos = aquecimentoD1.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]")));
+  const aq2Novos = aquecimentoD2.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]")));
+
+  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
       ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
+      ...aq1Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ1]").trim() } })),
+      ...aq2Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ2]").trim() } })),
     ]);
   }
 
