@@ -690,7 +690,8 @@ function composeInfo(campos: Record<string, string>): string {
 const INPUT = "w-full input-dark px-3 py-2.5 text-[13px]";
 
 /* ── WhatsApp connection tab ──────────────────────────────────────── */
-function AbaWhatsApp({ instancia }: { instancia: string }) {
+function AbaWhatsApp({ instancia, vendedoresOk, informacoesOk }: { instancia: string; vendedoresOk: boolean; informacoesOk: boolean }) {
+  const setupOk = vendedoresOk && informacoesOk;
   const [state, setState] = useState<"loading" | "open" | "connecting" | "close" | "unknown">("loading");
   const [qrcode, setQrcode] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -711,9 +712,10 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
   }
 
   useEffect(() => {
+    if (!setupOk) return;
     checar();
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [instancia]);
+  }, [instancia, setupOk]);
 
   const cardStyle = {
     background: "var(--card)", border: "1px solid var(--border)", borderRadius: "16px",
@@ -739,14 +741,51 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
           </button>
         </div>
 
-        {state === "loading" && (
+        {!setupOk && (
+          <div className="rounded-xl p-3 mb-2" style={{ background: "rgba(251,146,60,.06)", border: "1px solid rgba(251,146,60,.2)" }}>
+            <div className="flex items-center gap-2 mb-2.5">
+              <span className="text-lg">🔒</span>
+              <p className="text-[13px] font-bold" style={{ color: "#fb923c" }}>Complete o setup para liberar o QR Code</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {!vendedoresOk && (
+                <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
+                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
+                  <span className="text-[16px]">👤</span>
+                  <div className="flex-1">
+                    <p className="text-[12px] font-semibold" style={{ color: "#f87171" }}>Cadastrar vendedor</p>
+                    <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>Nenhum vendedor ativo para esta empresa</p>
+                  </div>
+                  <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Ir para Vendedores →</span>
+                </a>
+              )}
+              {!informacoesOk && (
+                <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
+                  style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
+                  <span className="text-[16px]">📋</span>
+                  <div className="flex-1">
+                    <p className="text-[12px] font-semibold" style={{ color: "#f87171" }}>Preencher informações da empresa</p>
+                    <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>A IA precisa das informações para atender</p>
+                  </div>
+                  <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Ir para Empresa →</span>
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {setupOk && state === "loading" && (
           <div className="flex items-center gap-3 py-6">
             <div className="w-3 h-3 rounded-full animate-pulse" style={{ background: "#fbbf24" }} />
             <span className="text-[13px]" style={{ color: "var(--muted)" }}>Verificando conexão...</span>
           </div>
         )}
 
-        {state === "open" && (
+        {setupOk && state === "open" && (
           <div className="flex items-center gap-3 py-3 px-4 rounded-xl" style={{ background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)" }}>
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: "#34d399", boxShadow: "0 0 8px #34d399" }} />
             <div>
@@ -756,7 +795,7 @@ function AbaWhatsApp({ instancia }: { instancia: string }) {
           </div>
         )}
 
-        {(state === "close" || state === "connecting" || state === "unknown") && (
+        {setupOk && (state === "close" || state === "connecting" || state === "unknown") && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 py-3 px-4 rounded-xl" style={{ background: "rgba(251,146,60,.08)", border: "1px solid rgba(251,146,60,.2)" }}>
               <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: "#fb923c" }} />
@@ -1911,7 +1950,11 @@ export default function ConfiguracoesPage() {
 
         {/* ── WHATSAPP (só EMPRESA) ── */}
         {aba === "whatsapp" && !isCentral && empresas[0] && (
-          <AbaWhatsApp instancia={empresas[0].instanciaWhatsapp} />
+          <AbaWhatsApp
+            instancia={empresas[0].instanciaWhatsapp}
+            vendedoresOk={vendedores.filter(v => v.ativo && v.empresaId === empresas[0].id).length > 0}
+            informacoesOk={!!empresas[0].informacoes?.trim()}
+          />
         )}
 
       </div>
