@@ -793,13 +793,28 @@ export default function CentralPage() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5 items-end">
-                        {w.state !== "open" && (
-                          <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
-                            className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
-                            style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
-                            {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
-                          </button>
-                        )}
+                        {w.state !== "open" && (() => {
+                          const faltaVendedor = w.setup && !w.setup.vendedores;
+                          const faltaInfo = w.setup && !w.setup.informacoes;
+                          const bloqueado = faltaVendedor || faltaInfo;
+                          if (bloqueado) return (
+                            <div className="flex flex-col items-end gap-1">
+                              <button disabled
+                                className="text-[12px] px-3 py-1.5 rounded-lg font-semibold opacity-30 cursor-not-allowed"
+                                style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                                Ver QR Code
+                              </button>
+                              <span className="text-[10px] font-semibold" style={{ color: "#fb923c" }}>🔒 Setup incompleto</span>
+                            </div>
+                          );
+                          return (
+                            <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
+                              className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                              style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                              {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
+                            </button>
+                          );
+                        })()}
                         {w.state === "open" && (
                           <button onClick={() => desconectar(w.instancia)}
                             className="text-[12px] px-3 py-1.5 rounded-lg font-semibold"
@@ -820,6 +835,44 @@ export default function CentralPage() {
                           <p>2. Toque em ⋮ → Aparelhos conectados</p>
                           <p>3. Conectar aparelho → Escaneie o QR</p>
                           <p className="font-semibold" style={{ color: "#fb923c" }}>QR expira em ~20s — atualize se necessário</p>
+                        </div>
+                      </div>
+                    )}
+                    {w.setup && (!w.setup.vendedores || !w.setup.informacoes) && w.state !== "open" && (
+                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+                        <div className="rounded-xl p-3" style={{ background: "rgba(251,146,60,.06)", border: "1px solid rgba(251,146,60,.2)" }}>
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <span className="text-lg">🔒</span>
+                            <p className="text-[13px] font-bold" style={{ color: "#fb923c" }}>Complete o setup para liberar o QR Code</p>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {!w.setup.vendedores && (
+                              <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
+                                style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
+                                onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
+                                <span className="text-[16px]">👤</span>
+                                <div className="flex-1">
+                                  <p className="text-[12px] font-semibold" style={{ color: "#f87171" }}>Cadastrar vendedor</p>
+                                  <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>Nenhum vendedor ativo para esta empresa</p>
+                                </div>
+                                <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Configurar →</span>
+                              </a>
+                            )}
+                            {!w.setup.informacoes && (
+                              <a href="/dashboard/configuracoes" className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
+                                style={{ background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.15)", textDecoration: "none" }}
+                                onMouseEnter={e => (e.currentTarget.style.background = "rgba(248,113,113,.14)")}
+                                onMouseLeave={e => (e.currentTarget.style.background = "rgba(248,113,113,.08)")}>
+                                <span className="text-[16px]">📋</span>
+                                <div className="flex-1">
+                                  <p className="text-[12px] font-semibold" style={{ color: "#f87171" }}>Preencher informações da empresa</p>
+                                  <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>A IA precisa das informações para atender</p>
+                                </div>
+                                <span className="text-[11px] font-semibold" style={{ color: "#f87171" }}>Configurar →</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
