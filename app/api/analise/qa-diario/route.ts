@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
+  try {
   const body = await req.json();
   const { secret, horas = 24 } = body;
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     const conversas = await prisma.conversa.findMany({
       where: {
         ultimaAtividade: { gte: since },
-        cliente: { leads: { some: { empresaId: empresa.id } } },
+        cliente: { empresaId: empresa.id },
       },
       include: {
         mensagens: {
@@ -166,4 +167,7 @@ Regras:
     totalCorrecoesSalvas: totalCorrecoes,
     resultados,
   });
+  } catch (e: any) {
+    return NextResponse.json({ error: "erro_interno", detalhe: e?.message ?? String(e) }, { status: 500 });
+  }
 }
