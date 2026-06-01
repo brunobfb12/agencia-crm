@@ -76,6 +76,19 @@ export async function POST(req: Request) {
           orderBy: { ordemChamada: "asc" },
           select: { id: true, nome: true, telefone: true },
         });
+        // Atribui o vendedor ao lead para que a pressão P24/P48/P72 funcione
+        if (vendedor && !lead.vendedorId) {
+          await Promise.all([
+            prisma.lead.update({
+              where: { id: lead.id },
+              data: { vendedorId: vendedor.id },
+            }),
+            prisma.vendedor.update({
+              where: { id: vendedor.id },
+              data: { ultimaAtribuicaoEm: new Date() },
+            }),
+          ]).catch(() => null);
+        }
       }
       if (notificarGerente) {
         gerente = await prisma.vendedor.findFirst({
