@@ -33,12 +33,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 24px;backdrop-f
 .ch-btn.active{color:#818cf8;border-bottom-color:#818cf8}
 .ch-btn:hover{color:rgba(240,240,255,.7)}
 
-/* Split columns */
+/* Split columns — desktop grid, mobile scroll snapping */
 .split-world{display:grid;grid-template-columns:1fr 1px 1fr;min-height:100vh;position:relative;z-index:1}
-@media(max-width:768px){.split-world{grid-template-columns:1fr;}}
 .world-divider{background:linear-gradient(to bottom,transparent,rgba(99,102,241,.4) 20%,rgba(34,211,238,.4) 80%,transparent);position:relative}
 .world-divider::after{content:'90 dias · 0 esforço';position:sticky;top:50%;display:block;writing-mode:vertical-rl;transform:rotate(180deg) translateY(50%);font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(99,102,241,.6);padding:8px 0;margin:0 auto;width:fit-content}
-@media(max-width:768px){.world-divider{display:none}}
+
+/* Mobile: horizontal scroll snap para preservar a comparação */
+@media(max-width:768px){
+  .split-world{display:flex;flex-direction:row;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;min-height:auto;gap:0}
+  .world-left,.world-right{flex:0 0 90vw;min-width:90vw;scroll-snap-align:start}
+  .world-divider{display:none}
+  .swipe-hint{display:flex!important}
+}
+.swipe-hint{display:none;align-items:center;justify-content:center;gap:6px;padding:10px 16px;font-size:.72rem;color:rgba(240,240,255,.35);text-transform:uppercase;letter-spacing:.1em;position:sticky;z-index:10;background:rgba(6,6,14,.9);border-bottom:1px solid rgba(255,255,255,.05)}
 
 /* Left world — sem FácilCRM */
 .world-left{background:linear-gradient(135deg,#080808,#0a0a10);border-right:none;padding:0}
@@ -279,6 +286,13 @@ export default function CaminhoDoLead() {
         {CHAPTERS.map((c,i)=>(
           <button key={c.id} data-ch={c.id} className={`ch-btn${i===0?" active":""}`}>{c.label}</button>
         ))}
+      </div>
+
+      {/* Swipe hint — só aparece no mobile */}
+      <div className="swipe-hint">
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M19 12H5M5 12l7-7M5 12l7 7"/></svg>
+        deslize para comparar
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M5 12h14M14 5l7 7-7 7"/></svg>
       </div>
 
       {/* Split World */}
