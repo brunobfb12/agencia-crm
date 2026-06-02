@@ -60,7 +60,7 @@ type QualidadeResult = { score: number; nivel: string; cor: string; corBg: strin
 function calcQualidadeAgente(
   infoCampos: Record<string, string>, nomeIA: string, tipoAtendimento: string,
   perguntasQualificacao: string, calendlyUrl: string,
-  mensagemPosVenda: string, mensagemAniversario: string
+  mensagemPosVenda: string, mensagemAniversario: string, mensagemIndicacao: string
 ): QualidadeResult {
   const prod  = (infoCampos["PRODUTOS"]     ?? "").trim();
   const preco = (infoCampos["PRECOS"]       ?? "").trim();
@@ -133,6 +133,11 @@ function calcQualidadeAgente(
   max += 0.5;
   if (!mensagemAniversario.trim()) { itens.push({ ok: false, msg: "Mensagem de aniversário em branco", peso: "baixa" }); }
   else                             { raw += 0.5; itens.push({ ok: true, msg: "Mensagem de aniversário personalizada", peso: "baixa" }); }
+
+  // INDICACAO — peso 0.5
+  max += 0.5;
+  if (!mensagemIndicacao.trim()) { itens.push({ ok: false, msg: "Mensagem de indicação em branco", peso: "baixa" }); }
+  else                           { raw += 0.5; itens.push({ ok: true, msg: "Mensagem de indicação configurada", peso: "baixa" }); }
 
   const score = Math.round((raw / max) * 100) / 10;
   let nivel: string; let cor: string; let corBg: string; let corBorder: string;
@@ -1522,7 +1527,7 @@ export default function ConfiguracoesPage() {
                         {(() => {
                           const q = calcQualidadeAgente(
                             infoCampos, nomeIA, tipoAtendimento, perguntasQualificacao,
-                            calendarFields.calendlyUrl, mensagemPosVenda, mensagemAniversario
+                            calendarFields.calendlyUrl, mensagemPosVenda, mensagemAniversario, mensagemIndicacao
                           );
                           const ruins = q.itens.filter(i => !i.ok).sort((a, b) =>
                             a.peso === "alta" ? -1 : b.peso === "alta" ? 1 : 0
