@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from "react";
-import type { Metadata } from "next";
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
@@ -143,7 +142,7 @@ const EVENTS = [
     phase:"speed", phaseLabel:"⚡ Velocidade", phaseSub:"Primeiros minutos",
     time:"D+0 · 10:42:00", who:"lead", whoLabel:"Lead",
     title:"Primeira mensagem chega",
-    desc:"Lead envia "Oi, boa tarde! Vi o anúncio de vocês. Quero um orçamento."",
+    desc:'Lead envia: "Oi, boa tarde! Vi o anúncio de vocês. Quero um orçamento."',
     ghost:null,
   },
   {
@@ -161,7 +160,7 @@ const EVENTS = [
   {
     phase:"speed", time:"D+0 · 10:44:08", who:"ia", whoLabel:"IA",
     title:"OCR lê a lista em 8 segundos",
-    desc:"IA identifica todos os itens, apresenta a lista numerada e pergunta: "Li assim — tá correto?"",
+    desc:'IA identifica todos os itens, apresenta a lista numerada e pergunta: "Li assim — tá correto?"',
     ghost:"Sem o FácilCRM: você tentaria ler a foto, talvez errasse algum item, ou pediria para reenviar.",
   },
   {
@@ -183,13 +182,13 @@ const EVENTS2 = [
     phase:"heat", phaseLabel:"🔥 Aquecimento", phaseSub:"Quando o lead some",
     time:"D+1 · 09:00", who:"ia", whoLabel:"IA",
     title:"Toque automático D+1",
-    desc:""Oi! Vi que conversamos ontem — ficou alguma dúvida ou posso te ajudar a finalizar?" — disparado sem você fazer nada.",
+    desc:'"Oi! Vi que conversamos ontem — ficou alguma dúvida ou posso te ajudar a finalizar?" — disparado sem você fazer nada.',
     ghost:"Sem o FácilCRM: você esqueceu. Lead também esqueceu.",
   },
   {
     phase:"heat", time:"D+2 · 09:00", who:"ia", whoLabel:"IA",
     title:"Segundo toque D+2",
-    desc:""Última tentativa por aqui — se precisar, é só me chamar! 🙌" — última chance, tom leve, sem pressão.",
+    desc:'"Última tentativa por aqui — se precisar, é só me chamar! 🙌" — última chance, tom leve, sem pressão.',
     ghost:"Sem o FácilCRM: lead foi para o concorrente. Você nunca soube.",
   },
 ];
@@ -199,19 +198,19 @@ const EVENTS3 = [
     phase:"sale", phaseLabel:"💰 Pós-Venda", phaseSub:"Depois que a venda fecha",
     time:"D+2 após venda", who:"ia", whoLabel:"IA",
     title:"Verificação de satisfação",
-    desc:""Tudo certo com seu pedido? Se tiver qualquer dúvida, estou aqui!" — automático, no timing certo.",
+    desc:'"Tudo certo com seu pedido? Se tiver qualquer dúvida, estou aqui!" — automático, no timing certo.',
     ghost:"Sem o FácilCRM: cliente com problema? Você ficou sabendo quando ele não voltou a comprar.",
   },
   {
     phase:"sale", time:"D+7 após venda", who:"ia", whoLabel:"IA",
     title:"Check-in de experiência + indicação",
-    desc:""Como está sendo sua experiência? Conhece alguém que também pode se interessar? Me passa o contato que eu atendo com o mesmo cuidado!"",
+    desc:'"Como está sendo sua experiência? Conhece alguém que também pode se interessar? Me passa o contato que eu atendo com o mesmo cuidado!"',
     ghost:"Sem o FácilCRM: pedido de indicação nunca aconteceu. Clientes felizes que poderiam ter virado embaixadores.",
   },
   {
     phase:"sale", time:"D+7 (automático)", who:"ia", whoLabel:"IA",
     title:"IA contata o amigo indicado",
-    desc:"Cliente indicou alguém? IA já envia mensagem para o indicado automaticamente: "João me passou seu contato e disse que você pode se interessar!"",
+    desc:'Cliente indicou alguém? IA já envia mensagem para o indicado automaticamente: "João me passou seu contato e disse que você pode se interessar!"',
     ghost:"Sem o FácilCRM: lead indicado perdido. Ninguém entrou em contato.",
   },
 ];
@@ -221,19 +220,19 @@ const EVENTS4 = [
     phase:"rel", phaseLabel:"🤝 Relacionamento", phaseSub:"Semanas depois — sem esforço",
     time:"D+20", who:"ia", whoLabel:"IA",
     title:"Toque de novidades",
-    desc:""Temos novidades que chegaram e lembrei de você! Quer dar uma olhada? 👀" — lead aquecido, na hora certa.",
+    desc:'"Temos novidades que chegaram e lembrei de você! Quer dar uma olhada? 👀" — lead aquecido, na hora certa.',
     ghost:"Sem o FácilCRM: cliente comprou uma vez e sumiu. Sem motivo para voltar.",
   },
   {
     phase:"rel", time:"D+28", who:"ia", whoLabel:"IA",
     title:"Sugestão de recompra",
-    desc:""Já faz um tempinho do último pedido — está precisando repor? Me fala que te ajudo rapidinho!" — no timing certo para a recompra.",
+    desc:'"Já faz um tempinho do último pedido — está precisando repor? Me fala que te ajudo rapidinho!" — no timing certo para a recompra.',
     ghost:"Sem o FácilCRM: cliente comprou do concorrente porque chegou primeiro.",
   },
   {
     phase:"rel", time:"D+45", who:"ia", whoLabel:"IA",
     title:"Oferta exclusiva cliente fiel",
-    desc:""Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais? 🎁" — fidelização real.",
+    desc:'"Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais? 🎁" — fidelização real.',
     ghost:"Sem o FácilCRM: cliente não sabe que você o valoriza. Para ele, é só mais uma loja.",
   },
 ];
@@ -251,14 +250,14 @@ const EVENTS5 = [
     phase:"loyal", time:"D+60 (se sumiu)",
     who:"ia", whoLabel:"IA",
     title:"Conversa franca automática",
-    desc:""Já faz um tempo sem nos falar — você ainda tem interesse? Pode ser agora ou no futuro, sem compromisso." — honesto e humano.",
+    desc:'"Já faz um tempo sem nos falar — você ainda tem interesse? Pode ser agora ou no futuro, sem compromisso." — honesto e humano.',
     ghost:"Sem o FácilCRM: lead sumiu sem explicação. Você nunca soube se era hora de desistir ou insistir.",
   },
   {
     phase:"loyal", time:"D+90",
     who:"ia", whoLabel:"IA",
     title:"Reativação leve",
-    desc:""Se precisar de nós, estamos aqui! 😊" — presença constante sem pressão. A marca que não abandona.",
+    desc:'"Se precisar de nós, estamos aqui! 😊" — presença constante sem pressão. A marca que não abandona.',
     ghost:"Sem o FácilCRM: lead foi embora em silêncio. Nunca soube que você ainda estava lá.",
   },
 ];
@@ -326,14 +325,6 @@ export default function CaminhoDoLead() {
 
     return () => { window.removeEventListener("mousemove", onMove); observer.disconnect(); };
   }, []);
-
-  const allGroups = [
-    { events: EVENTS },
-    { events: EVENTS2 },
-    { events: EVENTS3 },
-    { events: EVENTS4 },
-    { events: EVENTS5 },
-  ];
 
   return (
     <>
