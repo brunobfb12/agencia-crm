@@ -317,6 +317,12 @@ const HTML = `
           <a href="#hiw" class="btn bs">Ver como funciona ↓</a>
         </div>
         <p class="hero-trust">✓ Sem cartão<span>·</span>✓ Setup em 5 min<span>·</span>✓ Cancele quando quiser</p>
+        <div style="margin-top:16px">
+          <a href="/caminho-do-lead" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:rgba(129,140,248,.8);text-decoration:none;transition:color .2s" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='rgba(129,140,248,.8)'">
+            <span style="display:inline-block;width:6px;height:6px;background:#22d3ee;border-radius:50%;animation:blink 2s ease-in-out infinite"></span>
+            Ver o caminho completo de 90 dias do lead →
+          </a>
+        </div>
         <div class="stats">
           <div class="gc sc2-stat"><div class="sv">24/7</div><div class="sl">Atendimento ativo</div></div>
           <div class="gc sc2-stat"><div class="sv">&lt;30s</div><div class="sl">Tempo de resposta</div></div>
