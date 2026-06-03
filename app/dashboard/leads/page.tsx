@@ -18,7 +18,7 @@ interface Lead {
   empresaId: string;
   atualizadoEm: string;
   dataRecontato: string | null;
-  cliente: { nome: string | null; telefone: string; email: string | null; dataNascimento: string | null; tags: string[] };
+  cliente: { id: string; nome: string | null; telefone: string; email: string | null; dataNascimento: string | null; tags: string[] };
   empresa: { nome: string; instanciaWhatsapp: string };
 }
 
@@ -96,7 +96,7 @@ export default function LeadsPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [editLead, setEditLead] = useState<Lead | null>(null);
-  const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "", dataRecontato: "" });
+  const [editForm, setEditForm] = useState({ status: "", observacoes: "", score: 0, vendedorId: "", dataRecontato: "", nomeCliente: "" });
   const [salvando, setSalvando] = useState(false);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
   const [modoSelecao, setModoSelecao] = useState(false);
@@ -201,19 +201,29 @@ export default function LeadsPage() {
   const abrirEdit = (lead: Lead) => {
     setEditLead(lead);
     setConfirmandoExclusao(false);
-    setEditForm({ status: lead.status, observacoes: lead.observacoes ?? "", score: lead.score, vendedorId: lead.vendedorId ?? "", dataRecontato: lead.dataRecontato ? lead.dataRecontato.split("T")[0] : "" });
+    setEditForm({ status: lead.status, observacoes: lead.observacoes ?? "", score: lead.score, vendedorId: lead.vendedorId ?? "", dataRecontato: lead.dataRecontato ? lead.dataRecontato.split("T")[0] : "", nomeCliente: lead.cliente.nome ?? "" });
   };
 
   const salvarEdit = async () => {
     if (!editLead) return;
     setSalvando(true);
-    const res = await fetch(`/api/leads/${editLead.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: editForm.status, observacoes: editForm.observacoes, score: Number(editForm.score), vendedorId: editForm.vendedorId || null, dataRecontato: editForm.dataRecontato || null }),
-    });
+    const [res] = await Promise.all([
+      fetch(`/api/leads/${editLead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: editForm.status, observacoes: editForm.observacoes, score: Number(editForm.score), vendedorId: editForm.vendedorId || null, dataRecontato: editForm.dataRecontato || null }),
+      }),
+      editForm.nomeCliente !== (editLead.cliente.nome ?? "")
+        ? fetch(`/api/clientes/${editLead.cliente.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome: editForm.nomeCliente || null }),
+          })
+        : Promise.resolve(),
+    ]);
     const updated = await res.json();
-    setLeads((prev) => prev.map((l) => (l.id === editLead.id ? { ...l, ...updated } : l)));
+    const nomeAtualizado = editForm.nomeCliente !== (editLead.cliente.nome ?? "") ? editForm.nomeCliente || null : editLead.cliente.nome;
+    setLeads((prev) => prev.map((l) => (l.id === editLead.id ? { ...l, ...updated, cliente: { ...l.cliente, nome: nomeAtualizado } } : l)));
     setEditLead(null);
     setSalvando(false);
   };
@@ -1041,9 +1051,15 @@ export default function LeadsPage() {
                   Dados do Cliente
                 </p>
                 {/* Nome */}
-                <div className="flex items-center gap-2 text-[13px]">
-                  <span style={{ color: "var(--muted-2)" }}>👤</span>
-                  <span style={{ color: "var(--text)" }}>{editLead.cliente.nome ?? <span style={{ color: "var(--muted-3)" }}>Nome não informado</span>}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px]" style={{ color: "var(--muted-2)" }}>👤</span>
+                  <input
+                    type="text"
+                    value={editForm.nomeCliente}
+                    onChange={(e) => setEditForm((p) => ({ ...p, nomeCliente: e.target.value }))}
+                    placeholder="Nome do cliente"
+                    className="flex-1 input-dark px-2 py-1 text-[13px] rounded-lg"
+                  />
                 </div>
                 {/* Telefone clicável WhatsApp */}
                 <div className="flex items-center gap-2 text-[13px]">
