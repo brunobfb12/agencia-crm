@@ -27,6 +27,7 @@ model Empresa {
   aprendizados             String?
   conhecimentoBase         String?
   tagsCustomizadas         String[] @default([])
+  complementaresGuia       String?
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)

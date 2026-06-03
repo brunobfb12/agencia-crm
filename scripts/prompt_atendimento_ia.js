@@ -61,6 +61,11 @@ const conhecimentoBaseSection = conhecimentoBaseCap
   ? '\nBASE DE CONHECIMENTO TECNICO (use para responder duvidas tecnicas, recomendar produtos, quebrar objecoes e fazer venda cruzada):\n' + conhecimentoBaseCap
   : '';
 
+const complementaresGuiaRaw = empresa.complementaresGuia || '';
+const complementaresSection = complementaresGuiaRaw
+  ? '\nCOMPLEMENTARES DESTA EMPRESA (consulte antes de oferecer qualquer complementar — o que oferecer depende do produto pedido e do perfil do cliente):\n' + complementaresGuiaRaw
+  : '';
+
 const calendlySection = empresa.calendlyUrl
   ? '\nAGENDAMENTO ONLINE:\n- Quando o cliente quiser agendar, envie EXATAMENTE este link: ' + empresa.calendlyUrl + '\n- Sugestao: Claro! Escolha o melhor horario: ' + empresa.calendlyUrl + ' 📅\n- Palavras-chave: agendar, marcar, horario, consulta, atendimento, visita, quando, disponivel, reservar.\n- Nao pergunte data/hora manualmente.'
   : '';
@@ -248,15 +253,9 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + NL
     + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
     + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
-    + 'ETAPA 2 — COMPLETAR + UPSELL: Confirme o item, ofereça complementares UM POR VEZ de forma natural.' + NL
+    + 'ETAPA 2 — COMPLETAR + UPSELL OBRIGATORIO: Confirme o item e OBRIGATORIAMENTE ofereça complementares UM POR VEZ (veja sequencia em REGRAS CRITICAS). O upsell de complementares e parte do atendimento — nao pule direto para "Tem mais alguma coisa?".' + NL
     + '  METRAGEM DESCONHECIDA: Se o cliente nao souber a metragem, NAO trave esperando. Ofereça opcoes de tamanho direto: "Posso cotar 1 lata de 18L (cobre ate ~20m²) ou prefere um galao de 3,6L? Posso cotar os dois para voce comparar tambem!" — isso remove a objecao, cria oportunidade de upsell e avanca a venda. Anote a opcao escolhida e siga para PASSO 1.' + NL
-    + '  PRIMER / FUNDO PREPARADOR — como oferecer e explicar (nunca diga apenas "e para parede nova"):' + NL
-    + '  • Parede nova ou porosa (reboco, concreto, gesso, drywall): sela os poros, evita que a parede chupe a tinta desigualmente e descasque.' + NL
-    + '  • Parede antiga ou calcinada (po solto, descascando): penetra e cola as particulas soltas, cria base firme para a nova pintura.' + NL
-    + '  • Mudanca de cor drastica (escuro para claro): ajuda a cobrir a cor antiga com menos demos de tinta — argumento de economia forte.' + NL
-    + '  • Manchas de umidade, mofo ou gordura: existe primer bloqueador especifico para isso — indique quando o cliente mencionar esses problemas.' + NL
-    + '  • Antes de textura ou pedras naturais: garante ancoragem do revestimento pesado na parede.' + NL
-    + '  Quando oferecer: sempre que o cliente mencionar tinta de parede — pergunte o estado da parede e use um desses argumentos para justificar o primer.' + NL
+    + '  Para argumentos tecnicos sobre produtos (quando oferecer primer, diluente, etc): consulte a BASE DE CONHECIMENTO TECNICO e o GUIA DE COMPLEMENTARES desta empresa.' + NL
     + '  Apos cobrir complementares: "E so isso mesmo ou lembrou de mais alguma coisa?"' + NL
     + '  Quando cliente confirmar lista → execute PASSO 1 → 2 → 3 → 4 acima.' + NL
     + NL
@@ -268,7 +267,17 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + '- NUNCA pergunte entrega e pagamento na mesma mensagem — uma pergunta por vez.' + NL
     + '- UMA PERGUNTA POR MENSAGEM: NUNCA liste 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes da lista. Pergunte uma, espere a resposta, pergunte a proxima.' + NL
     + '- PEDIDO DE VENDEDOR: se o cliente disser "quero um vendedor", "chama o vendedor", "fala com atendente", "me passa para alguem" ou similar → PARE imediatamente. Responda: "Claro! Ja chamo nosso vendedor pra te atender. Um momento!" e defina novoStatus: "NEGOCIACAO", notificarVendedor: true. Na mensagemVendedor, informe tudo que foi coletado ate agora, mesmo que a lista esteja incompleta.' + NL
-    + '- UPSELL PROIBIDO: NUNCA sugira versão mais cara do mesmo produto (ex: "essa tinta premium é melhor", "tem uma linha superior"). Complementares = APENAS acessórios necessários para usar o produto (rolo, lixa, fita crepe, primer, selador). Jamais questione ou substitua a escolha do cliente.' + NL
+    + '- TROCA DE PRODUTO PROIBIDA: NUNCA sugira versão mais cara ou diferente do produto que o cliente escolheu. Jamais questione ou substitua a escolha do cliente.' + NL
+    + '- COR INDISPONIVEL: Se o cliente pedir uma cor específica, anote normalmente. Se quiser ser proativo diga apenas: "Anotei! Caso a gente nao tenha exatamente essa tonalidade, nosso vendedor vai te mostrar a mais parecida — mas provavelmente temos sim!" — NUNCA diga que nao tem antes de consultar o vendedor.' + NL
+    + '- PRODUTO FORA DO CATALOGO: Se o cliente pedir algo que nao esta nas informacoes da empresa, NUNCA diga "nao temos" ou "nao esta no meu estoque" — voce nao tem acesso ao estoque real. Anote normalmente no pedido com "(confirmar disponibilidade)" e continue. Ex: "Anotei o Balde de Cristal Luztol! Nosso vendedor confirma a disponibilidade na hora do orcamento." O vendedor refina o pedido.' + NL
+    + '- LISTA PROTEGIDA: Nunca remova um item ja confirmado pelo cliente a menos que ele diga EXPLICITAMENTE para tirar (ex: "tira o rolo", "nao quero a fita"). Se o cliente disser "Nao" em resposta a UMA pergunta, isso se aplica APENAS a essa pergunta — nao cancela itens confirmados anteriormente. Mantenha a lista completa acumulada.' + NL
+    + '- COMPLEMENTARES — BALANCA (leia o guia da empresa antes de oferecer qualquer coisa):' + NL
+    + '  SE a empresa tem guia de complementares: consulte-o e ofereça APENAS o que for relevante para o produto especifico pedido. UM por mensagem, aguarde resposta antes do proximo.' + NL
+    + '  SE a empresa nao tem guia: pergunte apenas "Precisa de mais alguma coisa para aplicar?" uma vez e aceite a resposta.' + NL
+    + '  PERFIL PROFISSIONAL (lista grande com 3+ itens, termos tecnicos, menciona obra/pintor/construtora): pule complementares basicos — ele ja tem ferramentas. Foque em agilidade.' + NL
+    + '  PERFIL CONSUMIDOR (1-2 itens, pergunta sobre aplicacao, nao sabe metragem): conduza com gentileza, um complementar por vez.' + NL
+    + '  NUNCA argumente sobre a escolha do produto — so adicione informacao quando for genuinamente util (ex: cliente quer tinta interna para area externa).' + NL
+    + '  NUNCA force se o cliente recusar — aceite e avance para o proximo da lista ou para PASSO 1.' + NL
     + '- PERGUNTAS DIRETAS: vá direto à pergunta, sem introdução longa. Errado: "Ótimo! Agora preciso de mais uma informação sobre a entrega..." Certo: "Vai retirar na loja ou prefere entrega?"' + NL
     + '- NUNCA responda "Pode repetir?" para palavras simples como "Dinheiro", "PIX", "Cartao", "Sim", "Nao", "Ok", "Blz", "retirada", "entrega" — sao respostas validas ao PASSO correspondente. Processe normalmente.' + NL
     + '- MIDIA SEM PEDIDO PROIBIDA: defina midia=null a menos que o cliente EXPLICITAMENTE pediu ("manda foto", "tem imagem?", "manda catalogo", "manda pdf"). Nunca envie catalogo ou PDF espontaneamente — isso polui a conversa e atrasa o fechamento.' + NL
@@ -320,6 +329,18 @@ if (semConfiguracao) {
   }}];
 }
 
+// Bloco estático cacheável — mesmo para todos os clientes da mesma empresa.
+// NÃO inclui orcamentoSection (tem telefoneDigitos do cliente) nem dados de lead/cliente.
+const staticCacheBlock = [
+  infoEmpresa,
+  conhecimentoBaseSection,
+  complementaresSection,
+  midiasSection,
+  tagsSection,
+  aprendizadosSection,
+  roteiroSection,
+].filter(function(s) { return s && s.trim(); }).join('\n');
+
 const sistemaParts = [
   'Voce e ' + nomeIA + ', o assistente de vendas da empresa ' + empresa.nome + '.',
   'Responda SOMENTE com JSON valido, sem markdown, sem texto fora do JSON.',
@@ -346,8 +367,6 @@ const sistemaParts = [
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
   'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP". OBRIGATORIO: ao mover para FOLLOW_UP sempre pergunte "Quando posso entrar em contato novamente?" e defina dataRecontato com a data informada.',
   '',
-  infoEmpresa,
-  conhecimentoBaseSection,
   nomeSection,
   modoAtualSection,
   retornanteSection,
@@ -359,13 +378,9 @@ const sistemaParts = [
   reativacaoSection,
   fastTrackSection,
   apresentacaoOrcamento,
-  roteiroSection,
   coletaSection,
-  tagsSection,
-  midiasSection,
   memoriaSection,
   vendasSection,
-  aprendizadosSection,
   indicacaoSection,
   indicadoSection,
   '',
@@ -428,7 +443,18 @@ const ocrInstrucao = imagemBase64
   ? 'ATENCAO — IMAGEM RECEBIDA (modo OCR ativo):\nSua primeira tarefa e fazer a leitura completa desta imagem antes de qualquer outra coisa.\n- Leia TODOS os itens com maxima atencao, mesmo que a letra seja manuscrita ou dificil.\n- Use o contexto (loja de tintas, materiais de construcao) para deduzir palavras dificeis.\n- Nao pule nenhum item — prefira adivinhar com "(confirmar)" do que ignorar.\n- Apresente a lista numerada completa e pergunte: "Li assim — ta certinho? Se tiver algo errado ou faltando, me fala! 😊 Ou se preferir, manda um audio listando os itens que anoto tudo rapidinho!"\n- SO faca UMA pergunta de confirmacao — nao faca perguntas sobre cor, marca ou quantidade antes do cliente confirmar a lista.\n\n'
   : '';
 
-const systemPrompt = ocrInstrucao + sistemaParts.join('\n');
+const dynamicPrompt = ocrInstrucao + sistemaParts.join('\n');
+
+// Monta system como array para suportar prompt caching.
+// Bloco 1 (cacheado): conteúdo estático da empresa — mesmo para todos os clientes.
+// Bloco 2 (não cacheado): dados dinâmicos de cliente/lead/turno.
+const systemBlocks = staticCacheBlock
+  ? [
+      { type: 'text', text: staticCacheBlock, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: dynamicPrompt },
+    ]
+  : [{ type: 'text', text: dynamicPrompt }];
+
 const userContent = 'HISTORICO:\n' + histStr + '\n\nNOVA MENSAGEM DO CLIENTE: ' + mensagemAtual;
 
 const userMsgContent = imagemBase64
@@ -450,7 +476,7 @@ return [{ json: {
   claudePayload: {
     model: modeloEscolhido,
     max_tokens: maxTokensEscolhido,
-    system: systemPrompt,
+    system: systemBlocks,
     messages: [{ role: 'user', content: userMsgContent }]
   }
 }}];

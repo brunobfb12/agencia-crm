@@ -115,6 +115,9 @@ END $$`,
     `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "processando" BOOLEAN NOT NULL DEFAULT false`,
     `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "processandoEm" TIMESTAMP(3)`,
 
+    // --- complementares por empresa ---
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "complementaresGuia" TEXT`,
+
     // --- perfil EMPRESA ---
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'EMPRESA'`,
 
