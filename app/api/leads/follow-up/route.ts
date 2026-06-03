@@ -40,7 +40,7 @@ export async function GET(req: Request) {
   const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
   const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, semInteresse75d, reativacao90d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta] = await Promise.all([
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -162,6 +162,17 @@ export async function GET(req: Request) {
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
       },
+      include: baseInclude,
+    }),
+  ]);
+
+  const [leadD1, leadD2] = await Promise.all([
+    prisma.lead.findMany({
+      where: { status: "LEAD", atualizadoEm: { gte: h48, lt: h24 }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
+      include: baseInclude,
+    }),
+    prisma.lead.findMany({
+      where: { status: "LEAD", atualizadoEm: { gte: h72, lt: h48 }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
       include: baseInclude,
     }),
   ]);
@@ -429,6 +440,7 @@ export async function GET(req: Request) {
           `Oi${nome}! Última tentativa por aqui — se ainda precisar de algo da ${l.empresa.nome}, é só me chamar! 🙌`
         );
       }),
+
   ];
 
   // Birthday items
@@ -492,14 +504,18 @@ export async function GET(req: Request) {
   // Marcar todos como enviados antes de retornar (evita duplicatas em crons simultâneos)
   const aq1Novos = aquecimentoD1.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]")));
   const aq2Novos = aquecimentoD2.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]")));
+  const ld1Novos = (leadD1 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD1]")));
+  const ld2Novos = (leadD2 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD2]")));
 
-  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0) {
+  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
       ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
       ...aq1Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ1]").trim() } })),
       ...aq2Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ2]").trim() } })),
+      ...ld1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[LD1]").trim() } })),
+      ...ld2Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[LD2]").trim() } })),
     ]);
   }
 
@@ -542,6 +558,32 @@ export async function GET(req: Request) {
         mensagem: `🚨 Lead *${nc}* (vendedor: ${l.vendedor?.nome ?? "não atribuído"}) sem atualização há +72h. Verifique antes de perder essa oportunidade.`,
       });
     }
+  }
+
+  for (const l of ld1Novos) {
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const ia = l.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "lead_d1", leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você entrou em contato — ficou alguma dúvida? Ainda tem interesse?`,
+    });
+  }
+
+  for (const l of ld2Novos) {
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const ia = l.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "lead_d2", leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Última tentativa — Podemos encerrar esse contato? Se precisar de algo é só chamar aqui!`,
+    });
   }
 
   // Calendário de relacionamento: D+7, D+20, D+28, D+45 desde última compra
