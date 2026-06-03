@@ -276,6 +276,7 @@ interface Empresa {
   mensagemAniversario: string | null;
   mensagemIndicacao: string | null;
   tagsCustomizadas: string[];
+  complementaresGuia: string | null;
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -879,6 +880,7 @@ export default function ConfiguracoesPage() {
   const [mensagemIndicacao, setMensagemIndicacao] = useState("");
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
+  const [complementaresGuia, setComplementaresGuia] = useState("");
   const [modalLogin, setModalLogin] = useState<Empresa | null>(null);
   const [loginForm, setLoginForm] = useState({ nome: "", email: "", senha: "" });
   const [criandoLogin, setCriandoLogin] = useState(false);
@@ -1010,6 +1012,7 @@ export default function ConfiguracoesPage() {
     setMensagemIndicacao(emp.mensagemIndicacao ?? "Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)");
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
+    setComplementaresGuia(emp.complementaresGuia ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -1036,7 +1039,7 @@ export default function ConfiguracoesPage() {
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null }),
     });
 
     if (!res.ok) {
@@ -1521,6 +1524,21 @@ export default function ConfiguracoesPage() {
                               + Adicionar
                             </button>
                           </div>
+                        </div>
+
+                        {/* ── Guia de Complementares ── */}
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted)" }}>GUIA DE COMPLEMENTARES DA IA</p>
+                          <p className="text-[11px] mb-3" style={{ color: "var(--muted-3)" }}>
+                            Instrui a IA sobre quais complementares oferecer para cada tipo de produto. Mencione o produto, quando oferecer e o argumento curto. Deixe em branco para usar o padrão genérico.
+                          </p>
+                          <textarea
+                            rows={8}
+                            value={complementaresGuia}
+                            onChange={(e) => setComplementaresGuia(e.target.value)}
+                            placeholder={`Ex:\nTINTAS DE PAREDE: Ofereça rolo (só consumidor), fita crepe, lixa. Primer quando: parede nova, mudança de cor escuro→claro, descascamento.\nESMALTE: Diluente (thinner para sintético, água para à base d'água), lixa de ferro, pincel.\nPINTOR PROFISSIONAL (lista com 3+ itens): pule complementares básicos — foque em agilidade.`}
+                            className={`${INPUT} resize-none font-mono text-[12px]`}
+                          />
                         </div>
 
                         {/* ── Termômetro do Agente ── */}
