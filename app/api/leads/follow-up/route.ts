@@ -132,13 +132,18 @@ export async function GET(req: Request) {
       include: baseInclude,
     }),
     // AQUECIMENTO 72h+ sem atividade → SEM_RESPOSTA (dois toques ignorados)
+    // Leads com score ≥ 6 ou pedido confirmado ficam retidos — vão para pressão do vendedor
     prisma.lead.findMany({
       where: {
         status: "AQUECIMENTO",
         atualizadoEm: { lt: h72 },
         empresa: { ativa: true },
       },
-      select: { id: true },
+      select: { id: true, score: true, observacoes: true, vendedorId: true,
+        cliente: { select: { nome: true, telefone: true } },
+        empresa: { select: { id: true, nome: true, instanciaWhatsapp: true, nomeIA: true } },
+        vendedor: { select: { nome: true, telefone: true } },
+      },
     }),
     // #4: SEM_RESPOSTA 75+ dias → auto SEM_INTERESSE (conversa franca ignorada há 15d+)
     prisma.lead.findMany({
@@ -283,11 +288,42 @@ export async function GET(req: Request) {
     });
   }
 
-  // AQUECIMENTO 72h+ → SEM_RESPOSTA (dois toques ignorados)
-  if (aquecimentoSemResposta.length > 0) {
+  // AQUECIMENTO 72h+ → SEM_RESPOSTA, mas protege leads com interesse confirmado
+  type AqLead = { id: string; score: number; observacoes: string | null; vendedorId: string | null;
+    cliente: { nome: string | null; telefone: string }; empresa: { id: string; nome: string; instanciaWhatsapp: string | null; nomeIA: string | null };
+    vendedor: { nome: string; telefone: string } | null };
+  const aqLeads = aquecimentoSemResposta as unknown as AqLead[];
+
+  // Quentes: score ≥ 6 OU observacoes tem "CONFIRMADO" → retém, notifica vendedor
+  const aqQuentes = aqLeads.filter(l =>
+    (l.score ?? 0) >= 6 || (l.observacoes ?? "").includes("CONFIRMADO")
+  );
+  // Frios: sem sinal de interesse real → SEM_RESPOSTA normalmente
+  const aqFrios = aqLeads.filter(l =>
+    (l.score ?? 0) < 6 && !(l.observacoes ?? "").includes("CONFIRMADO")
+  );
+
+  if (aqFrios.length > 0) {
     await prisma.lead.updateMany({
-      where: { id: { in: aquecimentoSemResposta.map((l: { id: string }) => l.id) } },
+      where: { id: { in: aqFrios.map(l => l.id) } },
       data: { status: "SEM_RESPOSTA" },
+    });
+  }
+
+  // Quentes: notifica vendedor e mantém em AQUECIMENTO
+  for (const l of aqQuentes) {
+    if (!l.empresa.instanciaWhatsapp || !l.vendedorId || !l.vendedor?.telefone) continue;
+    const nc = l.cliente.nome || l.cliente.telefone;
+    const pedido = resumoPedido(l.observacoes);
+    const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
+    items.push({
+      tipo: "pressao_vendedor_aquecimento",
+      leadId: l.id,
+      clienteTelefone: l.vendedor.telefone,
+      clienteNome: l.vendedor.nome,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `⚠️ Oi ${l.vendedor.nome}! O lead *${nc}* está parado há 72h mas tem pedido confirmado.${pedidoStr}\n\nEntre em contato agora antes de perder essa venda! 👊`,
     });
   }
 
