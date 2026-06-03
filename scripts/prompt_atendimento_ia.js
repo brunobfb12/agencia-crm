@@ -77,7 +77,9 @@ if (!cliente.dataNascimento) dadosFaltando.push('data de nascimento');
 const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA'];
 const isReativacao = statusReativacao.includes(lead.status);
 const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
+const mensagensSaida = historico.filter(function(m) { return m.direcao === 'SAIDA'; }).length;
 const isPrimeiraMensagem = mensagensEntrada <= 1;
+const iaPrimeiraResposta = mensagensSaida === 0;
 const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocadas
 
 let reativacaoSection = '';
@@ -183,11 +185,26 @@ if (aprendizadosRaw.length > 0) {
 }
 
 const isPosVenda = lead.status === 'POS_VENDA';
+const isIndicado = (cliente.tags || []).some(function(t) { return t.startsWith('indicado_por_'); });
+const indicadorNome = isIndicado
+  ? (cliente.tags || []).find(function(t) { return t.startsWith('indicado_por_'); }).replace('indicado_por_', '')
+  : null;
+
 const indicacaoSection = isPosVenda
-  ? '\nPOS-VENDA: Este cliente ja comprou. Verifique se esta satisfeito. Se confirmar satisfacao, pergunte naturalmente: "Voce conhece alguem que tambem poderia se interessar? Adoraria atender amigos seus com o mesmo cuidado!" — so pergunte uma vez, nunca insista.'
+  ? '\nPOS-VENDA — INDICACAO:\n- Este cliente ja comprou. Verifique se esta satisfeito.\n- Se confirmar satisfacao (ex: "gostei", "otimo", "perfeito"), pergunte: "Que otimo! Voce conhece alguem que tambem poderia se interessar? Se quiser, me passa o nome e numero que eu entro em contato e falo que voce indicou! 😊"\n- Quando o cliente informar nome E numero do amigo: inclua no JSON "indicacao": {"nomeIndicado": "Nome", "telefoneIndicado": "55XXXXXXXXXXX"} dentro de atualizarCliente.\n- SO pergunte uma vez. Se o cliente nao quiser indicar, respeite e nao insista.'
+  : '';
+
+const indicadoSection = isIndicado
+  ? '\nLEAD INDICADO:\n- Este lead foi indicado por ' + indicadorNome + '. Na primeira mensagem, mencione isso naturalmente: "Vi que voce veio indicado pelo(a) ' + indicadorNome + ' — que legal! Fico feliz que ele(a) tenha pensado em voce!"\n- Se a mensagem for "1" ou similar (sim/quero): inicie o atendimento normalmente.\n- Se a mensagem for "2" ou "agora nao" ou "me chama em X dias": defina dataRecontato para daqui 7 dias uteis (sem fim de semana) e novoStatus: "FOLLOW_UP". Responda: "Tudo bem! Vou te chamar daqui 7 dias. Se precisar antes, e so me chamar! 😊"\n- Se a mensagem for "3" ou "nao obrigado": novoStatus: "SEM_INTERESSE". Responda com empatia e encerre.'
   : '';
 
 const tipoAtend = empresa.tipoAtendimento || 'AGENDAMENTO';
+
+// Apresentação inicial para orçamento — só na primeira mensagem
+const apresentacaoOrcamento = (iaPrimeiraResposta && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
+  ? '\nAPRESENTACAO INICIAL — SUA PRIMEIRA RESPOSTA DEVE COMECAR EXATAMENTE ASSIM (nao resuma, nao adapte, nao abrevie):\n"Oi! Eu sou ' + nomeIA + ', assistente de vendas aqui na ' + empresa.nome + '. 😊\n\nVou te fazer algumas perguntinhas para preparar o seu orçamento. 📋\n\n1 - Lista de materiais que você precisa\n2 - Retirar na Loja ou Entrega\n3 - Forma de pagamento\n\nAssim que eu terminar vou passar para um de nossos vendedores para te passar o preço!"\n- Depois dessa mensagem: se o cliente JA disse o que quer, continue direto para a proxima etapa. Se ainda nao disse, aguarde ele responder.\n- PROIBIDO omitir os 3 itens numerados. PROIBIDO omitir a parte "passar para um de nossos vendedores para te passar o preco".\n- POS-SAUDACAO: se o cliente responder com saudacao generica (Boa tarde, Oi, Tudo bem, Ok, 1, kkkk, etc.) sem citar materiais, responda APENAS: "Boa tarde! 😊 Me conta o que voce esta precisando?" — PROIBIDO perguntar casa/obra/profissional/reforma antes de saber a lista. Foco total em: LISTA DE MATERIAIS primeiro.'
+  : '';
+
 let orcamentoSection = '';
 if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
   const NL = String.fromCharCode(10);
@@ -208,12 +225,21 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + NL
     + 'PASSO 1 — ENTREGA: "Perfeito! Vai retirar na loja ou prefere entrega?"' + NL
     + 'PASSO 2 — Se entrega: "Me passa o endereco completo com bairro e referencia que ja anoto aqui!"' + NL
+    + '          Se cliente nao tiver o endereco na hora: "Tudo bem! Me fala so a cidade e o bairro para adiantar — depois o vendedor confirma o endereco completo com voce!"' + NL
     + '          Se retirada: vai direto para PASSO 3.' + NL
     + 'PASSO 3 — PAGAMENTO: "Como prefere pagar? PIX, cartao ou dinheiro?"' + NL
     + 'PASSO 4 — CONFIRMAR E ENVIAR:' + NL
     + '  Cliente: "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊"' + NL
     + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
     + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n📞 https://wa.me/' + telefoneDigitos + '\n\n📋 *Itens confirmados:*\n• [item 1]\n• [item 2]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
+    + NL
+    + '📷 MODO FOTO DE LISTA (cliente envia imagem com lista de produtos):' + NL
+    + '- Leia a imagem e monte uma lista numerada com o que conseguiu identificar.' + NL
+    + '- Apresente TUDO que leu de uma vez: "Recebi sua lista! Li assim:\n1. [item]\n2. [item]\n...\nTa certinho? Se tiver algo errado ou faltando, me fala! 😊"' + NL
+    + '- Se a letra estiver dificil de ler em algum item: inclua na lista com "(confirmar)" ao lado.' + NL
+    + '- Ofereça alternativa de audio: "Se preferir, pode me mandar um audio listando os itens que eu anoto tudo rapidinho!"' + NL
+    + '- SO avance para PASSO 1 depois que o cliente confirmar ou corrigir a lista.' + NL
+    + '- NUNCA faca mais de 1 pergunta de esclarecimento por mensagem — se tiver duvidas, pergunte item por item, uma de cada vez.' + NL
     + NL
     + '🚀 MODO LISTA (cliente ja manda 2+ itens com quantidades na PRIMEIRA mensagem):' + NL
     + '- Identificar: mensagem com 2+ itens, quantidades, marcas ou medidas (m2, kg, latas, litros, galoes).' + NL
@@ -223,6 +249,14 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
     + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
     + 'ETAPA 2 — COMPLETAR + UPSELL: Confirme o item, ofereça complementares UM POR VEZ de forma natural.' + NL
+    + '  METRAGEM DESCONHECIDA: Se o cliente nao souber a metragem, NAO trave esperando. Ofereça opcoes de tamanho direto: "Posso cotar 1 lata de 18L (cobre ate ~20m²) ou prefere um galao de 3,6L? Posso cotar os dois para voce comparar tambem!" — isso remove a objecao, cria oportunidade de upsell e avanca a venda. Anote a opcao escolhida e siga para PASSO 1.' + NL
+    + '  PRIMER / FUNDO PREPARADOR — como oferecer e explicar (nunca diga apenas "e para parede nova"):' + NL
+    + '  • Parede nova ou porosa (reboco, concreto, gesso, drywall): sela os poros, evita que a parede chupe a tinta desigualmente e descasque.' + NL
+    + '  • Parede antiga ou calcinada (po solto, descascando): penetra e cola as particulas soltas, cria base firme para a nova pintura.' + NL
+    + '  • Mudanca de cor drastica (escuro para claro): ajuda a cobrir a cor antiga com menos demos de tinta — argumento de economia forte.' + NL
+    + '  • Manchas de umidade, mofo ou gordura: existe primer bloqueador especifico para isso — indique quando o cliente mencionar esses problemas.' + NL
+    + '  • Antes de textura ou pedras naturais: garante ancoragem do revestimento pesado na parede.' + NL
+    + '  Quando oferecer: sempre que o cliente mencionar tinta de parede — pergunte o estado da parede e use um desses argumentos para justificar o primer.' + NL
     + '  Apos cobrir complementares: "E so isso mesmo ou lembrou de mais alguma coisa?"' + NL
     + '  Quando cliente confirmar lista → execute PASSO 1 → 2 → 3 → 4 acima.' + NL
     + NL
@@ -232,6 +266,12 @@ if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
     + '- ORDEM RIGIDA: lista → upsell → confirmar lista → PASSO1 → PASSO2 → PASSO3 → PASSO4. Proibido voltar atras.' + NL
     + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute apenas PASSO 1 → 2 → 3 → 4.' + NL
     + '- NUNCA pergunte entrega e pagamento na mesma mensagem — uma pergunta por vez.' + NL
+    + '- UMA PERGUNTA POR MENSAGEM: NUNCA liste 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes da lista. Pergunte uma, espere a resposta, pergunte a proxima.' + NL
+    + '- PEDIDO DE VENDEDOR: se o cliente disser "quero um vendedor", "chama o vendedor", "fala com atendente", "me passa para alguem" ou similar → PARE imediatamente. Responda: "Claro! Ja chamo nosso vendedor pra te atender. Um momento!" e defina novoStatus: "NEGOCIACAO", notificarVendedor: true. Na mensagemVendedor, informe tudo que foi coletado ate agora, mesmo que a lista esteja incompleta.' + NL
+    + '- UPSELL PROIBIDO: NUNCA sugira versão mais cara do mesmo produto (ex: "essa tinta premium é melhor", "tem uma linha superior"). Complementares = APENAS acessórios necessários para usar o produto (rolo, lixa, fita crepe, primer, selador). Jamais questione ou substitua a escolha do cliente.' + NL
+    + '- PERGUNTAS DIRETAS: vá direto à pergunta, sem introdução longa. Errado: "Ótimo! Agora preciso de mais uma informação sobre a entrega..." Certo: "Vai retirar na loja ou prefere entrega?"' + NL
+    + '- NUNCA responda "Pode repetir?" para palavras simples como "Dinheiro", "PIX", "Cartao", "Sim", "Nao", "Ok", "Blz", "retirada", "entrega" — sao respostas validas ao PASSO correspondente. Processe normalmente.' + NL
+    + '- MIDIA SEM PEDIDO PROIBIDA: defina midia=null a menos que o cliente EXPLICITAMENTE pediu ("manda foto", "tem imagem?", "manda catalogo", "manda pdf"). Nunca envie catalogo ou PDF espontaneamente — isso polui a conversa e atrasa o fechamento.' + NL
     + '- PRONTO_PARA_COMPRAR proibido neste modo — use sempre NEGOCIACAO.' + NL
     + '- novoStatus NEGOCIACAO + notificarVendedor true SOMENTE no PASSO 4 (apos coletar entrega E pagamento).' + NL
     + '- NUNCA prometa preco — o time de vendas fecha o preco.' + NL
@@ -299,7 +339,7 @@ const sistemaParts = [
   '  "score": null',
   '}',
   '',
-  'atualizarCliente: null OU {"nome":"Nome Completo","email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"]}',
+  'atualizarCliente: null OU {"nome":"Nome Completo","email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"],"indicacao":{"nomeIndicado":"Nome","telefoneIndicado":"5562999999999"}}',
   '- nome: salve quando o cliente informar o nome pela primeira vez.',
   '- addTags: lista de tags para ADICIONAR ao cliente (nao substitui as existentes). Use apenas tags definidas pela empresa.',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
@@ -318,6 +358,7 @@ const sistemaParts = [
   aguardandoVendedorSection,
   reativacaoSection,
   fastTrackSection,
+  apresentacaoOrcamento,
   roteiroSection,
   coletaSection,
   tagsSection,
@@ -326,6 +367,7 @@ const sistemaParts = [
   vendasSection,
   aprendizadosSection,
   indicacaoSection,
+  indicadoSection,
   '',
   'FLUXO DE ATENDIMENTO:',
   '1. Cumprimente e pergunte como pode ajudar (primeira mensagem)',
@@ -381,7 +423,12 @@ const sistemaParts = [
   'ANIVERSARIO CLIENTE: ' + (cliente.dataNascimento ? new Date(cliente.dataNascimento).toLocaleDateString('pt-BR') : 'nao cadastrado')
 ];
 
-const systemPrompt = sistemaParts.join('\n');
+// Instrução extra de OCR quando tem imagem — aparece no topo do system prompt
+const ocrInstrucao = imagemBase64
+  ? 'ATENCAO — IMAGEM RECEBIDA (modo OCR ativo):\nSua primeira tarefa e fazer a leitura completa desta imagem antes de qualquer outra coisa.\n- Leia TODOS os itens com maxima atencao, mesmo que a letra seja manuscrita ou dificil.\n- Use o contexto (loja de tintas, materiais de construcao) para deduzir palavras dificeis.\n- Nao pule nenhum item — prefira adivinhar com "(confirmar)" do que ignorar.\n- Apresente a lista numerada completa e pergunte: "Li assim — ta certinho? Se tiver algo errado ou faltando, me fala! 😊 Ou se preferir, manda um audio listando os itens que anoto tudo rapidinho!"\n- SO faca UMA pergunta de confirmacao — nao faca perguntas sobre cor, marca ou quantidade antes do cliente confirmar a lista.\n\n'
+  : '';
+
+const systemPrompt = ocrInstrucao + sistemaParts.join('\n');
 const userContent = 'HISTORICO:\n' + histStr + '\n\nNOVA MENSAGEM DO CLIENTE: ' + mensagemAtual;
 
 const userMsgContent = imagemBase64
@@ -389,6 +436,10 @@ const userMsgContent = imagemBase64
   : documentoBase64
   ? [{ type: 'document', source: { type: 'base64', media_type: documentoMimeType, data: documentoBase64 } }, { type: 'text', text: userContent }]
   : userContent;
+// Usa Sonnet quando tem imagem — muito melhor em OCR de letra manuscrita
+const modeloEscolhido = imagemBase64 ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+const maxTokensEscolhido = imagemBase64 ? 2048 : 1024;
+
 return [{ json: {
   ...crm,
   instancia,
@@ -397,8 +448,8 @@ return [{ json: {
   nomeVendedor,
   clienteId: cliente.id,
   claudePayload: {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
+    model: modeloEscolhido,
+    max_tokens: maxTokensEscolhido,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMsgContent }]
   }

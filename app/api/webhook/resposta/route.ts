@@ -16,7 +16,12 @@ export async function POST(req: Request) {
 
   await prisma.conversa.update({
     where: { id: conversaId },
-    data: { ultimaMensagem: resposta, ultimaAtividade: new Date() },
+    data: {
+      ultimaMensagem: resposta,
+      ultimaAtividade: new Date(),
+      processando: false,
+      processandoEm: null,
+    },
   });
 
   // Status hierarchy — AI cannot downgrade leads that reached AGENDADO or beyond

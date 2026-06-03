@@ -156,12 +156,14 @@ enum LeadStatus {
 }
 
 model Conversa {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   clienteId       String
   ultimaMensagem  String?
-  ultimaAtividade DateTime @default(now())
-  criadoEm        DateTime @default(now())
-  modoHumano      Boolean  @default(false)
+  ultimaAtividade DateTime  @default(now())
+  criadoEm        DateTime  @default(now())
+  modoHumano      Boolean   @default(false)
+  processando     Boolean   @default(false)
+  processandoEm   DateTime?
 
   cliente   Cliente    @relation(fields: [clienteId], references: [id])
   mensagens Mensagem[]

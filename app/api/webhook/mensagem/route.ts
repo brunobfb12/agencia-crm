@@ -130,6 +130,21 @@ export async function POST(req: Request) {
     data: { ultimaMensagem: mensagem, ultimaAtividade: new Date() },
   });
 
+  // Lock atômico: só uma execução processa por vez.
+  // Travamentos com mais de 30s são considerados mortos e liberados automaticamente.
+  const lockTimeout = new Date(Date.now() - 30000);
+  const lock = await prisma.conversa.updateMany({
+    where: {
+      id: conversa.id,
+      OR: [
+        { processando: false },
+        { processandoEm: { lt: lockTimeout } },
+      ],
+    },
+    data: { processando: true, processandoEm: new Date() },
+  });
+  const jaProcessando = lock.count === 0;
+
   const historico = await prisma.mensagem.findMany({
     where: { conversaId: conversa.id },
     orderBy: { criadoEm: "asc" },
@@ -191,6 +206,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    jaProcessando,
     modoHumano: conversa.modoHumano,
     empresa: {
       id: empresa.id,
