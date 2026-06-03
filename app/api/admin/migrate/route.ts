@@ -111,6 +111,10 @@ END $$`,
     // --- modo humano ---
     `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "modoHumano" BOOLEAN NOT NULL DEFAULT false`,
 
+    // --- debounce lock ---
+    `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "processando" BOOLEAN NOT NULL DEFAULT false`,
+    `ALTER TABLE "Conversa" ADD COLUMN IF NOT EXISTS "processandoEm" TIMESTAMP(3)`,
+
     // --- perfil EMPRESA ---
     `ALTER TYPE "Perfil" ADD VALUE IF NOT EXISTS 'EMPRESA'`,
 
