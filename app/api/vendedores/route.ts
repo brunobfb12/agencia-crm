@@ -34,13 +34,14 @@ export async function POST(req: Request) {
     select: { ordemChamada: true },
   });
 
-  const vendedor = await prisma.vendedor.create({
+  const vendedor = await (prisma as any).vendedor.create({
     data: {
       nome: body.nome,
       telefone: body.telefone,
       empresaId: body.empresaId,
       ordemChamada: (ultimaOrdem?.ordemChamada ?? 0) + 1,
       ...(body.cargo && { cargo: body.cargo }),
+      token: crypto.randomUUID(),
     },
   });
   return NextResponse.json(vendedor, { status: 201 });
