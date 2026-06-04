@@ -39,6 +39,8 @@ export async function GET(req: Request) {
   const h24 = new Date(now); h24.setHours(h24.getHours() - 24);
   const h48 = new Date(now); h48.setHours(h48.getHours() - 48);
   const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
+  const h96 = new Date(now); h96.setHours(h96.getHours() - 96);
+  const h120 = new Date(now); h120.setHours(h120.getHours() - 120);
 
   const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
@@ -177,6 +179,33 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // PRONTO_PARA_COMPRAR / NEGOCIACAO parado:
+  //   PC1 = 96h+ com [P72] → conversa franca pro cliente
+  //   PC2 = 120h+ com [PC1] sem resposta → FOLLOW_UP
+  const [prontoConversa, prontoFollowUp] = await Promise.all([
+    prisma.lead.findMany({
+      where: {
+        status: { in: ["PRONTO_PARA_COMPRAR", "NEGOCIACAO"] },
+        observacoes: { contains: "[P72]" },
+        NOT: { observacoes: { contains: "[PC1]" } },
+        atualizadoEm: { lt: h96 },
+        empresa: { ativa: true },
+        cliente: { telefone: { not: "" } },
+      },
+      include: baseInclude,
+    }),
+    prisma.lead.findMany({
+      where: {
+        status: { in: ["PRONTO_PARA_COMPRAR", "NEGOCIACAO"] },
+        observacoes: { contains: "[PC1]" },
+        NOT: { observacoes: { contains: "[PC2]" } },
+        atualizadoEm: { lt: h120 },
+        empresa: { ativa: true },
+      },
+      select: { id: true, observacoes: true },
+    }),
+  ]);
+
   // Calendário de relacionamento por compra — D+7, D+20, D+28, D+45 desde última venda
   const [vendasD7, vendasD20, vendasD28, vendasD45] = await Promise.all([
     prisma.venda.findMany({
@@ -297,6 +326,19 @@ export async function GET(req: Request) {
       where: { id: { in: inativos30d.map(l => l.id) } },
       data: { status: "SEM_RESPOSTA" },
     });
+  }
+
+  // PC2: PRONTO_PARA_COMPRAR + [PC1] + sem resposta 1 dia → FOLLOW_UP
+  if (prontoFollowUp.length > 0) {
+    await Promise.all(
+      prontoFollowUp.map((l: any) => prisma.lead.update({
+        where: { id: l.id },
+        data: {
+          status: "FOLLOW_UP",
+          observacoes: ((l.observacoes ?? "") + "\n[PC2]").trim(),
+        },
+      }))
+    );
   }
 
   // AQUECIMENTO 72h+ → SEM_RESPOSTA, mas protege leads com interesse confirmado
@@ -507,7 +549,9 @@ export async function GET(req: Request) {
   const ld1Novos = (leadD1 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD1]")));
   const ld2Novos = (leadD2 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD2]")));
 
-  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0) {
+  const pc1Novos = (prontoConversa as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[PC1]")));
+
+  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0 || pc1Novos.length > 0) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
@@ -516,6 +560,7 @@ export async function GET(req: Request) {
       ...aq2Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ2]").trim() } })),
       ...ld1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[LD1]").trim() } })),
       ...ld2Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[LD2]").trim() } })),
+      ...pc1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
     ]);
   }
 
@@ -583,6 +628,20 @@ export async function GET(req: Request) {
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
       mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Última tentativa — Podemos encerrar esse contato? Se precisar de algo é só chamar aqui!`,
+    });
+  }
+
+  // PC1: conversa franca para leads PRONTO_PARA_COMPRAR parados 96h+
+  for (const l of pc1Novos) {
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const ia = l.empresa.nomeIA ?? "Eu";
+    items.push({
+      tipo: "pronto_conversa_franca", leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Quero ser transparente com você — tínhamos um pedido em andamento e queria entender o que aconteceu.\n\nO que precisa acontecer para a gente fechar esse pedido? Me conta sem compromisso, pode ser agora ou numa data melhor 😊`,
     });
   }
 

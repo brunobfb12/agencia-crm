@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FácilCRM — Funil Completo do Lead</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#04040c;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.13);
+  --txt:#f0f0ff;--txt2:rgba(240,240,255,.6);--txt3:rgba(240,240,255,.3);
+  --indigo:#818cf8;--cyan:#22d3ee;--green:#34d399;--amber:#fbbf24;--red:#f87171;--pink:#f472b6;--orange:#fb923c;
+}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;line-height:1.5;padding:32px 16px 80px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+
+.wrap{position:relative;z-index:2;max-width:1200px;margin:0 auto}
+
+/* HEADER */
+.page-header{text-align:center;padding:48px 0 56px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--indigo);margin-bottom:20px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;margin-bottom:12px}
+.grad{background:linear-gradient(135deg,var(--indigo),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{font-size:.95rem;color:var(--txt2);max-width:520px;margin:0 auto}
+
+/* LEGEND */
+.legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:48px}
+.leg{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--txt2)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* FUNIL GRID */
+.funil{display:grid;grid-template-columns:1fr;gap:0}
+
+/* STATUS NODE */
+.node{border-radius:16px;padding:18px 20px;position:relative;border:1px solid}
+.node.entry{background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.25)}
+.node.qual{background:rgba(34,211,238,.06);border-color:rgba(34,211,238,.2)}
+.node.hot{background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.2)}
+.node.win{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.2)}
+.node.followup{background:rgba(99,102,241,.06);border-color:rgba(99,102,241,.2)}
+.node.cold{background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.15)}
+.node.dead{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}
+.node.new-flow{background:rgba(251,146,60,.06);border-color:rgba(251,146,60,.25)}
+
+.node-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.node-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.node-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800}
+.node-status{font-size:.65rem;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:6px;margin-left:auto;white-space:nowrap}
+
+/* AUTOMATION ROWS */
+.auto-list{display:flex;flex-direction:column;gap:6px}
+.auto{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07)}
+.auto.new{background:rgba(251,146,60,.06);border-color:rgba(251,146,60,.2)}
+.auto.warn{background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.15)}
+.auto.danger{background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.15)}
+.auto.win{background:rgba(52,211,153,.05);border-color:rgba(52,211,153,.15)}
+.auto-time{font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.auto-text{font-size:.8rem;color:var(--txt2);line-height:1.5}
+.auto-text strong{color:var(--txt)}
+
+/* CONNECTOR */
+.connector{display:flex;align-items:center;justify-content:center;padding:8px 0;gap:8px;position:relative}
+.conn-line{width:2px;height:32px;background:linear-gradient(to bottom,var(--border2),var(--border2));margin:0 auto}
+.conn-arrow{font-size:1rem;color:var(--txt3)}
+.conn-label{font-size:.7rem;color:var(--txt3);background:var(--bg);padding:0 8px;position:absolute;font-weight:600}
+
+/* BRANCH GRID */
+.branch-grid{display:grid;gap:16px;margin:8px 0}
+.branch-grid.two{grid-template-columns:1fr 1fr}
+.branch-grid.three{grid-template-columns:1fr 1fr 1fr}
+.branch-grid.four{grid-template-columns:repeat(4,1fr)}
+
+/* OUTCOME CARD */
+.outcome{border-radius:12px;padding:14px 16px;border:1px solid;text-align:center}
+.outcome-icon{font-size:1.4rem;margin-bottom:6px}
+.outcome-label{font-size:.78rem;font-weight:700;margin-bottom:4px}
+.outcome-sub{font-size:.7rem;color:var(--txt3);line-height:1.4}
+
+/* GAPS SECTION */
+.gaps{margin-top:48px;padding:28px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.15);border-radius:20px}
+.gaps-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--red);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.gap-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;padding:10px 14px;background:rgba(248,113,113,.05);border-radius:10px;border:1px solid rgba(248,113,113,.1)}
+.gap-tag{font-size:.65rem;font-weight:800;padding:2px 8px;border-radius:6px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:var(--red);white-space:nowrap;flex-shrink:0;margin-top:1px}
+.gap-text{font-size:.8rem;color:var(--txt2);line-height:1.5}
+
+/* NEW TAG */
+.tag-new{font-size:.6rem;font-weight:800;padding:1px 6px;border-radius:4px;background:rgba(251,146,60,.2);border:1px solid rgba(251,146,60,.4);color:var(--orange);letter-spacing:.04em;margin-left:6px;vertical-align:middle}
+
+@media(max-width:700px){
+  .branch-grid.two,.branch-grid.three,.branch-grid.four{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="page-header">
+  <div class="badge"><span class="dot"></span> Atualizado · 04 de Junho de 2026</div>
+  <h1>Funil Completo<br/><span class="grad">Do Lead ao Fechamento</span></h1>
+  <p class="sub">Cada status, cada automação, cada timing — e as brechas que ainda existem.</p>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:var(--indigo)"></div> Entrada / Qualificação</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div> Vendedor / Negociação</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--green)"></div> Venda / Pós-venda</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--indigo)"></div> Follow-up</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--red)"></div> Esfriando / Perdido</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--orange)"></div> Novo (04/06)</div>
+</div>
+
+<div class="funil">
+
+  <!-- ══ ENTRADA ══ -->
+  <div class="node entry">
+    <div class="node-header">
+      <div class="node-icon" style="background:rgba(129,140,248,.15)">✨</div>
+      <div>
+        <div class="node-title">LEAD <span style="font-size:.7rem;font-weight:500;color:var(--txt3)">(novo lead)</span></div>
+        <div style="font-size:.72rem;color:var(--indigo);margin-top:2px">Primeira mensagem recebida → cliente + lead criados em &lt;30s</div>
+      </div>
+      <div class="node-status" style="background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.25);color:var(--indigo)">T = 0</div>
+    </div>
+    <div class="auto-list">
+      <div class="auto"><span class="auto-time" style="background:rgba(129,140,248,.1);color:var(--indigo)">Imediato</span><div class="auto-text">IA responde, confirma nome, lê perfil (profissional/consumidor), inicia qualificação</div></div>
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">LD1 · 24–48h</span><div class="auto-text">Lead parou de responder → <strong>"Vi que você entrou em contato, ficou alguma dúvida?"</strong></div></div>
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">LD2 · 48–72h</span><div class="auto-text">Segunda tentativa → <strong>"Última tentativa, é só chamar quando precisar!"</strong></div></div>
+      <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">D+30</span><div class="auto-text">Sem nenhuma resposta → auto <strong>SEM_RESPOSTA</strong> (nunca houve contato real)</div></div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="conn-line"></div><div class="conn-arrow">↓</div></div>
+
+  <!-- ══ AQUECIMENTO ══ -->
+  <div class="node qual">
+    <div class="node-header">
+      <div class="node-icon" style="background:rgba(34,211,238,.12)">🤖</div>
+      <div>
+        <div class="node-title">AQUECIMENTO</div>
+        <div style="font-size:.72rem;color:var(--cyan);margin-top:2px">IA qualifica, faz upsell por perfil, coleta entrega + pagamento</div>
+      </div>
+      <div class="node-status" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);color:var(--cyan)">IA ativa</div>
+    </div>
+    <div class="auto-list">
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">AQ1 · 24–48h</span><div class="auto-text">Parou de responder → <strong>"Ficou alguma dúvida? Posso ajudar a finalizar?"</strong></div></div>
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">AQ2 · 48–72h</span><div class="auto-text">Segunda tentativa → <strong>"Última tentativa por aqui — é só chamar!"</strong></div></div>
+      <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">AQ · 72h+ frio</span><div class="auto-text">score &lt;6 e sem CONFIRMADO → auto <strong>SEM_RESPOSTA</strong></div></div>
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">AQ · 72h+ quente</span><div class="auto-text">score ≥6 ou CONFIRMADO → vendedor notificado, mantém AQUECIMENTO</div></div>
+    </div>
+  </div>
+
+  <div class="connector"><div class="conn-line"></div><div class="conn-arrow">↓</div></div>
+
+  <!-- ══ PRONTO / NEGOCIACAO ══ -->
+  <div class="node hot">
+    <div class="node-header">
+      <div class="node-icon" style="background:rgba(251,191,36,.12)">🎯</div>
+      <div>
+        <div class="node-title">PRONTO_PARA_COMPRAR / NEGOCIACAO</div>
+        <div style="font-size:.72rem;color:var(--amber);margin-top:2px">Vendedor notificado com briefing completo — lista, entrega, pagamento, tom do cliente</div>
+      </div>
+      <div class="node-status" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber)">Vendedor age</div>
+    </div>
+    <div class="auto-list">
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">P24 · 24h</span><div class="auto-text">Vendedor sem resposta → pressão: <strong>"Fechou? 1-Sim / 2-Não / 3-Negociando"</strong></div></div>
+      <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">P48 · 48h</span><div class="auto-text">Sem resposta → segunda pressão ao vendedor</div></div>
+      <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">P72 · 72h</span><div class="auto-text">Terceira pressão + <strong>gerente notificado</strong> + modoHumano=true</div></div>
+      <div class="auto new"><span class="auto-time" style="background:rgba(251,146,60,.15);color:var(--orange)">PC1 · 96h <span class="tag-new">NOVO</span></span><div class="auto-text">Vendedor ignorou tudo → IA fala com o <strong>cliente</strong>: <em>"O que aconteceu? O que precisa para fecharmos esse pedido?"</em></div></div>
+      <div class="auto new"><span class="auto-time" style="background:rgba(251,146,60,.15);color:var(--orange)">PC2 · 120h <span class="tag-new">NOVO</span></span><div class="auto-text">Cliente não respondeu ao PC1 → <strong>FOLLOW_UP</strong> automático</div></div>
+    </div>
+
+    <!-- Fork: resultados do vendedor -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)">
+      <div style="font-size:.72rem;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Respostas possíveis do vendedor</div>
+      <div class="branch-grid four">
+        <div class="outcome" style="background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.2)">
+          <div class="outcome-icon">✅</div>
+          <div class="outcome-label" style="color:var(--green)">1 · Fechei</div>
+          <div class="outcome-sub">Pede valor → VENDA_REALIZADA</div>
+        </div>
+        <div class="outcome" style="background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.2)">
+          <div class="outcome-icon">👻</div>
+          <div class="outcome-label" style="color:var(--red)">2a · Sumiu</div>
+          <div class="outcome-sub">IA tenta reativar → SEM_RESPOSTA</div>
+        </div>
+        <div class="outcome" style="background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.2)">
+          <div class="outcome-icon">💸</div>
+          <div class="outcome-label" style="color:var(--red)">2b · Caro</div>
+          <div class="outcome-sub">IA manda argumento → FOLLOW_UP</div>
+        </div>
+        <div class="outcome" style="background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.2)">
+          <div class="outcome-icon">⏳</div>
+          <div class="outcome-label" style="color:var(--amber)">3 · Negociando</div>
+          <div class="outcome-sub">Fica em NEGOCIACAO, P24/P48/P72 reinicia</div>
+        </div>
+      </div>
+      <div class="branch-grid two" style="margin-top:8px">
+        <div class="outcome" style="background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.2)">
+          <div class="outcome-icon">📦</div>
+          <div class="outcome-label" style="color:var(--red)">2c · Sem produto</div>
+          <div class="outcome-sub">Aprendizado salvo → PERDIDO</div>
+        </div>
+        <div class="outcome" style="background:rgba(251,146,60,.05);border-color:rgba(251,146,60,.2)">
+          <div class="outcome-icon">🤫</div>
+          <div class="outcome-label" style="color:var(--orange)">Vendedor ignora tudo</div>
+          <div class="outcome-sub">PC1 (96h) → PC2 (120h) → FOLLOW_UP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bifurcação: Venda ou Follow-up -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0">
+
+    <!-- CAMINHO A: VENDA -->
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="text-align:center;padding:8px 0;font-size:.7rem;font-weight:700;color:var(--green);letter-spacing:.08em">✅ FECHOU A VENDA</div>
+      <div class="node win">
+        <div class="node-header">
+          <div class="node-icon" style="background:rgba(52,211,153,.12)">🏆</div>
+          <div>
+            <div class="node-title" style="font-size:.9rem">VENDA_REALIZADA → POS_VENDA</div>
+          </div>
+        </div>
+        <div class="auto-list">
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">D+2</span><div class="auto-text">Mensagem pós-venda personalizada da empresa</div></div>
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">D+7</span><div class="auto-text">"Como está sendo sua experiência?"</div></div>
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">D+20</span><div class="auto-text">"Temos novidades, lembrei de você!"</div></div>
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">D+28</span><div class="auto-text">"Já faz um tempo — precisa repor?"</div></div>
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">D+45</span><div class="auto-text">Condição especial para cliente fiel</div></div>
+          <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">🎂</span><div class="auto-text">Mensagem de aniversário automática</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMINHO B: SEM VENDA -->
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="text-align:center;padding:8px 0;font-size:.7rem;font-weight:700;color:var(--amber);letter-spacing:.08em">⚠️ NÃO FECHOU / ESFRIOU</div>
+      <div class="node followup">
+        <div class="node-header">
+          <div class="node-icon" style="background:rgba(99,102,241,.12)">🔄</div>
+          <div>
+            <div class="node-title" style="font-size:.9rem">FOLLOW_UP</div>
+          </div>
+        </div>
+        <div class="auto-list">
+          <div class="auto"><span class="auto-time" style="background:rgba(99,102,241,.1);color:var(--indigo)">D+15</span><div class="auto-text">Reativação leve: "novidades que podem te interessar"</div></div>
+          <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">D+30</span><div class="auto-text">Reativação final → se sem resposta → <strong>SEM_RESPOSTA</strong></div></div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:6px 0;font-size:.8rem;color:var(--txt3)">↓</div>
+      <div class="node cold">
+        <div class="node-header">
+          <div class="node-icon" style="background:rgba(248,113,113,.1)">❄️</div>
+          <div>
+            <div class="node-title" style="font-size:.9rem">SEM_RESPOSTA</div>
+          </div>
+        </div>
+        <div class="auto-list">
+          <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">D+60</span><div class="auto-text"><strong>Conversa franca:</strong> "Ainda tem interesse? Pode ser agora ou no futuro — me diga sem compromisso."</div></div>
+          <div class="auto danger"><span class="auto-time" style="background:rgba(248,113,113,.1);color:var(--red)">D+75</span><div class="auto-text">Conversa franca ignorada → <strong>SEM_INTERESSE</strong></div></div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:6px 0;font-size:.8rem;color:var(--txt3)">↓</div>
+      <div class="node dead">
+        <div class="node-header">
+          <div class="node-icon" style="background:rgba(255,255,255,.06)">🌱</div>
+          <div>
+            <div class="node-title" style="font-size:.9rem">SEM_INTERESSE</div>
+          </div>
+        </div>
+        <div class="auto-list">
+          <div class="auto"><span class="auto-time" style="background:rgba(255,255,255,.08);color:var(--txt3)">D+90</span><div class="auto-text">Reativação leve final: "Se precisar de nós um dia, estamos aqui!" Permanece SEM_INTERESSE.</div></div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:6px 0;font-size:.8rem;color:var(--txt3)">↓</div>
+      <div class="node dead" style="text-align:center;padding:20px">
+        <div style="font-size:1.4rem;margin-bottom:6px">⛔</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;color:var(--txt3)">PERDIDO</div>
+        <div style="font-size:.75rem;color:var(--txt3);margin-top:4px">Terminal — só sai via intervenção manual</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENDADO (fora do fluxo principal) -->
+  <div style="margin-top:8px">
+    <div style="font-size:.7rem;font-weight:700;color:var(--cyan);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;text-align:center">📅 FLUXO PARALELO — Cal.com</div>
+    <div class="node qual">
+      <div class="node-header">
+        <div class="node-icon" style="background:rgba(34,211,238,.1)">📅</div>
+        <div><div class="node-title">AGENDADO</div><div style="font-size:.72rem;color:var(--cyan);margin-top:2px">Cal.com → webhook → lead movido para AGENDADO automaticamente</div></div>
+      </div>
+      <div class="auto-list">
+        <div class="auto win"><span class="auto-time" style="background:rgba(52,211,153,.1);color:var(--green)">No dia</span><div class="auto-text">Lembrete automático enviado ao cliente</div></div>
+        <div class="auto warn"><span class="auto-time" style="background:rgba(251,191,36,.1);color:var(--amber)">P24/P48/P72</span><div class="auto-text">Se sem retorno após consulta → pressão ao vendedor (mesmo fluxo que NEGOCIACAO)</div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /funil -->
+
+<!-- ══ BRECHAS ══ -->
+<div class="gaps">
+  <div class="gaps-title">🔍 Brechas Identificadas</div>
+
+  <div class="gap-item">
+    <span class="gap-tag">RESOLVIDA</span>
+    <div class="gap-text"><strong style="color:var(--green)">PC1/PC2 — PRONTO_PARA_COMPRAR + NEGOCIACAO parado</strong><br>
+    Vendedor ignorava P72 e o lead ficava preso para sempre. Resolvido em 04/06: PC1 (96h) fala com o cliente, PC2 (120h) manda para FOLLOW_UP.</div>
+  </div>
+
+  <div class="gap-item">
+    <span class="gap-tag">BRECHA</span>
+    <div class="gap-text"><strong style="color:var(--amber)">AGENDADO sem consulta realizada</strong><br>
+    Se o cliente agenda mas não comparece (no-show), o lead fica em AGENDADO indefinidamente. Não há transição automática após a data de consulta passar. Precisaria de: cron verifica se data do agendamento passou + move para FOLLOW_UP se não houve atualização.</div>
+  </div>
+
+  <div class="gap-item">
+    <span class="gap-tag">BRECHA</span>
+    <div class="gap-text"><strong style="color:var(--amber)">POS_VENDA sem ciclo de recompra após D+45</strong><br>
+    O calendário vai até D+45. Após isso, o lead fica em POS_VENDA/FOLLOW_UP sem mais automações — sem reativação em 90d, 180d. Para produtos de recompra frequente (tintas, moda) isso é dinheiro deixado na mesa.</div>
+  </div>
+
+  <div class="gap-item">
+    <span class="gap-tag">BRECHA</span>
+    <div class="gap-text"><strong style="color:var(--amber)">SEM_INTERESSE após D+90 para completamente</strong><br>
+    O toque de D+90 "bump" o atualizadoEm mas mantém SEM_INTERESSE — o lead nunca mais recebe nada. Ideal: após 6 meses + algum evento externo (nova coleção, promoção), reativar via campanha.</div>
+  </div>
+
+  <div class="gap-item">
+    <span class="gap-tag">MENOR</span>
+    <div class="gap-text"><strong style="color:var(--txt2)">PERDIDO não tem reentrada automática</strong><br>
+    Lead em PERDIDO só sai via ação manual no Kanban. Se o cliente voltou por conta própria (nova mensagem no WhatsApp), o N8N cria um novo lead — o histórico anterior se perde. Poderia haver merge automático por telefone.</div>
+  </div>
+
+  <div class="gap-item">
+    <span class="gap-tag">MENOR</span>
+    <div class="gap-text"><strong style="color:var(--txt2)">Sem métricas de conversão por etapa</strong><br>
+    Não há visibilidade de quantos leads entram em cada status e qual % avança. Impossível saber onde o funil está "vazando" mais sem exportar dados do banco manualmente.</div>
+  </div>
+
+</div>
+
+<!-- TIMELINE RESUMO -->
+<div style="margin-top:32px;padding:24px;background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.15);border-radius:16px">
+  <div style="font-size:.7rem;font-weight:800;color:var(--indigo);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">⏱️ Linha do Tempo — Pior Caso (lead que nunca responde nada)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.2);color:var(--indigo)">T+0 · Entra</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">24h · LD1</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">48h · LD2</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">30d · SEM_RESPOSTA</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">60d · Conversa franca</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">75d · SEM_INTERESSE</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--txt3)">90d · Toque final</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--txt3)">⛔ Silêncio</span>
+  </div>
+  <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+    <span style="font-size:.7rem;color:var(--txt3)">Via PRONTO:</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">24h · P24</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">48h · P48</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">72h · P72 + Gerente</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);color:var(--orange)">96h · PC1 cliente <span class="tag-new">NOVO</span></span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);color:var(--orange)">120h · FOLLOW_UP <span class="tag-new">NOVO</span></span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);color:var(--indigo)">+15d · Reativação</span>
+    <span style="color:var(--txt3);font-size:.8rem">→</span>
+    <span style="font-size:.75rem;padding:4px 10px;border-radius:6px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">+30d · SEM_RESPOSTA</span>
+    <span style="color:var(--txt3);font-size:.8rem">→ ... → ⛔</span>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:32px;font-size:.72rem;color:var(--txt3)">FácilCRM · Funil Interno · 04 de Junho de 2026 · Confidencial</div>
+
+</div>
+</body>
+</html>
