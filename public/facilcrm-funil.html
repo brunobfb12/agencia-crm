@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FácilCRM — Simulação do Funil</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#04040c;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --txt:#f0f0ff;--txt2:rgba(240,240,255,.6);--txt3:rgba(240,240,255,.3);
+  --indigo:#818cf8;--cyan:#22d3ee;--green:#34d399;--amber:#fbbf24;--red:#f87171;--orange:#fb923c;
+}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;line-height:1.5;padding:32px 16px 80px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.03) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:2;max-width:1160px;margin:0 auto}
+
+/* HEADER */
+.page-header{text-align:center;padding:48px 0 40px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--indigo);margin-bottom:20px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;letter-spacing:-.03em;margin-bottom:12px}
+.grad{background:linear-gradient(135deg,var(--indigo),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{font-size:.92rem;color:var(--txt2);max-width:540px;margin:0 auto}
+
+/* SIMULATION GRID */
+.sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:800px){.sim-grid{grid-template-columns:1fr}}
+
+/* LEAD HEADER */
+.lead-header{border-radius:16px 16px 0 0;padding:18px 20px;border:1px solid;border-bottom:none}
+.lead-tag{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:100px;display:inline-block;margin-bottom:10px}
+.lead-name{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;margin-bottom:4px}
+.lead-meta{font-size:.78rem;color:var(--txt2)}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:28px;border-left:2px solid var(--border2)}
+.tl-item{position:relative;padding:0 0 20px 20px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-29px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid;flex-shrink:0}
+.tl-date{font-size:.68rem;font-weight:700;color:var(--txt3);margin-bottom:4px;letter-spacing:.04em}
+.tl-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.tl-card.highlight{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.05)}
+.tl-card.warn{border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.04)}
+.tl-card.danger{border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.04)}
+.tl-card.new{border-color:rgba(251,146,60,.3);background:rgba(251,146,60,.05)}
+.tl-card.cold{border-color:rgba(99,102,241,.2);background:rgba(99,102,241,.04)}
+.tl-card.dead{border-color:rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+.status-pill{display:inline-flex;align-items:center;gap:5px;font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:6px;letter-spacing:.04em;margin-bottom:6px}
+.tl-title{font-size:.85rem;font-weight:700;margin-bottom:4px}
+.tl-desc{font-size:.78rem;color:var(--txt2);line-height:1.5}
+.tl-msg{font-size:.75rem;color:var(--txt3);font-style:italic;margin-top:6px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:7px;border-left:2px solid var(--border2);line-height:1.5}
+.tl-msg.green{border-left-color:var(--green);color:rgba(52,211,153,.8)}
+.tl-msg.amber{border-left-color:var(--amber);color:rgba(251,191,36,.8)}
+.tl-msg.orange{border-left-color:var(--orange);color:rgba(251,146,60,.8)}
+.tag-new{font-size:.58rem;font-weight:800;padding:1px 5px;border-radius:4px;background:rgba(251,146,60,.2);border:1px solid rgba(251,146,60,.4);color:var(--orange);letter-spacing:.04em;margin-left:5px;vertical-align:middle}
+.tag-auto{font-size:.58rem;font-weight:800;padding:1px 5px;border-radius:4px;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:var(--indigo);letter-spacing:.04em;margin-left:5px;vertical-align:middle}
+.detail-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.detail-chip{font-size:.7rem;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--txt2)}
+
+/* SECTION DIVIDER */
+.section-divider{display:flex;align-items:center;gap:12px;margin:32px 0 24px}
+.section-divider span{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* GAPS */
+.gaps-section{margin-top:48px;padding:24px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.15);border-radius:16px}
+.gaps-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--red);margin-bottom:14px}
+.gap{display:flex;gap:10px;margin-bottom:8px;padding:10px 12px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.1);border-radius:8px;align-items:flex-start}
+.gap-tag{font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.gap-text{font-size:.78rem;color:var(--txt2);line-height:1.5}
+
+/* TIMELINE SUMMARY */
+.tl-summary{margin-top:32px;padding:20px 24px;background:rgba(99,102,241,.05);border:1px solid rgba(99,102,241,.15);border-radius:14px}
+.tl-summary-title{font-size:.68rem;font-weight:800;color:var(--indigo);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.tl-summary-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+.tl-summary-row .label{font-size:.68rem;color:var(--txt3);flex-shrink:0;width:100px}
+.pill{font-size:.7rem;padding:3px 9px;border-radius:6px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="page-header">
+  <div class="badge"><span class="dot"></span> Simulação Real · Entrada 01/06/2026 · 08:00</div>
+  <h1>Funil Completo<br/><span class="grad">2 Jornadas Simuladas</span></h1>
+  <p class="sub">Lead 1 — cliente orgânico ativo que fecha a venda. Lead 2 — disparo de campanha que esfria e mostra o fluxo de recuperação PC1/PC2.</p>
+</div>
+
+<div class="sim-grid">
+
+  <!-- ══════════════════════ LEAD 1 ══════════════════════ -->
+  <div>
+    <div class="lead-header" style="background:rgba(52,211,153,.05);border-color:rgba(52,211,153,.2)">
+      <div class="lead-tag" style="background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.25);color:var(--green)">Lead 1 — Orgânico</div>
+      <div class="lead-name">João Silva</div>
+      <div class="lead-meta">📱 Mandou mensagem direto no WhatsApp da Paredão T9<br/>Perfil: consumidor final — quer tinta para sala de casa</div>
+    </div>
+
+    <div style="padding:20px;background:rgba(255,255,255,.02);border:1px solid rgba(52,211,153,.12);border-top:none;border-radius:0 0 16px 16px">
+    <div class="timeline">
+
+      <!-- T=0 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--indigo);border-color:var(--indigo)"></div>
+        <div class="tl-date">01/06 · 08:00</div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.25);color:var(--indigo)">LEAD</div>
+          <div class="tl-title">Primeira mensagem recebida</div>
+          <div class="tl-desc">Evolution API captura. N8N cria Cliente + Lead em &lt;2s. IA começa a digitar.</div>
+          <div class="detail-row">
+            <span class="detail-chip">🕐 Lead criado em &lt;2s</span>
+            <span class="detail-chip">📋 observacoes: vazio</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- IA responde -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--cyan);border-color:var(--cyan)"></div>
+        <div class="tl-date">01/06 · 08:00 (28s depois)</div>
+        <div class="tl-card highlight">
+          <div class="status-pill" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);color:var(--cyan)">IA ATIVA</div>
+          <div class="tl-title">IA responde — confirma nome</div>
+          <div class="tl-desc">Lê perfil (consumidor final: 1 item, pergunta sobre aplicação). Inicia saudação com confirmação do nome salvo.</div>
+          <div class="tl-msg green">"Oi! Aqui seu nome está salvo como *João*, esse é seu nome mesmo? 1️⃣ Sim 2️⃣ Não"</div>
+        </div>
+      </div>
+
+      <!-- AQUECIMENTO -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--cyan);border-color:var(--cyan)"></div>
+        <div class="tl-date">01/06 · 08:03</div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);color:var(--cyan)">AQUECIMENTO</div>
+          <div class="tl-title">Qualificação — upsell por perfil</div>
+          <div class="tl-desc">João confirmou o nome. IA identifica <strong>consumidor final</strong>. Confirma a tinta, oferece 1 complementar por vez (rolo, fita, selador), anota aceitos/recusados. Coleta endereço + forma de pagamento.</div>
+          <div class="tl-msg green">"Ótima escolha! 🎨 Vai aplicar rolo ou pincel? E já tem um rolo de lã de carneiro?"</div>
+          <div class="detail-row">
+            <span class="detail-chip">✅ Aceito: Rolo lã de carneiro</span>
+            <span class="detail-chip">❌ Recusado: Fita crepe</span>
+            <span class="detail-chip">✅ Aceito: Thinner 900ml</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRONTO PARA COMPRAR -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--amber);border-color:var(--amber)"></div>
+        <div class="tl-date">01/06 · 08:31</div>
+        <div class="tl-card warn">
+          <div class="status-pill" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);color:var(--amber)">PRONTO_PARA_COMPRAR</div>
+          <div class="tl-title">Lista confirmada — vendedor notificado</div>
+          <div class="tl-desc">IA coletou: endereço (Rua das Flores 42), pagamento (Pix), itens confirmados. Uma mensagem enviada ao vendedor Leo com briefing completo.</div>
+          <div class="tl-msg amber">📲 "Oi Leo! 👋 Lead *João Silva* pronto para fechar!\n📋 Tinta Coral 18L branco gelo + rolo + thinner\n📍 Rua das Flores, 42 | 💳 Pix\n🔗 wa.me/5562..."</div>
+          <div class="detail-row">
+            <span class="detail-chip">⏱️ atualizadoEm: 01/06 08:31</span>
+            <span class="detail-chip">📋 observacoes: Pedido: Tinta 18L...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vendedor age rápido -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--green);border-color:var(--green)"></div>
+        <div class="tl-date">01/06 · 09:15</div>
+        <div class="tl-card highlight">
+          <div class="status-pill" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green)">NEGOCIACAO → VENDA_REALIZADA</div>
+          <div class="tl-title">Vendedor responde "1 — Fechei"</div>
+          <div class="tl-desc">Leo clicou no link do painel, informou valor R$ 287,00. Sistema registra venda e move lead para VENDA_REALIZADA.</div>
+          <div class="detail-row">
+            <span class="detail-chip">💰 Valor: R$ 287,00</span>
+            <span class="detail-chip">⏱️ 44min do briefing ao fechamento</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- POS VENDA D+2 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--green);border-color:rgba(52,211,153,.4)"></div>
+        <div class="tl-date">03/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card highlight">
+          <div class="status-pill" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--green)">POS_VENDA · D+2</div>
+          <div class="tl-title">Mensagem pós-venda</div>
+          <div class="tl-desc">Cron detecta VENDA_REALIZADA com atualizadoEm entre D+1 e D+2. Envia mensagem personalizada da empresa. Status muda para POS_VENDA.</div>
+          <div class="tl-msg green">"Oi João! 😊 Lu aqui, da Paredão. Tudo certo com seu pedido? Se tiver dúvida na aplicação, é só chamar!"</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(52,211,153,.3);border-color:rgba(52,211,153,.2)"></div>
+        <div class="tl-date">08/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);color:rgba(52,211,153,.7)">D+7</div>
+          <div class="tl-title">"Como está sendo a experiência?"</div>
+          <div class="tl-desc">Disparo automático. Abre porta para recompra ou indicação.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(52,211,153,.3);border-color:rgba(52,211,153,.2)"></div>
+        <div class="tl-date">21/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);color:rgba(52,211,153,.7)">D+20</div>
+          <div class="tl-title">"Temos novidades, lembrei de você!"</div>
+          <div class="tl-desc">Reengajamento leve. Cliente pode abrir nova conversa com a IA.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(52,211,153,.3);border-color:rgba(52,211,153,.2)"></div>
+        <div class="tl-date">29/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);color:rgba(52,211,153,.7)">D+28</div>
+          <div class="tl-title">"Já faz um tempo — precisa repor?"</div>
+          <div class="tl-desc">Para produtos de consumo recorrente. Gatilho de recompra.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(52,211,153,.3);border-color:rgba(52,211,153,.2)"></div>
+        <div class="tl-date">16/07 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.15);color:rgba(52,211,153,.7)">D+45</div>
+          <div class="tl-title">Condição especial para cliente fiel</div>
+          <div class="tl-desc">Último toque do calendário de relacionamento pós-compra.</div>
+          <div class="tl-msg green">"Oi João! Você é um dos nossos clientes especiais — preparamos uma condição exclusiva para você! Quer ver? 🎁"</div>
+        </div>
+      </div>
+
+    </div><!-- /timeline -->
+
+    <!-- ATENÇÃO: brechas Lead 1 -->
+    <div style="margin-top:16px;padding:12px 14px;border-radius:10px;background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.15)">
+      <div style="font-size:.68rem;font-weight:800;color:var(--amber);letter-spacing:.08em;margin-bottom:6px">⚠️ BRECHA APÓS D+45</div>
+      <div style="font-size:.76rem;color:var(--txt2)">Após D+45, João fica em FOLLOW_UP sem mais automações. Se não comprar de novo em 3–6 meses, ninguém fala com ele. <strong style="color:var(--txt)">Reativação de 90/180d não existe ainda.</strong></div>
+    </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ LEAD 2 ══════════════════════ -->
+  <div>
+    <div class="lead-header" style="background:rgba(251,146,60,.05);border-color:rgba(251,146,60,.25)">
+      <div class="lead-tag" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);color:var(--orange)">Lead 2 — Campanha</div>
+      <div class="lead-name">Maria Fernanda</div>
+      <div class="lead-meta">📢 Recebeu disparo de campanha da Paredão T9<br/>Perfil: respondeu com interesse, mas esfriou no meio — vendedor ignorou</div>
+    </div>
+
+    <div style="padding:20px;background:rgba(255,255,255,.02);border:1px solid rgba(251,146,60,.12);border-top:none;border-radius:0 0 16px 16px">
+    <div class="timeline">
+
+      <!-- Campanha enviada -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--orange);border-color:var(--orange)"></div>
+        <div class="tl-date">01/06 · 08:00 <span class="tag-auto">CAMPANHA</span></div>
+        <div class="tl-card" style="border-color:rgba(251,146,60,.2);background:rgba(251,146,60,.03)">
+          <div class="status-pill" style="background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);color:var(--orange)">DISPARO</div>
+          <div class="tl-title">Campanha enviada para Maria</div>
+          <div class="tl-desc">N8N dispara mensagem de campanha (intervalo 2–3 min entre envios para anti-spam). Maria está na lista de FOLLOW_UP da empresa.</div>
+          <div class="tl-msg amber">"Oi Maria! Temos lançamentos chegando esta semana na Paredão! Quer dar uma olhada? 🎨"</div>
+          <div class="detail-row">
+            <span class="detail-chip">⏱️ Intervalo anti-spam: 2–3min</span>
+            <span class="detail-chip">📋 Opt-out LGPD: checado</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maria responde -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--indigo);border-color:var(--indigo)"></div>
+        <div class="tl-date">01/06 · 09:42</div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.25);color:var(--indigo)">LEAD</div>
+          <div class="tl-title">Maria responde à campanha</div>
+          <div class="tl-desc">Evolution API captura resposta. N8N verifica se cliente já existe (existe — estava em FOLLOW_UP). Cria novo lead vinculado ao cliente. IA ativa.</div>
+          <div class="tl-msg">"Oi! Queria ver tinta para quarto, qual vocês têm?"</div>
+          <div class="detail-row">
+            <span class="detail-chip">⏱️ atualizadoEm: 01/06 09:42</span>
+            <span class="detail-chip">📎 histórico anterior carregado</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- IA qualifica -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--cyan);border-color:var(--cyan)"></div>
+        <div class="tl-date">01/06 · 09:43</div>
+        <div class="tl-card">
+          <div class="status-pill" style="background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.25);color:var(--cyan)">AQUECIMENTO</div>
+          <div class="tl-title">IA qualifica e oferece complementar</div>
+          <div class="tl-desc">Confirma nome. Identifica consumidor final. Sugere Coral Premium acetinado, oferece rolo de lã. Maria confirma a tinta, aceita o rolo. Para de responder após isso.</div>
+          <div class="tl-msg green">"Ótima escolha! A Coral Premium dá um acabamento lindo no quarto. E vai precisar de rolo? Tenho um de lã que é perfeito para textura lisa 😊"</div>
+          <div class="detail-row">
+            <span class="detail-chip">✅ Aceito: Coral Premium 3,6L</span>
+            <span class="detail-chip">✅ Aceito: Rolo de lã</span>
+            <span class="detail-chip">⏱️ Para de responder: 01/06 10:05</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LD1 — DESTAQUE -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--amber);border-color:var(--amber)"></div>
+        <div class="tl-date">03/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card warn">
+          <div class="status-pill" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)">LD1 · 24–48h parado</div>
+          <div class="tl-title">Primeira tentativa de recuperação</div>
+          <div class="tl-desc">Cron 09:30 detecta: status LEAD ou AQUECIMENTO, atualizadoEm entre <strong>now-48h e now-24h</strong> (01/06 09:30 a 02/06 09:30). Maria entrou às 09:42 → enquadra no cron do dia 03/06. Não tem flag [LD1] → dispara.</div>
+          <div class="tl-msg amber">"Oi Maria! Lu aqui, da Paredão. Vi que conversamos ontem — ficou alguma dúvida? Ainda posso te ajudar a finalizar? 😊"</div>
+          <div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15)">
+            <div style="font-size:.68rem;font-weight:700;color:var(--indigo);margin-bottom:4px">O que acontece no banco</div>
+            <div style="font-size:.73rem;color:var(--txt2)">observacoes += <code style="background:rgba(0,0,0,.3);padding:1px 4px;border-radius:3px">[LD1]</code> (deduplicação — nunca dispara duas vezes)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LD2 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--amber);border-color:rgba(251,191,36,.5)"></div>
+        <div class="tl-date">04/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card warn">
+          <div class="status-pill" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)">LD2 · 48–72h parado</div>
+          <div class="tl-title">Segunda e última tentativa</div>
+          <div class="tl-desc">Maria não respondeu ao LD1. Cron detecta: atualizadoEm entre now-72h e now-48h. Flag [LD1] presente, [LD2] ausente → dispara.</div>
+          <div class="tl-msg amber">"Oi Maria! Última tentativa por aqui — se ainda quiser ver as tintas da Paredão, é só me chamar! 🙌"</div>
+          <div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15)">
+            <div style="font-size:.68rem;font-weight:700;color:var(--indigo);margin-bottom:4px">O que acontece no banco</div>
+            <div style="font-size:.73rem;color:var(--txt2)">observacoes += <code style="background:rgba(0,0,0,.3);padding:1px 4px;border-radius:3px">[LD2]</code></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maria responde ao LD2! vai para PRONTO -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--amber);border-color:var(--amber)"></div>
+        <div class="tl-date">04/06 · 14:22</div>
+        <div class="tl-card warn">
+          <div class="status-pill" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--amber)">PRONTO_PARA_COMPRAR</div>
+          <div class="tl-title">Maria respondeu ao LD2 — IA retoma e fecha qualificação</div>
+          <div class="tl-desc">IA retoma a conversa, coleta endereço de entrega (Av. Brasil 500) e pagamento (cartão). Lista confirmada. Vendedor Leo notificado.</div>
+          <div class="tl-msg amber">📲 "Oi Leo! 👋 Lead *Maria Fernanda* pronto!\n📋 Coral Premium 3,6L + Rolo lã\n📍 Av. Brasil, 500 | 💳 Cartão\n🔗 wa.me/5562..."</div>
+          <div class="detail-row">
+            <span class="detail-chip">⏱️ atualizadoEm: 04/06 14:22</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leo ignora P24 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(248,113,113,.5);border-color:var(--red)"></div>
+        <div class="tl-date">06/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card danger">
+          <div class="status-pill" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)">P24 — vendedor não respondeu</div>
+          <div class="tl-title">Pressão P24 → Leo ignora</div>
+          <div class="tl-desc">atualizadoEm 04/06 14:22 está no intervalo now-48h a now-24h do cron 06/06. Flag [P24] adicionado.</div>
+          <div class="tl-msg amber">"Oi Leo! 👋 O lead *Maria Fernanda* aguarda há 24h.\n📋 Pedido: Coral Premium 3,6L + Rolo\nFechou a venda? 1✅ 2❌ 3⏳"</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(248,113,113,.5);border-color:var(--red)"></div>
+        <div class="tl-date">07/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card danger">
+          <div class="status-pill" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)">P48 — vendedor não respondeu</div>
+          <div class="tl-title">Pressão P48 → Leo ignora de novo</div>
+          <div class="tl-desc">Segunda pressão. Flag [P48] adicionado.</div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--red);border-color:var(--red)"></div>
+        <div class="tl-date">08/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card danger">
+          <div class="status-pill" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)">P72 — gerente notificado</div>
+          <div class="tl-title">P72 + Gerente + modoHumano=true</div>
+          <div class="tl-desc">Terceira pressão ao Leo. Gerente recebe alerta. Conversa travada em modoHumano (IA não responde automaticamente). Flag [P72] adicionado.</div>
+          <div class="tl-msg" style="border-left-color:var(--red);color:rgba(248,113,113,.8)">"🚨 Lead *Maria Fernanda* (Leo) sem atualização há +72h. Verifique antes de perder essa oportunidade."</div>
+        </div>
+      </div>
+
+      <!-- PC1 — NOVO -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--orange);border-color:var(--orange)"></div>
+        <div class="tl-date">09/06 · 09:30 <span class="tag-auto">CRON</span> <span class="tag-new">NOVO</span></div>
+        <div class="tl-card new">
+          <div class="status-pill" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.35);color:var(--orange)">PC1 · 96h — conversa franca pro cliente</div>
+          <div class="tl-title">IA fala diretamente com Maria</div>
+          <div class="tl-desc">Vendedor ignorou tudo. Cron detecta: PRONTO_PARA_COMPRAR, tem [P72], sem [PC1], atualizadoEm &lt; now-96h. Envia mensagem transparente ao cliente. Flag [PC1] adicionado.</div>
+          <div class="tl-msg orange">"Oi Maria! Lu aqui, da Paredão. Quero ser transparente — tínhamos um pedido em andamento e queria entender o que aconteceu.\n\nO que precisa acontecer para a gente fechar esse pedido? Me conta sem compromisso, pode ser agora ou numa data melhor 😊"</div>
+        </div>
+      </div>
+
+      <!-- PC2 — NOVO -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--orange);border-color:rgba(251,146,60,.5)"></div>
+        <div class="tl-date">10/06 · 09:30 <span class="tag-auto">CRON</span> <span class="tag-new">NOVO</span></div>
+        <div class="tl-card new">
+          <div class="status-pill" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.35);color:var(--orange)">PC2 · 120h — sem resposta ao PC1</div>
+          <div class="tl-title">Maria não respondeu → FOLLOW_UP</div>
+          <div class="tl-desc">Cron detecta: tem [PC1], sem [PC2], atualizadoEm &lt; now-120h. Move para FOLLOW_UP automaticamente. Flag [PC2] adicionado.</div>
+          <div class="detail-row">
+            <span class="detail-chip">Status: PRONTO_PARA_COMPRAR → FOLLOW_UP</span>
+            <span class="detail-chip">⏱️ 9 dias desde a entrada no PRONTO</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOLLOW_UP D+15 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--indigo);border-color:rgba(129,140,248,.4)"></div>
+        <div class="tl-date">25/06 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card cold">
+          <div class="status-pill" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:var(--indigo)">FOLLOW_UP · D+15</div>
+          <div class="tl-title">Reativação leve</div>
+          <div class="tl-desc">15 dias desde que entrou em FOLLOW_UP (10/06). Mensagem leve de novidades.</div>
+          <div class="tl-msg">"Oi Maria! Lu aqui, da Paredão. Faz um tempo que não conversamos! Temos novidades que podem te interessar. Quer dar uma olhada? 😊"</div>
+        </div>
+      </div>
+
+      <!-- FOLLOW_UP D+30 → SEM_RESPOSTA -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--red);border-color:rgba(248,113,113,.4)"></div>
+        <div class="tl-date">10/07 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card danger">
+          <div class="status-pill" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);color:var(--red)">FOLLOW_UP D+30 → SEM_RESPOSTA</div>
+          <div class="tl-title">Reativação final — sem resposta</div>
+          <div class="tl-desc">30 dias em FOLLOW_UP sem resposta. Envia última mensagem e move para SEM_RESPOSTA automaticamente.</div>
+          <div class="tl-msg" style="border-left-color:var(--red)">"Sentimos sua falta por aqui! 🙏 Preparamos uma condição especial pensando em você. Posso te contar?"</div>
+        </div>
+      </div>
+
+      <!-- SEM_RESPOSTA D+60 -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(248,113,113,.3);border-color:rgba(248,113,113,.2)"></div>
+        <div class="tl-date">08/09 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card danger">
+          <div class="status-pill" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:rgba(248,113,113,.7)">SEM_RESPOSTA · D+60</div>
+          <div class="tl-title">Conversa franca — última chance real</div>
+          <div class="tl-desc">60 dias em SEM_RESPOSTA. Mensagem direta e honesta.</div>
+          <div class="tl-msg" style="border-left-color:rgba(248,113,113,.4)">"Oi Maria! Quero ser honesto: já faz 60 dias que não conversamos. Você ainda tem algum interesse em ser nossa cliente? Pode ser agora ou no futuro — me diga sem compromisso."</div>
+        </div>
+      </div>
+
+      <!-- SEM_INTERESSE -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.1)"></div>
+        <div class="tl-date">23/09 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card dead">
+          <div class="status-pill" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:var(--txt3)">SEM_INTERESSE · D+75</div>
+          <div class="tl-title">Conversa franca ignorada → SEM_INTERESSE</div>
+          <div class="tl-desc">Sem resposta por 15 dias após conversa franca. Status automático para SEM_INTERESSE.</div>
+        </div>
+      </div>
+
+      <!-- D+90 toque final -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.07)"></div>
+        <div class="tl-date">08/10 · 09:30 <span class="tag-auto">CRON</span></div>
+        <div class="tl-card dead">
+          <div class="status-pill" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--txt3)">D+90 · Toque final</div>
+          <div class="tl-title">Último contato — permanece SEM_INTERESSE</div>
+          <div class="tl-desc">Mensagem leve de porta aberta. Sem mais automações depois disso.</div>
+          <div class="tl-msg">"Oi Maria! Lu aqui, da Paredão. Faz tempo — tudo bem? Se precisar de tintas um dia, pode nos chamar, estamos aqui! 😊"</div>
+        </div>
+      </div>
+
+      <!-- PERDIDO -->
+      <div class="tl-item">
+        <div class="tl-dot" style="background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.05)"></div>
+        <div class="tl-date">08/10 em diante</div>
+        <div class="tl-card dead" style="text-align:center;padding:16px">
+          <div style="font-size:1.2rem;margin-bottom:4px">⛔</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--txt3);font-size:.85rem">Silêncio automático</div>
+          <div style="font-size:.73rem;color:var(--txt3);margin-top:4px">Nenhuma automação dispara mais.<br/>Só volta via campanha manual ou intervenção humana.</div>
+        </div>
+      </div>
+
+    </div><!-- /timeline -->
+    </div>
+  </div>
+
+</div><!-- /sim-grid -->
+
+<!-- RESUMO DE DATAS -->
+<div class="tl-summary" style="margin-top:32px">
+  <div class="tl-summary-title">📅 Resumo de Datas — Lead 2 (Maria · Campanha · Vendor Ignora)</div>
+  <div class="tl-summary-row">
+    <span class="label">Campanha</span>
+    <span class="pill" style="background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);color:var(--orange)">01/06 08:00</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Mensagem de disparo enviada</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">Lead criado</span>
+    <span class="pill" style="background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.2);color:var(--indigo)">01/06 09:42</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Maria respondeu à campanha</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">LD1</span>
+    <span class="pill" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">03/06 09:30</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Cron detecta parada 24–48h em AQUECIMENTO</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">LD2</span>
+    <span class="pill" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);color:var(--amber)">04/06 09:30</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Segunda tentativa — Maria respondeu!</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">PRONTO</span>
+    <span class="pill" style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--amber)">04/06 14:22</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Qualificação completa, vendedor notificado</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">P24 / P48 / P72</span>
+    <span class="pill" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);color:var(--red)">06 / 07 / 08 Jun</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Leo ignorou todos</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">PC1 ✦ novo</span>
+    <span class="pill" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);color:var(--orange)">09/06 09:30</span>
+    <span style="font-size:.72rem;color:var(--txt3)">IA fala com Maria "O que precisa para fecharmos?"</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">PC2 ✦ novo</span>
+    <span class="pill" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);color:var(--orange)">10/06 09:30</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Sem resposta → FOLLOW_UP automático</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">FOLLOW_UP</span>
+    <span class="pill" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.15);color:var(--indigo)">25/06 · 10/07</span>
+    <span style="font-size:.72rem;color:var(--txt3)">D+15 reativação leve · D+30 → SEM_RESPOSTA</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">SEM_RESPOSTA</span>
+    <span class="pill" style="background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.12);color:rgba(248,113,113,.7)">08/09 · 23/09</span>
+    <span style="font-size:.72rem;color:var(--txt3)">D+60 conversa franca · D+75 → SEM_INTERESSE</span>
+  </div>
+  <div class="tl-summary-row">
+    <span class="label">Fim</span>
+    <span class="pill" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--txt3)">08/10</span>
+    <span style="font-size:.72rem;color:var(--txt3)">Toque final → silêncio. 129 dias de jornada.</span>
+  </div>
+</div>
+
+<!-- BRECHAS -->
+<div class="gaps-section">
+  <div class="gaps-title">🔍 Brechas Identificadas no Funil</div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);color:var(--green)">RESOLVIDA</span>
+    <div class="gap-text"><strong style="color:var(--green)">PC1/PC2 — PRONTO e NEGOCIACAO parados</strong> — Implementado 04/06. Vendor que ignora P72 agora tem recuperação automática via IA falando com o cliente em 96h.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red)">BRECHA</span>
+    <div class="gap-text"><strong style="color:var(--txt)">AGENDADO sem no-show</strong> — Se cliente agenda pelo Cal.com mas não comparece, o lead fica preso em AGENDADO para sempre. Falta: cron verifica se data da consulta passou + sem atualização = FOLLOW_UP.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red)">BRECHA</span>
+    <div class="gap-text"><strong style="color:var(--txt)">Recompra após D+45 não existe</strong> — Após o toque de D+45, clientes que compraram ficam em silêncio. Para produtos de recompra (tintas, moda) isso é receita perdida. Falta: reativação em D+90 e D+180 para quem já comprou.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25);color:var(--amber)">MENOR</span>
+    <div class="gap-text"><strong style="color:var(--txt)">PC1 não reseta modoHumano</strong> — Quando PC1 é enviado, modoHumano ainda está true (foi setado em P72). Se Maria responder ao PC1, a IA não consegue continuar automaticamente — precisa de intervenção manual. Solução: ao enviar PC1, setar modoHumano=false na conversa.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25);color:var(--amber)">MENOR</span>
+    <div class="gap-text"><strong style="color:var(--txt)">PERDIDO não tem reentrada por telefone</strong> — Se Maria mandar mensagem meses depois, N8N cria novo lead e perde o histórico anterior. Falta: merge por telefone ao criar lead.</div>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:32px;font-size:.7rem;color:var(--txt3)">FácilCRM · Simulação de Funil · 04 de Junho de 2026 · Confidencial</div>
+
+</div>
+</body>
+</html>
