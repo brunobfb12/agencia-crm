@@ -281,6 +281,12 @@ END $$`,
 
     // --- usuario: telefone ---
     `ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "telefone" TEXT`,
+
+    // --- vendedor: painel de pressão ---
+    `ALTER TABLE "Vendedor" ADD COLUMN IF NOT EXISTS "token" TEXT`,
+    `ALTER TABLE "Vendedor" ADD COLUMN IF NOT EXISTS "ultimoLinkPressaoEm" TIMESTAMP`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "Vendedor_token_key" ON "Vendedor"("token")`,
+    `UPDATE "Vendedor" SET "token" = gen_random_uuid()::TEXT WHERE "token" IS NULL`,
   ];
 
   for (const sql of migrations) {

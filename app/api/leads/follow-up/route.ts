@@ -696,5 +696,48 @@ export async function GET(req: Request) {
     });
   }
 
+  // Painel do vendedor — envia link 1x/dia quando há leads em NEGOCIACAO pendentes
+  const h24ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const vendedoresComPendentes: any[] = await (prisma as any).vendedor.findMany({
+    where: {
+      ativo: true,
+      telefone: { not: null },
+      token: { not: null },
+      OR: [
+        { ultimoLinkPressaoEm: null },
+        { ultimoLinkPressaoEm: { lt: h24ago } },
+      ],
+      leads: {
+        some: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
+      },
+    },
+    include: {
+      empresa: { select: { instanciaWhatsapp: true, nome: true } },
+      leads: {
+        where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
+        select: { id: true },
+      },
+    },
+  });
+
+  for (const v of vendedoresComPendentes) {
+    if (!v.telefone || !v.token || !v.empresa?.instanciaWhatsapp) continue;
+    const qtd = v.leads.length;
+    const msg = `⚡ *${v.nome}*, você tem *${qtd} orçamento${qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${v.token}`;
+    items.push({
+      tipo: "painel_vendedor",
+      leadId: v.leads[0]?.id ?? "",
+      clienteTelefone: v.telefone,
+      clienteNome: v.nome,
+      instancia: v.empresa.instanciaWhatsapp,
+      empresaNome: v.empresa.nome,
+      mensagem: msg,
+    });
+    await (prisma as any).vendedor.update({
+      where: { id: v.id },
+      data: { ultimoLinkPressaoEm: now },
+    });
+  }
+
   return NextResponse.json({ total: items.length, items });
 }

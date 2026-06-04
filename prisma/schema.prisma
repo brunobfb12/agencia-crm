@@ -85,15 +85,17 @@ enum Perfil {
 }
 
 model Vendedor {
-  id                  String    @id @default(cuid())
-  nome                String
-  telefone            String
-  empresaId           String
-  ordemChamada        Int
-  ativo               Boolean   @default(true)
-  cargo               String    @default("VENDEDOR")
-  criadoEm            DateTime  @default(now())
-  ultimaAtribuicaoEm  DateTime?
+  id                   String    @id @default(cuid())
+  nome                 String
+  telefone             String
+  empresaId            String
+  ordemChamada         Int
+  ativo                Boolean   @default(true)
+  cargo                String    @default("VENDEDOR")
+  criadoEm             DateTime  @default(now())
+  ultimaAtribuicaoEm   DateTime?
+  token                String?   @unique
+  ultimoLinkPressaoEm  DateTime?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]
