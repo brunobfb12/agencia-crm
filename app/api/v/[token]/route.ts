@@ -12,15 +12,6 @@ async function sendWhatsApp(instancia: string, number: string, text: string) {
   }).catch(() => null);
 }
 
-type Categoria = "negociando" | "pronto" | "parado" | "qualificando" | "novo";
-
-function categorizar(status: string, horasParado: number): Categoria {
-  if (status === "NEGOCIACAO") return "negociando";
-  if (status === "PRONTO_PARA_COMPRAR") return "pronto";
-  if (status === "AQUECIMENTO") return horasParado >= 24 ? "parado" : "qualificando";
-  return "novo";
-}
-
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
@@ -35,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   const leads = await prisma.lead.findMany({
     where: {
       vendedorId: vendedor.id,
-      status: { in: ["LEAD", "AQUECIMENTO", "NEGOCIACAO", "PRONTO_PARA_COMPRAR"] },
+      status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] },
       empresa: { ativa: true },
     },
     orderBy: { atualizadoEm: "asc" },
@@ -46,20 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   });
 
   const now = Date.now();
-  const leadsFormatados = leads.map(l => {
-    const horasParado = Math.round((now - new Date(l.atualizadoEm).getTime()) / 3600000);
-    return {
-      id: l.id,
-      clienteNome: l.cliente.nome ?? l.cliente.telefone,
-      clienteTelefone: l.cliente.telefone,
-      empresaNome: l.empresa.nome,
-      instancia: l.empresa.instanciaWhatsapp,
-      horasParado,
-      observacoes: l.observacoes ?? "",
-      status: l.status,
-      categoria: categorizar(l.status, horasParado),
-    };
-  });
+  const leadsFormatados = leads.map(l => ({
+    id: l.id,
+    clienteNome: l.cliente.nome ?? l.cliente.telefone,
+    clienteTelefone: l.cliente.telefone,
+    empresaNome: l.empresa.nome,
+    instancia: l.empresa.instanciaWhatsapp,
+    horasParado: Math.round((now - new Date(l.atualizadoEm).getTime()) / 3600000),
+    observacoes: l.observacoes ?? "",
+    status: l.status,
+  }));
 
   return NextResponse.json({
     vendedorNome: vendedor.nome,
@@ -90,36 +77,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const ia = lead.empresa?.nomeIA ?? "Eu";
   const clienteNome = (lead.cliente?.nome as string | null)?.split(" ")[0] ?? "";
   const clienteTel = lead.cliente?.telefone as string;
-
-  if (acao === "assumir") {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: "NEGOCIACAO",
-        observacoes: ((lead.observacoes ?? "") + " | Assumido pelo vendedor").trim(),
-        atualizadoEm: new Date(),
-      },
-    });
-    return NextResponse.json({ ok: true, proximoStatus: "NEGOCIACAO" });
-  }
-
-  if (acao === "descartar_aquecimento") {
-    const aprendizadoNovo = `[PERDA] Lead parado em qualificação — cliente: ${lead.cliente.nome ?? clienteTel} | ${(lead.observacoes ?? "").split("|")[0].trim().slice(0, 80)}`;
-    const aprendizadosAtuais = lead.empresa.aprendizados ?? "";
-    await prisma.empresa.update({
-      where: { instanciaWhatsapp: instancia },
-      data: { aprendizados: (aprendizadosAtuais + "\n---\n" + aprendizadoNovo).trim() } as any,
-    });
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: "PERDIDO",
-        observacoes: ((lead.observacoes ?? "") + " | Descartado pelo vendedor").trim(),
-        atualizadoEm: new Date(),
-      },
-    });
-    return NextResponse.json({ ok: true, proximoStatus: "PERDIDO" });
-  }
 
   if (acao === "venda") {
     const valorNum = valor ? parseFloat(String(valor).replace(",", ".")) : null;
