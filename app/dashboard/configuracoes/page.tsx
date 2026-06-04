@@ -1536,7 +1536,7 @@ export default function ConfiguracoesPage() {
                             rows={8}
                             value={complementaresGuia}
                             onChange={(e) => setComplementaresGuia(e.target.value)}
-                            placeholder={`Ex:\nTINTAS DE PAREDE: Ofereça rolo (só consumidor), fita crepe, lixa. Primer quando: parede nova, mudança de cor escuro→claro, descascamento.\nESMALTE: Diluente (thinner para sintético, água para à base d'água), lixa de ferro, pincel.\nPINTOR PROFISSIONAL (lista com 3+ itens): pule complementares básicos — foque em agilidade.`}
+                            placeholder={`Ex:\nTINTAS DE PAREDE: Ofereça selador (parede nova) ou fundo preparador (esfarelamento/caiação), rolo (só consumidor), fita crepe, lixa.\nESMALTE SINTÉTICO: Aguarrás (NUNCA Thinner), rolo de espuma (obrigatório), lixa d'água.\nTEXTURA/CIMENTO QUEIMADO: Desempenadeira INOX canto arredondado (obrigatório), selador se parede nova.\nPINTOR PROFISSIONAL (lista 3+ itens): pule complementares básicos — foque em agilidade.`}
                             className={`${INPUT} resize-none font-mono text-[12px]`}
                           />
                         </div>
