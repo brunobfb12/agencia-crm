@@ -24,13 +24,26 @@ const imgMsg = msg.imageMessage || {};
 const vidMsg = msg.videoMessage || {};
 const audioMsg = msg.audioMessage || msg.pttMessage || null;
 const docMsg = msg.documentMessage || null;
+const callMsg = msg.callMessage || null;
 
 let tipo = 'TEXTO';
 let mensagem = msg.conversation || extText.text || imgMsg.caption || vidMsg.caption || null;
 let respostaImediata = null;
 
+// Detectar chamada de voz/vídeo
+if (callMsg) {
+  tipo = 'CHAMADA';
+  mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']';
+  respostaImediata = null;
+  // Continuar processamento para notificar vendedor
+}
+
 if (!mensagem) {
-  if (audioMsg) {
+  if (callMsg) {
+    tipo = 'CHAMADA';
+    mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']';
+    respostaImediata = null;
+  } else if (audioMsg) {
     tipo = 'AUDIO';
     mensagem = '[AUDIO]';
     respostaImediata = null;
