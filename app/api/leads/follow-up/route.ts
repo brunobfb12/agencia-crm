@@ -761,7 +761,7 @@ export async function GET(req: Request) {
 
   // Enviar link para cada vendedor com leads em pressão
   const evoUrl = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
-  const evoKey = process.env.AUTHENTICATION_API_KEY ?? process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+  const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
   for (const [vendedorId, entry] of pressaoPorVendedor) {
     if (!entry.vendedor.token || !entry.instancia) continue;
@@ -972,7 +972,7 @@ export async function GET(req: Request) {
 
   // Envio via Evolution API
   const evoUrlPainel = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
-  const evoKeyPainel = process.env.AUTHENTICATION_API_KEY ?? process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+  const evoKeyPainel = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
 
   for (const v of vendedoresComPendentes) {
     if (!v.telefone || !v.token || !v.empresa?.instanciaWhatsapp) continue;
