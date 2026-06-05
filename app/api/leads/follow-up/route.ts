@@ -208,6 +208,46 @@ export async function GET(req: Request) {
     },
   });
 
+  // P3.1: AGENDADO 48h+ sem resposta → FOLLOW_UP (no-show)
+  const agendadoNoShow = await prisma.lead.findMany({
+    where: {
+      status: "AGENDADO",
+      atualizadoEm: { lt: new Date(now.getTime() - 48 * 60 * 60 * 1000) },
+      empresa: { ativa: true },
+      cliente: { telefone: { not: "" } },
+    },
+    include: baseInclude,
+  });
+
+  // P3.2: NEGOCIACAO parado 14d+ (P72 + 7d) → FOLLOW_UP
+  const negociacaoTimeout = await prisma.lead.findMany({
+    where: {
+      status: "NEGOCIACAO",
+      observacoes: { contains: "[P72]" },
+      atualizadoEm: { lt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000) },
+      empresa: { ativa: true },
+      vendedorId: { not: null },
+      cliente: { telefone: { not: "" } },
+    },
+    include: {
+      cliente: { select: { nome: true, telefone: true } },
+      empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
+      vendedor: { select: { nome: true, telefone: true } },
+    },
+  });
+
+  // P3.3: FOLLOW_UP com dataRecontato vencido 7d+ → SEM_RESPOSTA
+  const followupVencido = await prisma.lead.findMany({
+    where: {
+      status: "FOLLOW_UP",
+      dataRecontato: { lte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+      atualizadoEm: { lt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+      empresa: { ativa: true },
+      cliente: { telefone: { not: "" } },
+    },
+    include: baseInclude,
+  });
+
   // PRONTO_PARA_COMPRAR / NEGOCIACAO parado:
   //   PC1 = 96h+ com [P72] → conversa franca pro cliente
   //   PC2 = 120h+ com [PC1] sem resposta → FOLLOW_UP
@@ -398,6 +438,76 @@ export async function GET(req: Request) {
       where: { id: { in: leadParaAquecimento.map(l => l.id) } },
       data: { status: "AQUECIMENTO" },
     });
+  }
+
+  // P3.1: Auto-transição AGENDADO no-show (48h) → FOLLOW_UP
+  if (agendadoNoShow.length > 0) {
+    await Promise.all(
+      agendadoNoShow.map(l =>
+        prisma.lead.update({
+          where: { id: l.id },
+          data: {
+            status: "FOLLOW_UP",
+            dataRecontato: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+            observacoes: ((l.observacoes ?? "") + "\n[P3_NOSHOW_REACTIVE]").trim(),
+          },
+        })
+      )
+    );
+  }
+
+  // P3.2: Auto-transição NEGOCIACAO timeout (14d) → FOLLOW_UP + notifica gerente
+  if (negociacaoTimeout.length > 0) {
+    await Promise.all(
+      negociacaoTimeout.map(l =>
+        prisma.lead.update({
+          where: { id: l.id },
+          data: {
+            status: "FOLLOW_UP",
+            dataRecontato: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+            observacoes: ((l.observacoes ?? "") + "\n[P3_TIMEOUT_VEND]").trim(),
+          },
+        })
+      )
+    );
+
+    // Notificar gerente sobre vendedores negligenciados
+    const gerentesP3 = await prisma.vendedor.findMany({
+      where: { cargo: "GERENTE", ativo: true },
+      select: { empresaId: true, nome: true, telefone: true },
+    });
+    const gerenteMapP3 = new Map(gerentesP3.map(g => [g.empresaId, g]));
+
+    for (const l of negociacaoTimeout) {
+      const gerente = gerenteMapP3.get(l.empresa.id);
+      if (gerente?.telefone) {
+        const nc = l.cliente.nome || l.cliente.telefone;
+        items.push({
+          tipo: "pressao_p3_timeout",
+          leadId: l.id,
+          clienteTelefone: gerente.telefone,
+          clienteNome: gerente.nome,
+          instancia: l.empresa.instanciaWhatsapp!,
+          empresaNome: l.empresa.nome,
+          mensagem: `🔴 CRÍTICO: Lead *${nc}* parado 14d+ em NEGOCIACAO. Vendedor ${l.vendedor?.nome ?? "não atribuído"} negligenciado. Movido para FOLLOW_UP automático.`,
+        });
+      }
+    }
+  }
+
+  // P3.3: Auto-transição FOLLOW_UP dataRecontato vencido (7d) → SEM_RESPOSTA
+  if (followupVencido.length > 0) {
+    await Promise.all(
+      followupVencido.map(l =>
+        prisma.lead.update({
+          where: { id: l.id },
+          data: {
+            status: "SEM_RESPOSTA",
+            observacoes: ((l.observacoes ?? "") + "\n[P3_FOLLOWUP_VENCIDO]").trim(),
+          },
+        })
+      )
+    );
   }
 
   // P2.2: Auto-transição AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR + notificar vendedor
