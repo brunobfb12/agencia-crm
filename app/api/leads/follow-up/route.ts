@@ -742,45 +742,58 @@ export async function GET(req: Request) {
     ]);
   }
 
-  for (const l of p24Novos) {
-    const nc = l.cliente.nome || l.cliente.telefone;
-    items.push({
-      tipo: "pressao_vendedor_24h", leadId: l.id,
-      clienteTelefone: l.vendedor!.telefone, clienteNome: l.vendedor!.nome,
-      instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
-      mensagem: msgPressao(l.vendedor!.nome, nc, 24, (l as any).observacoes),
-    });
-  }
+  // Consolidar pressão por vendedor: P24 + P48 + P72 → 1 link por vendedor
+  // Buscar vendedores com token para poder enviar link
+  const pressaoPorVendedor = new Map<string, { vendedor: any; qtd: number; instancia: string; empresaNome: string }>();
 
-  for (const l of p48Novos) {
-    const nc = l.cliente.nome || l.cliente.telefone;
-    items.push({
-      tipo: "pressao_vendedor_48h", leadId: l.id,
-      clienteTelefone: l.vendedor!.telefone, clienteNome: l.vendedor!.nome,
-      instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
-      mensagem: msgPressao(l.vendedor!.nome, nc, 48, (l as any).observacoes),
-    });
-  }
-
-  for (const l of p72Novos) {
-    const nc = l.cliente.nome || l.cliente.telefone;
-    if (l.vendedor?.telefone) {
-      items.push({
-        tipo: "pressao_vendedor_72h", leadId: l.id,
-        clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
-        instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
-        mensagem: msgPressao(l.vendedor.nome, nc, 72, (l as any).observacoes) + "\n\n⚠️ *72h sem resposta* — agora ou nunca!",
+  for (const l of [...p24Novos, ...p48Novos, ...p72Novos]) {
+    if (!l.vendedor?.telefone || !l.vendedor.token) continue;
+    if (!pressaoPorVendedor.has(l.vendedorId!)) {
+      pressaoPorVendedor.set(l.vendedorId!, {
+        vendedor: l.vendedor,
+        qtd: 0,
+        instancia: l.empresa.instanciaWhatsapp!,
+        empresaNome: l.empresa.nome,
       });
     }
-    const gerente = gerenteMap.get(l.empresa.id);
-    if (gerente?.telefone) {
-      items.push({
-        tipo: "pressao_gerente_72h", leadId: l.id,
-        clienteTelefone: gerente.telefone, clienteNome: gerente.nome,
-        instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
-        mensagem: `🚨 Lead *${nc}* (vendedor: ${l.vendedor?.nome ?? "não atribuído"}) sem atualização há +72h. Verifique antes de perder essa oportunidade.`,
-      });
-    }
+    const entry = pressaoPorVendedor.get(l.vendedorId!)!;
+    entry.qtd++;
+  }
+
+  // Enviar link para cada vendedor com leads em pressão
+  const evoUrl = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
+  const evoKey = process.env.AUTHENTICATION_API_KEY ?? process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+
+  for (const [vendedorId, entry] of pressaoPorVendedor) {
+    if (!entry.vendedor.token || !entry.instancia) continue;
+    const msg = `⚡ *${entry.vendedor.nome}*, você tem *${entry.qtd} orçamento${entry.qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${entry.vendedor.token}`;
+
+    items.push({
+      tipo: "pressao_vendedor_link",
+      leadId: "",
+      clienteTelefone: entry.vendedor.telefone,
+      clienteNome: entry.vendedor.nome,
+      instancia: entry.instancia,
+      empresaNome: entry.empresaNome,
+      mensagem: msg,
+    });
+
+    // Enviar via Evolution API
+    await fetch(`${evoUrl}/message/sendText/${entry.instancia}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: evoKey },
+      body: JSON.stringify({
+        number: entry.vendedor.telefone,
+        text: msg,
+        options: { presence: "composing", delay: 2000 },
+      }),
+    }).catch(() => null);
+
+    // Atualizar ultimoLinkPressaoEm
+    await prisma.vendedor.update({
+      where: { id: vendedorId },
+      data: { ultimoLinkPressaoEm: now },
+    }).catch(() => null);
   }
 
   for (const l of ld1Novos) {
