@@ -1,4 +1,20 @@
 const crm = $input.item.json;
+
+// Corta string por codepoints sem quebrar par surrogate de emojis
+function safeSlice(str, maxLen) {
+  if (!str || str.length <= maxLen) return str || '';
+  var out = [], i = 0, count = 0;
+  while (i < str.length && count < maxLen) {
+    var code = str.charCodeAt(i);
+    if (code >= 0xD800 && code <= 0xDBFF && i + 1 < str.length) {
+      out.push(str[i], str[i + 1]); i += 2;
+    } else {
+      out.push(str[i]); i++;
+    }
+    count++;
+  }
+  return out.join('');
+}
 const empresa = crm.empresa ?? {};
 const lead = crm.lead ?? {};
 const cliente = crm.cliente ?? {};
@@ -8,19 +24,62 @@ const agendamentos = crm.agendamentos ?? [];
 const vendas = crm.vendas ?? [];
 const instancia = $('Filtrar e Extrair').item.json.instancia;
 const telefone = $('Filtrar e Extrair').item.json.telefone;
+// Número limpo para wa.me — usa telefone do CRM (já normalizado) como fonte primária
+const telefoneDigitos = (cliente.telefone || telefone || '').replace(/\D/g, '').replace(/^5555/, '55');
+
+// Detecção fixo vs celular + link alternativo
+// 13 dígitos = celular (55+DDD+9+8d) | 12 dígitos = fixo (55+DDD+8d)
+const telLen = telefoneDigitos.length;
+const telDDD = telefoneDigitos.substring(2, 4);
+const telNumero = telefoneDigitos.substring(4);
+const isCelular = telLen === 13;
+// Formata legível: (62) 9 3235-8165 ou (62) 3235-8165
+const telFormatado = isCelular
+  ? '(' + telDDD + ') ' + telNumero[0] + ' ' + telNumero.substring(1,5) + '-' + telNumero.substring(5)
+  : '(' + telDDD + ') ' + telNumero.substring(0,4) + '-' + telNumero.substring(4);
+// Link alternativo: se celular → remove 9; se fixo → adiciona 9
+const telAlternativo = isCelular
+  ? '55' + telDDD + telNumero.substring(1)
+  : '55' + telDDD + '9' + telNumero;
+// Bloco de contato para mensagemVendedor
+const contatoVendedor = '📞 *WhatsApp:* https://wa.me/' + telefoneDigitos + '\n'
+  + '📱 *Telefone:* ' + telFormatado + '\n\n'
+  + '⚠️ _Se o link não abrir, tente:_ https://wa.me/' + telAlternativo + ' _ou ligue:_ ' + telFormatado;
 const mensagemAtual = crm.mensagem || $('Filtrar e Extrair').item.json.mensagem;
 const imagemBase64 = crm.imagemBase64 || null;
 const imagemMimeType = crm.imagemMimeType || 'image/jpeg';
 const documentoBase64 = crm.documentoBase64 || null;
 const documentoMimeType = crm.documentoMimeType || 'application/pdf';
 
-const histStr = historico
+// Histórico limitado às últimas 30 mensagens para manter foco do Haiku
+const historicoRecente = historico.slice(-30);
+const histStr = historicoRecente
   .map(m => (m.direcao === 'ENTRADA' ? 'Cliente' : 'Assistente') + ': ' + m.conteudo)
   .join('\n') || 'Primeira mensagem';
 
-// Cap em 3000 chars para evitar prompt gigante que derruba o JSON do Haiku
+// Extrai a última lista confirmada (✅) da conversa completa para não perder itens antigos
+function extrairUltimaLista(hist) {
+  var itens = [];
+  for (var i = hist.length - 1; i >= 0; i--) {
+    var msg = hist[i];
+    if (msg.direcao === 'SAIDA' && msg.conteudo && msg.conteudo.indexOf('✅') !== -1) {
+      var linhas = msg.conteudo.split('\n');
+      var encontrados = linhas.filter(function(l) { return l.indexOf('✅') !== -1 || l.indexOf('❓') !== -1; });
+      if (encontrados.length >= 2) {
+        itens = encontrados.map(function(l) { return l.replace(/^[✅❓]\s*/, '').trim(); }).filter(Boolean);
+        break;
+      }
+    }
+  }
+  return itens;
+}
+const listaConfirmada = extrairUltimaLista(historico);
+const listaConfirmadaSection = listaConfirmada.length > 0
+  ? '\nLISTA DE PEDIDO JA CONFIRMADA (NAO PERCA ESSES ITENS — adicione novos, nunca remova):\n' + listaConfirmada.map(function(i) { return '✅ ' + i; }).join('\n') + '\n- Qualquer novo item confirmado nesta mensagem deve ser somado a essa lista.\n- Se o cliente notar que falta um item: confirme que esta anotado e adicione imediatamente.\n'
+  : '';
+
 const infoRaw = empresa.informacoes || '';
-const infoCap = infoRaw.length > 3000 ? infoRaw.slice(0, 3000) + '\n[...informacoes truncadas — edite o campo para deixa-lo objetivo e curto]' : infoRaw;
+const infoCap = infoRaw.length > 30000 ? safeSlice(infoRaw, 30000) + '\n[...informacoes truncadas]' : infoRaw;
 const infoEmpresa = infoCap
   ? 'INFORMACOES DA EMPRESA (use para responder duvidas):\n' + infoCap
   : 'ATENCAO: Informacoes da empresa nao cadastradas. Se perguntarem sobre preco, estoque ou pagamento, diga que vai verificar e que um atendente entrara em contato.';
@@ -28,18 +87,49 @@ const infoEmpresa = infoCap
 const nomeIA = empresa.nomeIA || 'Assistente';
 const nomeVendedor = vendedor.nome || 'nosso atendente';
 
+const tagsCustomizadas = empresa.tagsCustomizadas || [];
+const tagsSection = tagsCustomizadas.length > 0
+  ? '\nTAGS DO CLIENTE (aplique automaticamente quando identificar o perfil durante a conversa):\n'
+    + 'Tags disponíveis: ' + tagsCustomizadas.map(function(t) { return '"' + t + '"'; }).join(', ') + '\n'
+    + '- Quando identificar o perfil, inclua "addTags": ["NomeDaTag"] em atualizarCliente.\n'
+    + '- Aplique apenas tags com alta confiança — nao aplique por suposicao.\n'
+    + '- Pode aplicar mais de uma tag quando o contexto confirmar.\n'
+    + '- Exemplo: cliente diz "compro para revender" → addTags: ["Revendedor"]'
+  : '';
+
+const conhecimentoBaseRaw = empresa.conhecimentoBase || '';
+const conhecimentoBaseCap = conhecimentoBaseRaw.length > 22000 ? conhecimentoBaseRaw.slice(0, 22000) + '\n[...base truncada]' : conhecimentoBaseRaw;
+const conhecimentoBaseSection = conhecimentoBaseCap
+  ? '\nBASE DE CONHECIMENTO TECNICO (use para responder duvidas tecnicas, recomendar produtos, quebrar objecoes e fazer venda cruzada):\n' + conhecimentoBaseCap
+  : '';
+
+const complementaresGuiaRaw = empresa.complementaresGuia || '';
+const complementaresSection = complementaresGuiaRaw
+  ? '\nCOMPLEMENTARES DESTA EMPRESA (consulte antes de oferecer qualquer complementar — o que oferecer depende do produto pedido e do perfil do cliente):\n' + complementaresGuiaRaw
+  : '';
+
 const calendlySection = empresa.calendlyUrl
   ? '\nAGENDAMENTO ONLINE:\n- Quando o cliente quiser agendar, envie EXATAMENTE este link: ' + empresa.calendlyUrl + '\n- Sugestao: Claro! Escolha o melhor horario: ' + empresa.calendlyUrl + ' 📅\n- Palavras-chave: agendar, marcar, horario, consulta, atendimento, visita, quando, disponivel, reservar.\n- Nao pergunte data/hora manualmente.'
+  : '';
+
+const nomeDesconhecido = !cliente.nome || cliente.nome.trim() === '';
+const nomeSection = (nomeDesconhecido && mensagensEntrada <= 1)
+  ? '\nNOME DO CLIENTE: Voce nao sabe o nome deste cliente. Na sua primeira resposta, apos cumprimentar, pergunte o nome naturalmente antes de prosseguir. Ex: "Tudo bem! Antes de tudo, qual o seu nome?" Quando souber, salve em atualizarCliente: {"nome": "Nome Completo"}.'
   : '';
 
 const dadosFaltando = [];
 if (!cliente.email) dadosFaltando.push('email');
 if (!cliente.dataNascimento) dadosFaltando.push('data de nascimento');
 
+// Declarado aqui para ser usado por modoAtualSection, aguardandoVendedorSection e orcamentoSection
+const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR' || lead.status === 'NEGOCIACAO';
+
 const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA'];
 const isReativacao = statusReativacao.includes(lead.status);
 const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
+const mensagensSaida = historico.filter(function(m) { return m.direcao === 'SAIDA'; }).length;
 const isPrimeiraMensagem = mensagensEntrada <= 1;
+const iaPrimeiraResposta = mensagensSaida === 0;
 const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocadas
 
 let reativacaoSection = '';
@@ -70,7 +160,8 @@ const modoInstrucoesMap = {
   AQUECER: 'Cliente comprou ha ' + diasDesdeCompra + ' dias. Pode mencionar novidades de forma leve e natural. Se o cliente mostrar interesse em comprar, avance. Se nao mostrar, mantenha o tom de cuidado e relacionamento — nao force.',
   VENDER: 'Entenda a necessidade do cliente e ofereça a melhor solucao. Use o historico de compras (se houver) para personalizar a oferta e encurtar o caminho ate o fechamento. Avance com confianca.',
 };
-const modoAtualSection = '\nMODO DE ATENDIMENTO ATUAL: ' + modoConversa + '\n' + modoInstrucoesMap[modoConversa];
+// Quando aguardando vendedor, suprimir modoAtual — aguardandoVendedorSection assume
+const modoAtualSection = aguardandoVendedor ? '' : '\nMODO DE ATENDIMENTO ATUAL: ' + modoConversa + '\n' + modoInstrucoesMap[modoConversa];
 
 // Roteiro de qualificação só faz sentido no modo VENDER
 const roteiroSection = (empresa.perguntasQualificacao && modoConversa === 'VENDER')
@@ -91,10 +182,9 @@ if (agendamentos.some(a => a.status === 'PENDENTE')) {
   agendamentoSection = '\nAGENDAMENTO: Este cliente ja tem um agendamento pendente. NAO ofereça agendar novamente.';
 }
 
-// Modo aguardando vendedor: lead já está em PRONTO_PARA_COMPRAR, vendedor já foi notificado
-const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR';
+// Modo aguardando vendedor: lead já está em PRONTO_PARA_COMPRAR ou NEGOCIACAO
 const aguardandoVendedorSection = aguardandoVendedor
-  ? '\nMODO AGUARDANDO VENDEDOR:\n- O vendedor ' + nomeVendedor + ' ja foi notificado e vai entrar em contato em breve.\n- Sua funcao agora: manter o cliente aquecido, responder duvidas e reforcar a expectativa positiva.\n- A cada mensagem do cliente reforce levemente: "' + nomeVendedor + ' vai te chamar logo pra finalizar tudo!"\n- Responda duvidas com entusiasmo — mantenha o interesse alto ate o vendedor agir.\n- NAO tente fechar preco ou negociar voce mesmo — isso e papel do vendedor.\n- NAO volte a notificar o vendedor (notificarVendedor: false obrigatoriamente).\n- NAO mude novoStatus — ele ja esta em PRONTO_PARA_COMPRAR.'
+  ? '\nMODO AGUARDANDO VENDEDOR:\n- O vendedor ja foi notificado com o pedido completo e vai entrar em contato em breve.\n- Sua funcao agora: manter o cliente aquecido e responder duvidas sobre produtos.\n- A cada mensagem reforce levemente: "Nosso time de vendas vai te chamar logo com o valor e prazo!"\n- Se o cliente perguntar preco: "Nosso time ja vai te passar o valor certinho, em breve!"\n- NAO mude novoStatus — ele ja esta em ' + lead.status + '.\n- COMPLEMENTO DE PEDIDO: Se o cliente quiser adicionar itens apos o pedido ja ter sido enviado ao vendedor:\n  1. Confirme com o cliente: "Anotado! Ja aviso nosso time 😊"\n  2. Defina notificarVendedor: true — NAO mude novoStatus\n  3. mensagemVendedor DEVE usar EXATAMENTE este formato (so os itens novos — o vendedor ja tem o pedido original):\n"➕ COMPLEMENTO — [NOME DO CLIENTE] adicionou itens ao pedido:\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n✅ [novo item 1]\n✅ [novo item 2]\n(UM ITEM POR LINHA — so os itens adicionados agora, nao repita o pedido original)\n\n📌 Ver pedido original na mensagem anterior."\n  4. Atualize observacoes adicionando ao final: " | COMPLEMENTO: [lista dos novos itens]"\n- Para qualquer OUTRA mensagem (duvida, confirmacao, info): notificarVendedor: false.'
   : '';
 
 const isClienteRetornante = historico.length > 4;
@@ -105,7 +195,7 @@ const retornanteSection = isClienteRetornante
 // Modo da conversa: lê a última mensagem de saída para entender o contexto
 const ultimaSaida = historico.slice().reverse().find(function(m) { return m.direcao === 'SAIDA'; });
 const modoConversaSection = ultimaSaida
-  ? '\nMODO DA CONVERSA (leia antes de responder): A ultima mensagem que voce enviou foi: "' + ultimaSaida.conteudo.slice(0, 200) + '"\n- Se foi uma mensagem de cuidado, dica ou valor (sem oferta direta): mantenha esse tom. NAO ofereça produto ou tente fechar venda imediatamente. Deixe o cliente guiar.\n- Se foi uma mensagem de reativacao, novidade ou oferta: avance para entender a necessidade e oferecer o produto naturalmente.'
+  ? '\nMODO DA CONVERSA (leia antes de responder): A ultima mensagem que voce enviou foi: "' + safeSlice(ultimaSaida.conteudo, 200) + '"\n- Se foi uma mensagem de cuidado, dica ou valor (sem oferta direta): mantenha esse tom. NAO ofereça produto ou tente fechar venda imediatamente. Deixe o cliente guiar.\n- Se foi uma mensagem de reativacao, novidade ou oferta: avance para entender a necessidade e oferecer o produto naturalmente.'
   : '';
 
 let midiasSection = '';
@@ -145,37 +235,134 @@ if (aprendizadosRaw.length > 0) {
 }
 
 const isPosVenda = lead.status === 'POS_VENDA';
+const isIndicado = (cliente.tags || []).some(function(t) { return t.startsWith('indicado_por_'); });
+const indicadorNome = isIndicado
+  ? (cliente.tags || []).find(function(t) { return t.startsWith('indicado_por_'); }).replace('indicado_por_', '')
+  : null;
+
 const indicacaoSection = isPosVenda
-  ? '\nPOS-VENDA: Este cliente ja comprou. Verifique se esta satisfeito. Se confirmar satisfacao, pergunte naturalmente: "Voce conhece alguem que tambem poderia se interessar? Adoraria atender amigos seus com o mesmo cuidado!" — so pergunte uma vez, nunca insista.'
+  ? '\nPOS-VENDA — INDICACAO:\n- Este cliente ja comprou. Verifique se esta satisfeito.\n- Se confirmar satisfacao (ex: "gostei", "otimo", "perfeito"), pergunte: "Que otimo! Voce conhece alguem que tambem poderia se interessar? Se quiser, me passa o nome e numero que eu entro em contato e falo que voce indicou! 😊"\n- Quando o cliente informar nome E numero do amigo: inclua no JSON "indicacao": {"nomeIndicado": "Nome", "telefoneIndicado": "55XXXXXXXXXXX"} dentro de atualizarCliente.\n- SO pergunte uma vez. Se o cliente nao quiser indicar, respeite e nao insista.'
+  : '';
+
+const indicadoSection = isIndicado
+  ? '\nLEAD INDICADO:\n- Este lead foi indicado por ' + indicadorNome + '. Na primeira mensagem, mencione isso naturalmente: "Vi que voce veio indicado pelo(a) ' + indicadorNome + ' — que legal! Fico feliz que ele(a) tenha pensado em voce!"\n- Se a mensagem for "1" ou similar (sim/quero): inicie o atendimento normalmente.\n- Se a mensagem for "2" ou "agora nao" ou "me chama em X dias": defina dataRecontato para daqui 7 dias uteis (sem fim de semana) e novoStatus: "FOLLOW_UP". Responda: "Tudo bem! Vou te chamar daqui 7 dias. Se precisar antes, e so me chamar! 😊"\n- Se a mensagem for "3" ou "nao obrigado": novoStatus: "SEM_INTERESSE". Responda com empatia e encerre.'
   : '';
 
 const tipoAtend = empresa.tipoAtendimento || 'AGENDAMENTO';
+
+// Apresentação inicial para orçamento — só na primeira mensagem
+// Bloco de confirmação de nome: aparece na saudação quando nome é conhecido
+const nomeWpp = cliente.nome ? cliente.nome.trim() : '';
+const confirmacaoNome = nomeWpp
+  ? 'Aqui o seu nome está salvo como *' + nomeWpp + '*, esse é o seu nome mesmo? Se não for, me fala seu nome por favor! 😊\n\n'
+  : 'Antes de tudo, qual é o seu nome? 😊\n\n';
+
+const apresentacaoOrcamento = (iaPrimeiraResposta && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
+  ? '\nAPRESENTACAO INICIAL — SUA PRIMEIRA RESPOSTA DEVE COMECAR EXATAMENTE ASSIM (nao resuma, nao adapte, nao abrevie):\n"Oi! Eu sou ' + nomeIA + ', assistente de vendas aqui na ' + empresa.nome + '. 😊\n\n' + confirmacaoNome + 'Vou te fazer algumas perguntinhas para preparar o seu orçamento. 📋\n\n1️⃣ Lista de materiais que você precisa\n2️⃣ Retirar na Loja ou Entrega\n3️⃣ Forma de pagamento\n\nAssim que eu terminar vou passar para um de nossos vendedores para te passar o preço!"\n- A confirmacao de nome e APENAS uma cortesia na saudacao. NUNCA trave, NUNCA repita a pergunta do nome, NUNCA gaste um turno so para confirmar o nome.\n- Trate o nome salvo como CORRETO por padrao. Se na mesma mensagem (ou na proxima) o cliente ja disser o que precisa (qualquer material/produto/quantidade), IGNORE a confirmacao de nome e siga DIRETO para o atendimento do pedido.\n- So atualize o nome se o cliente ESPONTANEAMENTE disser outro nome: salve em atualizarCliente: {"nome": "Nome Correto"}, agradeça em uma linha e continue sem alarde.\n- PROIBIDO responder coisas como "voce confirmou que e Fulano mesmo?" ou "quer mudar o nome?" — isso trava o atendimento e e exatamente o que NAO deve acontecer.\n- PROIBIDO omitir a confirmacao de nome, os 3 itens numerados e a parte "passar para um de nossos vendedores para te passar o preco".\n- POS-SAUDACAO: se o cliente responder com saudacao generica (Boa tarde, Oi, Tudo bem, Ok, 1, kkkk, etc.) sem citar materiais, responda APENAS: "Boa tarde! 😊 Me conta o que voce esta precisando?" — PROIBIDO perguntar casa/obra/profissional/reforma antes de saber a lista. Foco total em: LISTA DE MATERIAIS primeiro.'
+  : '';
+
 let orcamentoSection = '';
-if (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS') {
+// orcamentoSection só roda quando NÃO está aguardando vendedor
+if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS')) {
   const NL = String.fromCharCode(10);
+  const temCatalogo = !!(infoCap && infoCap.indexOf('PRODUTOS') !== -1);
   const introAmbo = tipoAtend === 'AMBOS'
     ? 'EMPRESA OFERECE AGENDAMENTO E ORCAMENTO: No inicio da conversa, entenda o que o cliente precisa. Se quiser AGENDAR: use o link Calendly. Se quiser ORCAMENTO: siga o fluxo abaixo.' + NL + NL
     : '';
-  orcamentoSection = NL + introAmbo
-    + 'FLUXO DE ORCAMENTO (ative quando o cliente pedir orcamento, preco, cotacao ou valor):' + NL
-    + 'ETAPA 1 — ESCUTA: Receba o pedido completo. O cliente pode enviar texto, [AUDIO], foto ou PDF com os itens desejados. Analise e monte a lista.' + NL
-    + 'ETAPA 2 — CONFIRMACAO: Apresente o resumo: "Voce esta precisando de [lista de itens], correto?"' + NL
-    + 'ETAPA 3 — COMPLETAR: Apos confirmacao, pergunte: "Precisa de mais algum item ou posso finalizar seu orcamento?"' + NL
-    + 'ETAPA 4 — CONCORRENTE: Pergunte: "Ja fez orcamento com outra empresa? Quanto ficou? Isso nos ajuda a oferecer a melhor condicao!"' + NL
-    + 'ETAPA 5 — ENVIO: Notifique o vendedor com o resumo completo:' + NL
-    + '  novoStatus: "NEGOCIACAO"' + NL
-    + '  notificarVendedor: true' + NL
-    + '  mensagemVendedor: "Orcamento de [nome]: [lista de itens]. Referencia concorrente: [valor ou nao informado]. -- Me avisa se fechou e o valor!"' + NL
-    + '  Resposta ao cliente: "Perfeito! Ja enviei para ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve! 😊"' + NL
+
+  const catalogoSection = temCatalogo
+    ? 'DISPONIBILIDADE DE PRODUTOS:' + NL
+      + '- Use a secao PRODUTOS das informacoes da empresa para responder "tem X?" ou "voces trabalham com Y?"' + NL
+      + '- Se estiver na lista: confirme com entusiasmo e ja ofereça complementares (rolo, lixa, fundo, fita).' + NL
+      + '- Se NAO estiver claramente na lista: PROIBIDO dizer "nao temos", "nao vendemos", "nao trabalhamos com isso" ou qualquer negativa categorica. Em loja de tinta/pintura voce NUNCA nega um produto da area.' + NL
+      + '  Em vez disso, responda: "Deixa eu confirmar a disponibilidade desse com nosso vendedor — ja anoto na sua lista junto com o resto! 😊 O que mais voce vai precisar?"' + NL
+      + '  Anote o item normalmente na lista, marcando "(confirmar disponibilidade)" ao lado dele, e CONTINUE o orcamento normalmente.' + NL
+      + '- Quem confirma o que tem, o que nao tem mais e qual o substituto e SEMPRE o vendedor — voce so monta a lista. Nao prometa nem descarte nada.' + NL
+      + '- So trate um item como indisponivel se a empresa tiver listado EXPLICITAMENTE o que NAO vende.' + NL + NL
+    : '';
+
+  orcamentoSection = NL + introAmbo + catalogoSection
+    + 'FLUXO DE FECHAMENTO — SEQUENCIA OBRIGATORIA apos lista confirmada:' + NL
     + NL
-    + 'REGRAS DO ORCAMENTO:' + NL
-    + '- Avance UMA etapa por vez. Nao pule fases.' + NL
-    + '- Foto: analise visualmente, liste os itens identificados, confirme com o cliente.' + NL
+    + 'PASSO 1 — ENTREGA: "Perfeito! Vai retirar na loja ou prefere entrega?"' + NL
+    + 'PASSO 2 — Se entrega: "Me passa o endereco completo com bairro e referencia que ja anoto aqui!"' + NL
+    + '          Se cliente nao tiver o endereco na hora: "Tudo bem! Me fala so a cidade e o bairro para adiantar — depois o vendedor confirma o endereco completo com voce!"' + NL
+    + '          Se retirada: vai direto para PASSO 3.' + NL
+    + 'PASSO 3 — PAGAMENTO: "Como prefere pagar? PIX, cartao ou dinheiro?"' + NL
+    + 'PASSO 4 — CONFIRMAR E ENVIAR:' + NL
+    + '  Cliente: "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊"' + NL
+    + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
+    + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n📋 *Itens confirmados:*\n✅ [item 1]\n✅ [item 2]\n✅ [item 3]\n(UM ITEM POR LINHA com ✅ — NUNCA separe por virgula)\n\n❓ *Confirmar disponibilidade:* [itens marcados (confirmar disponibilidade) — ou Nenhum. O cliente quer estes, confirme se temos e, se nao tiver mais, ofereça o substituto]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
+    + NL
+    + '📷 MODO FOTO DE LISTA (cliente envia imagem com lista de produtos):' + NL
+    + '- Leia a imagem e monte uma lista numerada com o que conseguiu identificar.' + NL
+    + '- Apresente TUDO que leu de uma vez: "Recebi sua lista! Li assim:\n1. [item]\n2. [item]\n...\nTa certinho? Se tiver algo errado ou faltando, me fala! 😊"' + NL
+    + '- Se a letra estiver dificil de ler em algum item: inclua na lista com "(confirmar)" ao lado.' + NL
+    + '- Ofereça alternativa de audio: "Se preferir, pode me mandar um audio listando os itens que eu anoto tudo rapidinho!"' + NL
+    + '- SO avance para PASSO 1 depois que o cliente confirmar ou corrigir a lista.' + NL
+    + '- NUNCA faca mais de 1 pergunta de esclarecimento por mensagem — se tiver duvidas, pergunte item por item, uma de cada vez.' + NL
+    + NL
+    + '🚀 MODO LISTA (cliente ja manda 2+ itens com quantidades na PRIMEIRA mensagem):' + NL
+    + '- Identificar: mensagem com 2+ itens, quantidades, marcas ou medidas (m2, kg, latas, litros, galoes).' + NL
+    + '- Confirmar com entusiasmo e ja pular para PASSO 1: "Recebi sua lista! So mais duas perguntinhas rapidas:"' + NL
+    + '- Nao faca upsell — cliente ja sabe o que quer. Execute PASSO 1 → 2 → 3 → 4.' + NL
+    + NL
+    + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
+    + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
+    + 'ETAPA 2 — COMPLETAR + UPSELL OBRIGATORIO: Confirme o item e OBRIGATORIAMENTE ofereça complementares UM POR VEZ (veja sequencia em REGRAS CRITICAS). O upsell de complementares e parte do atendimento — nao pule direto para "Tem mais alguma coisa?".' + NL
+    + '  METRAGEM DESCONHECIDA: Se o cliente nao souber a metragem, NAO trave esperando. Ofereça opcoes de tamanho direto: "Posso cotar 1 lata de 18L (cobre ate ~20m²) ou prefere um galao de 3,6L? Posso cotar os dois para voce comparar tambem!" — isso remove a objecao, cria oportunidade de upsell e avanca a venda. Anote a opcao escolhida e siga para PASSO 1.' + NL
+    + '  Para argumentos tecnicos sobre produtos (quando oferecer primer, diluente, etc): consulte a BASE DE CONHECIMENTO TECNICO e o GUIA DE COMPLEMENTARES desta empresa.' + NL
+    + '  Apos cobrir complementares: "E so isso mesmo ou lembrou de mais alguma coisa?"' + NL
+    + '  Quando cliente confirmar lista → execute PASSO 1 → 2 → 3 → 4 acima.' + NL
+    + NL
+    + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
+    + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
+    + '- PASSO JA RESPONDIDO = cliente mencionou o dado (ex: "vou retirar", "PIX", "Rua X") — marque como concluido e avance.' + NL
+    + '- ORDEM RIGIDA: lista → upsell → confirmar lista → PASSO1 → PASSO2 → PASSO3 → PASSO4. Proibido voltar atras.' + NL
+    + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute apenas PASSO 1 → 2 → 3 → 4.' + NL
+    + '- NUNCA pergunte entrega e pagamento na mesma mensagem — uma pergunta por vez.' + NL
+    + '- UMA PERGUNTA POR MENSAGEM: NUNCA liste 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes da lista. Pergunte uma, espere a resposta, pergunte a proxima.' + NL
+    + '- PEDIDO DE VENDEDOR: se o cliente disser "quero um vendedor", "chama o vendedor", "fala com atendente", "me passa para alguem" ou similar → PARE imediatamente. Responda: "Claro! Ja chamo nosso vendedor pra te atender. Um momento!" e defina novoStatus: "NEGOCIACAO", notificarVendedor: true. Na mensagemVendedor, informe tudo que foi coletado ate agora, mesmo que a lista esteja incompleta.' + NL
+    + '- TROCA DE PRODUTO PROIBIDA: NUNCA sugira versão mais cara ou diferente do produto que o cliente escolheu. Jamais questione ou substitua a escolha do cliente.' + NL
+    + '- COR INDISPONIVEL: Se o cliente pedir uma cor específica, anote normalmente. Se quiser ser proativo diga apenas: "Anotei! Caso a gente nao tenha exatamente essa tonalidade, nosso vendedor vai te mostrar a mais parecida — mas provavelmente temos sim!" — NUNCA diga que nao tem antes de consultar o vendedor.' + NL
+    + '- PRODUTO FORA DO CATALOGO: Se o cliente pedir algo que nao esta nas informacoes da empresa, NUNCA diga "nao temos" ou "nao esta no meu estoque" — voce nao tem acesso ao estoque real. Anote normalmente no pedido com "(confirmar disponibilidade)" e continue. Ex: "Anotei o Balde de Cristal Luztol! Nosso vendedor confirma a disponibilidade na hora do orcamento." O vendedor refina o pedido.' + NL
+    + '- AVANCE APOS ANOTAR: Quando anotar produto com "(confirmar disponibilidade)", esse assunto esta ENCERRADO. NAO volte a perguntar sobre esse item na proxima mensagem. Faca a proxima pergunta natural do fluxo (upsell, entrega, pagamento). NUNCA questione novamente um item que voce ja disse "Nosso vendedor confirma".' + NL
+    + '- RESPOSTA CURTA = RESPOSTA CONTEXTUAL: Se o cliente responder com 1-3 palavras (ex: "Parede", "Sim", "Luztol", "Fosca", "Buscar", "PIX"), ela e SEMPRE uma resposta direta a sua ultima pergunta. Processe como resposta valida ao contexto anterior — NUNCA trate como mensagem nova ou desconhecida. Ex: voce perguntou "para qual superficie?" e cliente responde "Parede" → confirme que e para parede e avance.' + NL
+    + '- PASSO 4 POR INICIATIVA: Quando voce ja tiver lista confirmada + entrega + pagamento, execute o PASSO 4 imediatamente sem pedir mais confirmacoes. Nao espere o cliente dizer "pode mandar" — ele ja respondeu tudo que e necessario. Frase: "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊" + novoStatus NEGOCIACAO + notificarVendedor true.' + NL
+    + '- LISTA PROTEGIDA: Nunca remova um item ja confirmado pelo cliente a menos que ele diga EXPLICITAMENTE para tirar (ex: "tira o rolo", "nao quero a fita"). Se o cliente disser "Nao" em resposta a UMA pergunta, isso se aplica APENAS a essa pergunta — nao cancela itens confirmados anteriormente. Mantenha a lista completa acumulada.' + NL
+    + '- LISTA ACUMULATIVA OBRIGATORIA: A lista de pedido so cresce — NUNCA perde itens ao longo da conversa. Antes de escrever qualquer resumo ou avancar para os PASSOs, leia toda a conversa desde o inicio e inclua TODOS os itens confirmados, mesmo os mencionados nas primeiras mensagens. Se o cliente pedir "faz um resumo": liste absolutamente tudo que foi confirmado, sem excecao.' + NL
+    + '- COMPLEMENTARES — BALANCA (leia o guia da empresa antes de oferecer qualquer coisa):' + NL
+    + '  SE a empresa tem guia de complementares: consulte-o e ofereça APENAS o que for relevante para o produto especifico pedido. UM por mensagem, aguarde resposta antes do proximo.' + NL
+    + '  SE a empresa nao tem guia: pergunte apenas "Precisa de mais alguma coisa para aplicar?" uma vez e aceite a resposta.' + NL
+    + '  PERFIL PROFISSIONAL (lista grande com 3+ itens, termos tecnicos, menciona obra/pintor/construtora): pule complementares basicos — ele ja tem ferramentas. Foque em agilidade.' + NL
+    + '  PERFIL CONSUMIDOR (1-2 itens, pergunta sobre aplicacao, nao sabe metragem): conduza com gentileza, um complementar por vez.' + NL
+    + '  NUNCA argumente sobre a escolha do produto — so adicione informacao quando for genuinamente util (ex: cliente quer tinta interna para area externa).' + NL
+    + '  NUNCA force se o cliente recusar — aceite e avance para o proximo da lista ou para PASSO 1.' + NL
+    + '  CLIENTE PEDE QUALQUER PRODUTO (ferramenta, EPI, lona, escada, selador, etc): confirme imediatamente sem questionar e anote na lista — NAO filtre pelo guia de complementares quando o cliente ja pediu.' + NL
+    + NL
+    + '- NOTAS DE CONHECIMENTO (dicas tecnicas em italico — formato WhatsApp: _texto_):' + NL
+    + '  QUANDO usar: ao confirmar certos produtos, adicione UMA nota tecnica contextual na mesma mensagem de confirmacao. Nunca em mensagem de entrega/pagamento. Nunca para perfil profissional/pintor. Nunca repita a mesma nota duas vezes na conversa.' + NL
+    + '  FORMATO OBRIGATORIO: _💡 [dica curta e direta em italico]_' + NL
+    + '  GATILHOS:' + NL
+    + '  • Cimento queimado, marmore ou efeito decorativo confirmado → _💡 Cimento Queimado e Marmore exigem desempenadeira INOX de canto arredondado — canto quadrado risca e arruina o efeito completamente._' + NL
+    + '  • 3 ou mais latas/galoes do mesmo produto confirmados → _💡 Lotes diferentes podem ter variacao sutil de cor. Misture todas as latas em um recipiente maior antes de comecar — assim fica uniforme do inicio ao fim._' + NL
+    + '  • Esmalte ou verniz confirmado → _💡 Para esmalte e verniz use sempre rolo de espuma — rolo de la deixa fiapos e bolhas no acabamento._' + NL
+    + '  • Esmalte sintetico confirmado → _💡 Esmalte sintetico dilui SOMENTE com Aguarras — nunca Thinner. Thinner estraga o produto._' + NL
+    + '  • Mofo mencionado pelo cliente → _💡 Pintar sobre mofo sem resolver a causa — o mofo volta. Trate com agua + agua sanitaria 1:1 por 6h, enxague bem e seque antes de pintar._' + NL
+    + '  • Parede nova / reboco novo confirmado → _💡 Parede nova: o Selador Acrílico e o mais indicado — padroniza a absorcao e economiza tinta. Use Fundo Preparador somente se houver esfarelamento ou caiacao._' + NL
+    + '  • Gesso ou drywall confirmado → _💡 Em gesso e drywall nunca use massa corrida convencional — descasca. Use produto especifico para gesso._' + NL
+    + '  • Verniz + madeira nova confirmados → _💡 Na madeira nova, dilua a 1a demao de verniz 1:1 com Aguarras para penetrar bem. Aguarde 72h de cura antes de usar._' + NL
+    + '  • Tinta de piso nas cores branco, amarelo demarcacao ou vermelho seguranca → _💡 Essas cores rendem menos: 14m² por galao (3,6L). Calcule separado para nao faltar no meio do servico._' + NL
+    + '- PERGUNTAS DIRETAS: vá direto à pergunta, sem introdução longa. Errado: "Ótimo! Agora preciso de mais uma informação sobre a entrega..." Certo: "Vai retirar na loja ou prefere entrega?"' + NL
+    + '- NUNCA responda "Pode repetir?" para palavras simples como "Dinheiro", "PIX", "Cartao", "Sim", "Nao", "Ok", "Blz", "retirada", "entrega" — sao respostas validas ao PASSO correspondente. Processe normalmente.' + NL
+    + '- MIDIA SEM PEDIDO PROIBIDA: defina midia=null a menos que o cliente EXPLICITAMENTE pediu ("manda foto", "tem imagem?", "manda catalogo", "manda pdf"). Nunca envie catalogo ou PDF espontaneamente — isso polui a conversa e atrasa o fechamento.' + NL
+    + '- PRONTO_PARA_COMPRAR proibido neste modo — use sempre NEGOCIACAO.' + NL
+    + '- novoStatus NEGOCIACAO + notificarVendedor true SOMENTE no PASSO 4 (apos coletar entrega E pagamento).' + NL
+    + '- NUNCA prometa preco — o time de vendas fecha o preco.' + NL
+    + '- IDENTIDADE: voce e ' + nomeIA + ', assistente da ' + empresa.nome + '. NUNCA se identifique como outra empresa ou pessoa.' + NL
+    + '- Foto/PDF: liste os itens identificados e siga o modo correspondente.' + NL
     + '- [AUDIO]: responda ao conteudo da transcricao como se fosse texto.' + NL
-    + '- PDF: leia o conteudo, extraia os itens, confirme com o cliente.' + NL
-    + '- Avance para CONCORRENTE somente apos o cliente confirmar os itens.' + NL
-    + '- Notifique o vendedor somente apos o cliente responder sobre concorrente (mesmo que diga "nao fiz").' + NL
-    + '- Em memoriaCliente registre: "ORCAMENTO ENVIADO: [itens] | Concorrente: [valor ou N/A]"';
+    + '- Em memoriaCliente registre: "PEDIDO: [itens] | Entrega: [retirada/endereco] | Pagamento: [forma]"';
 }
 
 // Se a empresa não tem informações configuradas, entra em modo de espera — não tenta vender
@@ -217,6 +404,18 @@ if (semConfiguracao) {
   }}];
 }
 
+// Bloco estático cacheável — mesmo para todos os clientes da mesma empresa.
+// NÃO inclui orcamentoSection (tem telefoneDigitos do cliente) nem dados de lead/cliente.
+const staticCacheBlock = [
+  infoEmpresa,
+  conhecimentoBaseSection,
+  complementaresSection,
+  midiasSection,
+  tagsSection,
+  aprendizadosSection,
+  roteiroSection,
+].filter(function(s) { return s && s.trim(); }).join('\n');
+
 const sistemaParts = [
   'Voce e ' + nomeIA + ', o assistente de vendas da empresa ' + empresa.nome + '.',
   'Responda SOMENTE com JSON valido, sem markdown, sem texto fora do JSON.',
@@ -236,35 +435,37 @@ const sistemaParts = [
   '  "score": null',
   '}',
   '',
-  'atualizarCliente: null OU {"email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve"}',
+  'atualizarCliente: null OU {"nome":"Nome Completo","email":"x@y.com","dataNascimento":"1990-05-15","memoriaCliente":"resumo breve","addTags":["Tag1","Tag2"],"indicacao":{"nomeIndicado":"Nome","telefoneIndicado":"5562999999999"}}',
+  '- nome: salve quando o cliente informar o nome pela primeira vez.',
+  '- addTags: lista de tags para ADICIONAR ao cliente (nao substitui as existentes). Use apenas tags definidas pela empresa.',
   'midia: null OU {"midiaId":"ID_DA_MIDIA","legenda":"texto opcional"}',
   'score: numero de 0 a 10 indicando engajamento (0=sem interesse, 5=curioso, 8=quase decidido, 10=pronto para comprar). Atualize a cada mensagem.',
-  'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP".',
+  'dataRecontato: null OU "YYYY-MM-DD" — use quando o lead pedir para ser contactado numa data futura. Calcule a data a partir do que ele disser (ex: "em 3 meses" = calcule 3 meses a partir de hoje). Quando definir dataRecontato, defina tambem novoStatus como "FOLLOW_UP". OBRIGATORIO: ao mover para FOLLOW_UP sempre pergunte "Quando posso entrar em contato novamente?" e defina dataRecontato com a data informada.',
   '',
-  infoEmpresa,
+  aguardandoVendedorSection,
+  listaConfirmadaSection,
+  nomeSection,
   modoAtualSection,
   retornanteSection,
   modoConversaSection,
   calendlySection,
   orcamentoSection,
   agendamentoSection,
-  aguardandoVendedorSection,
   reativacaoSection,
   fastTrackSection,
-  roteiroSection,
+  apresentacaoOrcamento,
   coletaSection,
-  midiasSection,
   memoriaSection,
   vendasSection,
-  aprendizadosSection,
   indicacaoSection,
+  indicadoSection,
   '',
   'FLUXO DE ATENDIMENTO:',
   '1. Cumprimente e pergunte como pode ajudar (primeira mensagem)',
   '2. Responda as duvidas usando as informacoes da empresa acima',
   '3. LISTA DE PEDIDO: quando o cliente mencionar o que quer, use a lista de produtos/servicos da empresa para: (a) confirmar o item com entusiasmo; (b) sugerir complementares UM POR VEZ de forma natural — ex: "Para essa tinta vai precisar de rolo? Temos fita crepe e lixa tambem!"; (c) anote tudo que o cliente aceitar ou recusar. Nunca liste todos os complementares de uma vez — ofereça um, espere a resposta, ofereça o proximo.',
   '4. Apos cobrir os complementares PERGUNTE: "Tem mais alguma coisa ou posso encaminhar sua lista para calcularmos o melhor preco?"',
-  '5. Quando cliente confirmar ("nao, so isso" / "pode encaminhar" / "ta bom"): compile lista completa → novoStatus=PRONTO_PARA_COMPRAR, notificarVendedor=true. Resposta ao cliente: "Anotado! Vou passar sua lista para ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve 😊" — NAO mencione preco voce mesmo, o vendedor fecha com preco.',
+  '5. Quando cliente confirmar lista ("nao, so isso" / "pode encaminhar" / "ta bom"): SE tipoAtendimento for ORCAMENTO — NAO use PRONTO_PARA_COMPRAR aqui, continue para PASSO 1 do FLUXO DE FECHAMENTO (perguntar entrega). SE for AGENDAMENTO — compile lista → novoStatus=PRONTO_PARA_COMPRAR, notificarVendedor=true. Resposta ao cliente: "Anotado! Vou passar sua lista para ' + nomeVendedor + ' que vai calcular o melhor preco e te retornar em breve 😊"',
   '6. AGENDAMENTO CONFIRMADO: quando o cliente confirmar que agendou no link: novoStatus=AGENDADO, notificarVendedor=true. mensagemVendedor deve conter: servico agendado, data/hora se o cliente mencionou, o que a IA ja explicou sobre o servico, tom do cliente. Resposta ao cliente: confirme o agendamento com entusiasmo e diga que a equipe vai recebe-lo.',
   '',
   'REGRAS:',
@@ -273,8 +474,8 @@ const sistemaParts = [
   '- Ao enviar uma midia, continue o atendimento normalmente logo em seguida — nao fique apenas enviando arquivos sem qualificar o lead',
   '- Mesmo ao mostrar fotos/videos, sempre avance no roteiro de qualificacao na mesma mensagem ou na seguinte',
   '- NUNCA marque PRONTO_PARA_COMPRAR apenas porque o cliente perguntou sobre preco',
-  '- PRONTO_PARA_COMPRAR: so marque quando (1) lista de pedido confirmada pelo cliente ("nao, so isso" / "pode encaminhar") OU agendamento feito no link; E (2) voce ja perguntou "tem mais alguma coisa?" e o cliente respondeu. Curiosidade, interesse generico ou pergunta de preco nao sao suficientes — qualifique ate ter os dois criterios.',
-  '- notificarVendedor=true SOMENTE quando novoStatus=PRONTO_PARA_COMPRAR ou novoStatus=AGENDADO. Em QUALQUER outro momento da conversa — duvida, qualificacao, upsell, IA sem resposta, cliente pensando — notificarVendedor=false obrigatoriamente. O vendedor recebe UMA mensagem, no momento certo, com tudo dentro.',
+  '- PRONTO_PARA_COMPRAR: so marque quando (1) lista de pedido confirmada pelo cliente ("nao, so isso" / "pode encaminhar") OU agendamento feito no link; E (2) voce ja perguntou "tem mais alguma coisa?" e o cliente respondeu. Curiosidade, interesse generico ou pergunta de preco nao sao suficientes — qualifique ate ter os dois criterios. EXCECAO: empresas com tipoAtendimento=ORCAMENTO ou AMBOS usam NEGOCIACAO (nao PRONTO_PARA_COMPRAR) — consulte o FLUXO DE FECHAMENTO acima.',
+  '- notificarVendedor=true SOMENTE quando novoStatus=PRONTO_PARA_COMPRAR, novoStatus=AGENDADO ou novoStatus=NEGOCIACAO (apenas apos completar todos os passos do FLUXO DE FECHAMENTO). Em QUALQUER outro momento — duvida, qualificacao, upsell, IA sem resposta, cliente pensando — notificarVendedor=false obrigatoriamente. O vendedor recebe UMA mensagem, no momento certo, com tudo dentro.',
   '- memoriaCliente em atualizarCliente: registre o que aprendeu sobre o cliente (interesses, orcamento, preferencias, objecoes). Cumulativo, max 300 chars.',
   '- Se o cliente disser explicitamente que NAO quer ser cliente, NAO quer o servico ou NAO quer mais ser contactado: novoStatus=SEM_INTERESSE. Responda com empatia: "Entendo! Fico a disposicao caso mude de ideia. Tenha um otimo dia!" e NAO contate mais.',
   '- Se o cliente demonstrar que nao quer AGORA mas pode querer no futuro ou pedir para ligar em outro momento: defina dataRecontato com a data calculada e novoStatus=FOLLOW_UP.',
@@ -310,10 +511,27 @@ const sistemaParts = [
   'OBSERVACOES: ' + (lead.observacoes || 'nenhuma'),
   'NOME DO CLIENTE: ' + (cliente.nome || 'desconhecido'),
   'EMAIL CLIENTE: ' + (cliente.email || 'nao cadastrado'),
-  'ANIVERSARIO CLIENTE: ' + (cliente.dataNascimento ? new Date(cliente.dataNascimento).toLocaleDateString('pt-BR') : 'nao cadastrado')
+  'ANIVERSARIO CLIENTE: ' + (cliente.dataNascimento ? new Date(cliente.dataNascimento).toLocaleDateString('pt-BR') : 'nao cadastrado'),
+  'CONTATO DO CLIENTE PARA O VENDEDOR (use EXATAMENTE na mensagemVendedor, nunca use placeholder):\n' + contatoVendedor
 ];
 
-const systemPrompt = sistemaParts.join('\n');
+// Instrução extra de OCR quando tem imagem — aparece no topo do system prompt
+const ocrInstrucao = imagemBase64
+  ? 'ATENCAO — IMAGEM RECEBIDA (modo OCR ativo):\nSua primeira tarefa e fazer a leitura completa desta imagem antes de qualquer outra coisa.\n- Leia TODOS os itens com maxima atencao, mesmo que a letra seja manuscrita ou dificil.\n- Use o contexto (loja de tintas, materiais de construcao) para deduzir palavras dificeis.\n- Nao pule nenhum item — prefira adivinhar com "(confirmar)" do que ignorar.\n- Apresente a lista numerada completa e pergunte: "Li assim — ta certinho? Se tiver algo errado ou faltando, me fala! 😊 Ou se preferir, manda um audio listando os itens que anoto tudo rapidinho!"\n- SO faca UMA pergunta de confirmacao — nao faca perguntas sobre cor, marca ou quantidade antes do cliente confirmar a lista.\n\n'
+  : '';
+
+const dynamicPrompt = ocrInstrucao + sistemaParts.join('\n');
+
+// Monta system como array para suportar prompt caching.
+// Bloco 1 (cacheado): conteúdo estático da empresa — mesmo para todos os clientes.
+// Bloco 2 (não cacheado): dados dinâmicos de cliente/lead/turno.
+const systemBlocks = staticCacheBlock
+  ? [
+      { type: 'text', text: staticCacheBlock, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: dynamicPrompt },
+    ]
+  : [{ type: 'text', text: dynamicPrompt }];
+
 const userContent = 'HISTORICO:\n' + histStr + '\n\nNOVA MENSAGEM DO CLIENTE: ' + mensagemAtual;
 
 const userMsgContent = imagemBase64
@@ -321,6 +539,10 @@ const userMsgContent = imagemBase64
   : documentoBase64
   ? [{ type: 'document', source: { type: 'base64', media_type: documentoMimeType, data: documentoBase64 } }, { type: 'text', text: userContent }]
   : userContent;
+// Usa Sonnet quando tem imagem — muito melhor em OCR de letra manuscrita
+const modeloEscolhido = imagemBase64 ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+const maxTokensEscolhido = imagemBase64 ? 2048 : 2048;
+
 return [{ json: {
   ...crm,
   instancia,
@@ -329,9 +551,9 @@ return [{ json: {
   nomeVendedor,
   clienteId: cliente.id,
   claudePayload: {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    system: systemPrompt,
+    model: modeloEscolhido,
+    max_tokens: maxTokensEscolhido,
+    system: systemBlocks,
     messages: [{ role: 'user', content: userMsgContent }]
   }
 }}];
