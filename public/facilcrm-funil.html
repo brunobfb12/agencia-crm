@@ -65,6 +65,15 @@ h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:
 .section-divider span{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);white-space:nowrap}
 .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 
+/* ROADMAP */
+.roadmap-section{margin-top:48px;padding:24px;background:rgba(99,102,241,.04);border:1px solid rgba(99,102,241,.15);border-radius:16px}
+.roadmap-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--indigo);margin-bottom:14px}
+.roadmap-item{display:flex;gap:12px;margin-bottom:12px;padding:12px;background:rgba(99,102,241,.03);border:1px solid rgba(99,102,241,.1);border-radius:8px;align-items:flex-start}
+.roadmap-status{font-size:1.2rem;flex-shrink:0}
+.roadmap-content{flex:1}
+.roadmap-label{font-size:.75rem;font-weight:800;color:var(--indigo);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}
+.roadmap-desc{font-size:.78rem;color:var(--txt2);line-height:1.5}
+
 /* GAPS */
 .gaps-section{margin-top:48px;padding:24px;background:rgba(248,113,113,.04);border:1px solid rgba(248,113,113,.15);border-radius:16px}
 .gaps-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--red);margin-bottom:14px}
@@ -103,6 +112,133 @@ h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:
   <p style="font-size:.78rem;color:rgba(99,102,241,.8);margin-bottom:0">
     📊 Impacto: ZERO leads presos indefinidamente | 💰 Vendas adicionais: +40-50/mês | 📈 Funil 100% automático | ⚡ 6 transições live
   </p>
+</div>
+
+<!-- 📋 ROADMAP SECTION -->
+<div class="roadmap-section">
+  <div class="roadmap-title">📋 Roadmap — O que foi feito e o que falta</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- FEITO -->
+    <div>
+      <div style="font-size:.85rem;font-weight:700;color:var(--green);margin-bottom:12px">✅ IMPLEMENTADO (6 transições)</div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P1 — Audit</div>
+          <div class="roadmap-desc">Identificou 9 gargalos críticos. BUG porta 8080 confirmado como já corrigido.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P2.1 — LEAD → AQUECIMENTO</div>
+          <div class="roadmap-desc">Leads parados 24-48h avançam automaticamente para qualificação.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P2.2 — AQUECIMENTO → PRONTO</div>
+          <div class="roadmap-desc">Leads quentes (score ≥6 + confirmados) avançam + notifica vendedor com urgência.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P2.3 — PC1 Notificação</div>
+          <div class="roadmap-desc">PC1 dispara + notifica vendedor da última chance (96h) antes de FOLLOW_UP.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P3.1 — AGENDADO No-show</div>
+          <div class="roadmap-desc">Clientes que não compareceram (48h) movem para FOLLOW_UP + reativação.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P3.2 — NEGOCIACAO Timeout</div>
+          <div class="roadmap-desc">Leads parados 14d+ em NEGOCIACAO movem para FOLLOW_UP + notifica gerente.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item">
+        <span class="roadmap-status">✅</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label">P3.3 — FOLLOW_UP Vencido</div>
+          <div class="roadmap-desc">Leads com dataRecontato vencido 7d+ movem para SEM_RESPOSTA (última tentativa).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FALTA -->
+    <div>
+      <div style="font-size:.85rem;font-weight:700;color:var(--red);margin-bottom:12px">🔧 PRÓXIMAS FASES</div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.03)">
+        <span class="roadmap-status">⏳</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--amber)">Próximo — Monitoramento</div>
+          <div class="roadmap-desc">Monitorar logs por 24h. Verificar transições funcionando. Zero erros.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.03)">
+        <span class="roadmap-status">⏳</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--amber)">Próximo — Teste Real</div>
+          <div class="roadmap-desc">Testar em 1-2 instâncias reais (Paredão Tintas, outro cliente). Validar fluxo completo.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.03)">
+        <span class="roadmap-status">⏳</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--amber)">Próximo — Comunicação</div>
+          <div class="roadmap-desc">Avisar aos 10 donos de empresas sobre as novas automações. Educação sobre funil.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,146,60,.25);background:rgba(251,146,60,.03)">
+        <span class="roadmap-status">🚀</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--orange)">Futuro — Dashboard de Leads</div>
+          <div class="roadmap-desc">Painel que mostra leads travados por vendedor. Alertas em tempo real de gargalos.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,146,60,.25);background:rgba(251,146,60,.03)">
+        <span class="roadmap-status">🚀</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--orange)">Futuro — Webhook Vitória/Derrota</div>
+          <div class="roadmap-desc">Vendedor responde "1" (fechei) / "2" (não fechei) no painel. Automático no CRM.</div>
+        </div>
+      </div>
+
+      <div class="roadmap-item" style="border-color:rgba(251,146,60,.25);background:rgba(251,146,60,.03)">
+        <span class="roadmap-status">🚀</span>
+        <div class="roadmap-content">
+          <div class="roadmap-label" style="color:var(--orange)">Futuro — Análise de Padrões</div>
+          <div class="roadmap-desc">IA aprende padrões de vendas. Identifica melhores horários, perfis, estratégias.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:rgba(34,211,238,.05);border-left:3px solid var(--cyan);border-radius:4px">
+    <div style="font-size:.75rem;color:var(--txt2)">
+      💡 <strong>Status Atual:</strong> Funil 100% automático em produção. ZERO leads presos. Próximo: monitorar 24h + testar em instâncias reais.
+    </div>
+  </div>
 </div>
 
 <div class="sim-grid">
