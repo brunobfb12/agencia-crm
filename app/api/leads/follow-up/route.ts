@@ -953,8 +953,6 @@ export async function GET(req: Request) {
   const vendedoresComPendentes: any[] = await (prisma as any).vendedor.findMany({
     where: {
       ativo: true,
-      telefone: { not: null },
-      token: { not: null },
       OR: [
         { ultimoLinkPressaoEm: null },
         { ultimoLinkPressaoEm: { lt: h24ago } },
