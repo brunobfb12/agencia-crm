@@ -743,7 +743,6 @@ export async function GET(req: Request) {
   }
 
   // Consolidar pressão por vendedor: P24 + P48 + P72 → 1 link por vendedor
-  // Buscar vendedores com token para poder enviar link
   const pressaoPorVendedor = new Map<string, { vendedor: any; qtd: number; instancia: string; empresaNome: string }>();
 
   for (const l of [...p24Novos, ...p48Novos, ...p72Novos]) {
@@ -767,16 +766,6 @@ export async function GET(req: Request) {
   for (const [vendedorId, entry] of pressaoPorVendedor) {
     if (!entry.vendedor.token || !entry.instancia) continue;
     const msg = `⚡ *${entry.vendedor.nome}*, você tem *${entry.qtd} orçamento${entry.qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${entry.vendedor.token}`;
-
-    items.push({
-      tipo: "pressao_vendedor_link",
-      leadId: "",
-      clienteTelefone: entry.vendedor.telefone,
-      clienteNome: entry.vendedor.nome,
-      instancia: entry.instancia,
-      empresaNome: entry.empresaNome,
-      mensagem: msg,
-    });
 
     // Enviar via Evolution API
     await fetch(`${evoUrl}/message/sendText/${entry.instancia}`, {
