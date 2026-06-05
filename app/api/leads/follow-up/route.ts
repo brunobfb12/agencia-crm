@@ -168,6 +168,17 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // P2.1: LEAD → AQUECIMENTO (respondeu + parado 24-48h)
+  const leadParaAquecimento = await prisma.lead.findMany({
+    where: {
+      status: "LEAD",
+      atualizadoEm: { gte: h48, lt: h24 },
+      empresa: { ativa: true },
+      cliente: { telefone: { not: "" } },
+    },
+    include: baseInclude,
+  });
+
   const [leadD1, leadD2] = await Promise.all([
     prisma.lead.findMany({
       where: { status: "LEAD", atualizadoEm: { gte: h48, lt: h24 }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
@@ -178,6 +189,24 @@ export async function GET(req: Request) {
       include: baseInclude,
     }),
   ]);
+
+  // P2.2: AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR (score ≥6 + CONFIRMADO + P72 + 24-48h)
+  const aquecimentoParaProto = await prisma.lead.findMany({
+    where: {
+      status: "AQUECIMENTO",
+      score: { gte: 6 },
+      observacoes: { contains: "CONFIRMADO" },
+      atualizadoEm: { gte: h72, lt: h48 },
+      empresa: { ativa: true },
+      vendedorId: { not: null },
+      cliente: { telefone: { not: "" } },
+    },
+    include: {
+      cliente: { select: { nome: true, telefone: true } },
+      empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
+      vendedor: { select: { nome: true, telefone: true } },
+    },
+  });
 
   // PRONTO_PARA_COMPRAR / NEGOCIACAO parado:
   //   PC1 = 96h+ com [P72] → conversa franca pro cliente
@@ -361,6 +390,45 @@ export async function GET(req: Request) {
       where: { id: { in: aqFrios.map(l => l.id) } },
       data: { status: "SEM_RESPOSTA" },
     });
+  }
+
+  // P2.1: Auto-transição LEAD → AQUECIMENTO
+  if (leadParaAquecimento.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: leadParaAquecimento.map(l => l.id) } },
+      data: { status: "AQUECIMENTO" },
+    });
+  }
+
+  // P2.2: Auto-transição AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR + notificar vendedor
+  if (aquecimentoParaProto.length > 0) {
+    await Promise.all(
+      aquecimentoParaProto.map(l =>
+        prisma.lead.update({
+          where: { id: l.id },
+          data: {
+            status: "PRONTO_PARA_COMPRAR",
+            observacoes: ((l.observacoes ?? "") + "\n[P2_AUTO_PRONTO]").trim(),
+          },
+        })
+      )
+    );
+
+    for (const l of aquecimentoParaProto) {
+      if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+      const nc = l.cliente.nome || l.cliente.telefone;
+      const pedido = resumoPedido(l.observacoes);
+      const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
+      items.push({
+        tipo: "pressao_p2_quente_pronto",
+        leadId: l.id,
+        clienteTelefone: l.vendedor.telefone,
+        clienteNome: l.vendedor.nome,
+        instancia: l.empresa.instanciaWhatsapp,
+        empresaNome: l.empresa.nome,
+        mensagem: `🚀 Oi ${l.vendedor.nome}! O lead *${nc}* foi movido para PRONTO_PARA_COMPRAR!${pedidoStr}\n\nO pedido está confirmado — chama AGORA! ⚡`,
+      });
+    }
   }
 
   // Quentes: notifica vendedor e mantém em AQUECIMENTO
@@ -643,6 +711,19 @@ export async function GET(req: Request) {
       empresaNome: l.empresa.nome,
       mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Quero ser transparente com você — tínhamos um pedido em andamento e queria entender o que aconteceu.\n\nO que precisa acontecer para a gente fechar esse pedido? Me conta sem compromisso, pode ser agora ou numa data melhor 😊`,
     });
+
+    // P2.3: Re-notificar vendedor que PC1 será disparado ao cliente (última chance)
+    if (l.vendedor?.telefone) {
+      const nc = l.cliente.nome || l.cliente.telefone;
+      const pedido = resumoPedido((l as any).observacoes);
+      const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
+      items.push({
+        tipo: "pressao_pc1_vendor", leadId: l.id,
+        clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
+        instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
+        mensagem: `⚠️ Oi ${l.vendedor.nome}! O lead *${nc}* está parado há 96h.${pedidoStr}\n\nVou enviar uma CONVERSA FRANCA ao cliente AGORA. Você tem 24h para fechar antes dele ser movido para FOLLOW_UP!\n\nÉ a última chance! 🔥`,
+      });
+    }
   }
 
   // Calendário de relacionamento: D+7, D+20, D+28, D+45 desde última compra
