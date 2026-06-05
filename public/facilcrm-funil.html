@@ -705,8 +705,18 @@ h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:
   </div>
 
   <div class="gap">
-    <span class="gap-tag" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red)">BRECHA</span>
-    <div class="gap-text"><strong style="color:var(--txt)">AGENDADO sem no-show</strong> — Se cliente agenda pelo Cal.com mas não comparece, o lead fica preso em AGENDADO para sempre. Falta: cron verifica se data da consulta passou + sem atualização = FOLLOW_UP.</div>
+    <span class="gap-tag" style="background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);color:var(--green)">RESOLVIDA</span>
+    <div class="gap-text"><strong style="color:var(--green)">AGENDADO sem no-show</strong> — Implementado 05/06 (P3.1). Cron detecta agendados parados 48h+ → FOLLOW_UP automático + reativação.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);color:var(--green)">RESOLVIDA</span>
+    <div class="gap-text"><strong style="color:var(--green)">NEGOCIACAO parado 14d+</strong> — Implementado 05/06 (P3.2). Lead parado 14d em NEGOCIACAO → FOLLOW_UP automático + notifica gerente.</div>
+  </div>
+
+  <div class="gap">
+    <span class="gap-tag" style="background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);color:var(--green)">RESOLVIDA</span>
+    <div class="gap-text"><strong style="color:var(--green)">FOLLOW_UP com dataRecontato vencido</strong> — Implementado 05/06 (P3.3). Lead com recontato vencido 7d+ → SEM_RESPOSTA automático.</div>
   </div>
 
   <div class="gap">
