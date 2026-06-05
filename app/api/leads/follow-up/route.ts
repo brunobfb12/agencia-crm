@@ -970,10 +970,28 @@ export async function GET(req: Request) {
     },
   });
 
+  // Envio via Evolution API
+  const evoUrlPainel = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
+  const evoKeyPainel = process.env.AUTHENTICATION_API_KEY ?? process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+
   for (const v of vendedoresComPendentes) {
     if (!v.telefone || !v.token || !v.empresa?.instanciaWhatsapp) continue;
     const qtd = v.leads.length;
     const msg = `⚡ *${v.nome}*, você tem *${qtd} orçamento${qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${v.token}`;
+
+    // Enviar via Evolution API
+    await fetch(`${evoUrlPainel}/message/sendText/${v.empresa.instanciaWhatsapp}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: evoKeyPainel },
+      body: JSON.stringify({
+        number: v.telefone,
+        text: msg,
+        options: { presence: "composing", delay: 2000 },
+      }),
+    }).catch((err) => {
+      console.error(`Erro ao enviar link para ${v.nome}:`, err.message);
+    });
+
     items.push({
       tipo: "painel_vendedor",
       leadId: v.leads[0]?.id ?? "",
@@ -983,10 +1001,11 @@ export async function GET(req: Request) {
       empresaNome: v.empresa.nome,
       mensagem: msg,
     });
+
     await (prisma as any).vendedor.update({
       where: { id: v.id },
       data: { ultimoLinkPressaoEm: now },
-    });
+    }).catch(() => null);
   }
 
   return NextResponse.json({ total: items.length, items });
