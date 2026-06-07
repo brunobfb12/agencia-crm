@@ -16,6 +16,7 @@ export async function GET(
     include: {
       mensagens: {
         orderBy: { criadoEm: "asc" },
+        take: 20,
         select: { id: true, conteudo: true, direcao: true, criadoEm: true },
       },
       cliente: {

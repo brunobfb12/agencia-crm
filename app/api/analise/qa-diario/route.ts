@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       include: {
         mensagens: {
           orderBy: { criadoEm: "asc" },
+          take: 20,
           select: { direcao: true, conteudo: true, criadoEm: true },
         },
         cliente: { select: { nome: true } },
