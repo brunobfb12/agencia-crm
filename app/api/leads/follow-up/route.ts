@@ -663,6 +663,14 @@ export async function GET(req: Request) {
 
   ];
 
+  // BUG 1 FIX: Limpar dataRecontato após envio de recontato_agendado
+  if (recontatos.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: recontatos.map(l => l.id) } },
+      data: { dataRecontato: null },
+    });
+  }
+
   // Birthday items
   for (const l of aniversarios) {
     if (!l.empresa.instanciaWhatsapp) continue;
@@ -1005,6 +1013,76 @@ export async function GET(req: Request) {
     await (prisma as any).vendedor.update({
       where: { id: v.id },
       data: { ultimoLinkPressaoEm: now },
+    }).catch(() => null);
+  }
+
+  // BUG 2 FIX: Salvar todas as mensagens disparadas na tabela Mensagem
+  const clienteMessageTypes = new Set([
+    "pos_venda", "reativacao_15d", "reativacao_30d", "recontato_agendado",
+    "aquecimento_d1", "aquecimento_d2", "aniversario", "lead_d1", "lead_d2",
+    "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
+    "conversa_franca", "reativacao_sem_interesse"
+  ]);
+
+  // Mapa de leadId → clienteId para vincular mensagens
+  const leadToClienteMap = new Map<string, string>();
+  for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
+    [aquecimentoD1], [aquecimentoD2], [aniversarios], [leadD1], [leadD2], [prontoConversa],
+    [semResposta60d], [reativacao90d]]) {
+    for (const lead of leads) {
+      if (lead?.id && (lead as any)?.clienteId) {
+        leadToClienteMap.set(lead.id, (lead as any).clienteId);
+      }
+    }
+  }
+  // Vendas também possuem leads
+  for (const vendas of [[vendasD7], [vendasD20], [vendasD28], [vendasD45]]) {
+    for (const venda of vendas) {
+      if (venda?.lead?.id && (venda as any)?.lead?.clienteId) {
+        leadToClienteMap.set(venda.lead.id, (venda as any).lead.clienteId);
+      }
+    }
+  }
+
+  // Agrupar mensagens por clienteId para buscar/criar Conversa
+  const mensagensPorCliente = new Map<string, Array<{ item: Item; mensagem: string }>>();
+  for (const item of items.filter(it => clienteMessageTypes.has(it.tipo))) {
+    const clienteId = leadToClienteMap.get(item.leadId);
+    if (clienteId) {
+      if (!mensagensPorCliente.has(clienteId)) {
+        mensagensPorCliente.set(clienteId, []);
+      }
+      mensagensPorCliente.get(clienteId)!.push({ item, mensagem: item.mensagem });
+    }
+  }
+
+  // Buscar/criar Conversa e salvar Mensagens
+  for (const [clienteId, msgs] of mensagensPorCliente) {
+    let conversa = await prisma.conversa.findFirst({
+      where: { clienteId },
+      orderBy: { ultimaAtividade: "desc" },
+    });
+
+    if (!conversa) {
+      conversa = await prisma.conversa.create({
+        data: { clienteId },
+      });
+    }
+
+    // Criar Mensagens para esta Conversa
+    for (const { item, mensagem } of msgs) {
+      await prisma.mensagem.create({
+        data: { conversaId: conversa.id, conteudo: mensagem, direcao: "SAIDA" },
+      }).catch(() => null);
+    }
+
+    // Atualizar Conversa com última atividade (como faz o webhook)
+    await prisma.conversa.update({
+      where: { id: conversa.id },
+      data: {
+        ultimaMensagem: msgs[msgs.length - 1].mensagem,
+        ultimaAtividade: new Date(),
+      },
     }).catch(() => null);
   }
 
