@@ -56,3 +56,21 @@ patch_vendor.js
 patch_vendor2.js
 wf_main.json
 facilcrm-review.html
+
+# Scripts com secrets e arquivos de debug — contêm chaves de API (Groq, Anthropic, etc)
+scripts/exec_*.json
+scripts/tmp_*.json
+scripts/add_log_node.mjs
+scripts/fix_followup_workflow.mjs
+scripts/guardrail_*.txt
+scripts/hist_*.json
+scripts/kb_*.txt
+scripts/msgs_*.json
+scripts/patch_*.mjs
+scripts/resto_info.txt
+scripts/setup_teste_*.mjs
+scripts/tmp_*.mjs
+scripts/update_*.sql
+scripts/update_*.mjs
+scripts/workflow_*.json
+node/
