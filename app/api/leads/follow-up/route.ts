@@ -8,6 +8,8 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
+  const nowBRTHour = (now.getUTCHours() - 3 + 24) % 24;
+  const isHorarioLD0 = nowBRTHour >= 8 && nowBRTHour < 20;
 
   const windowStart = (days: number) => {
     const d = new Date(now);
@@ -41,6 +43,7 @@ export async function GET(req: Request) {
   const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
   const h96 = new Date(now); h96.setHours(h96.getHours() - 96);
   const h120 = new Date(now); h120.setHours(h120.getHours() - 120);
+  const h3 = new Date(now); h3.setHours(h3.getHours() - 3);
 
   const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
@@ -189,6 +192,35 @@ export async function GET(req: Request) {
       include: baseInclude,
     }),
   ]);
+
+  const lembreteLD0Candidatos: any[] = isHorarioLD0 ? await prisma.lead.findMany({
+    where: {
+      status: "AQUECIMENTO",
+      NOT: { observacoes: { contains: "[LD0]" } },
+      empresa: { ativa: true },
+      cliente: { telefone: { not: "" } },
+    },
+    include: {
+      cliente: {
+        include: {
+          conversas: {
+            orderBy: { ultimaAtividade: "desc" },
+            take: 1,
+            include: {
+              mensagens: { orderBy: { criadoEm: "desc" }, take: 1 },
+            },
+          },
+        },
+      },
+      empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
+    },
+  }) : [];
+
+  const lembreteLD0Novos = lembreteLD0Candidatos.filter((l: any) => {
+    const lastMsg = l.cliente?.conversas?.[0]?.mensagens?.[0];
+    if (!lastMsg || lastMsg.direcao !== "SAIDA") return false;
+    return new Date(lastMsg.criadoEm) <= h3;
+  });
 
   // P2.2: AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR (score ≥6 + CONFIRMADO + P72 + 24-48h)
   const aquecimentoParaProto = await prisma.lead.findMany({
@@ -817,6 +849,29 @@ export async function GET(req: Request) {
     });
   }
 
+  for (const l of lembreteLD0Novos) {
+    const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
+    const nomeStr = primeiroNome ? ` ${primeiroNome}` : "";
+    items.push({
+      tipo: "lembrete_ld0",
+      leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp!,
+      empresaNome: l.empresa.nome,
+      mensagem: `👋 Oi${nomeStr}! Estou aqui aguardando sua confirmação para finalizar seu orçamento 😊`,
+    });
+  }
+
+  if (lembreteLD0Novos.length > 0) {
+    await Promise.all(
+      lembreteLD0Novos.map((l: any) => prisma.lead.update({
+        where: { id: l.id },
+        data: { observacoes: ((l.observacoes ?? "") + "\n[LD0]").trim() },
+      }))
+    );
+  }
+
   // PC1: conversa franca para leads PRONTO_PARA_COMPRAR parados 96h+
   for (const l of pc1Novos) {
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
@@ -1019,7 +1074,7 @@ export async function GET(req: Request) {
     "pos_venda", "reativacao_15d", "reativacao_30d", "recontato_agendado",
     "aquecimento_d1", "aquecimento_d2", "aniversario", "lead_d1", "lead_d2",
     "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
-    "conversa_franca", "reativacao_sem_interesse"
+    "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0"
   ]);
 
   // Mapa de leadId → clienteId para vincular mensagens

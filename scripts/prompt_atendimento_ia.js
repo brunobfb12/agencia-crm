@@ -134,7 +134,7 @@ const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocada
 
 let reativacaoSection = '';
 if (isReativacao && isPrimeiraMensagem) {
-  reativacaoSection = '\nCONTEXTO DE REATIVACAO:\n- Este cliente ja teve contato anterior. Seja caloroso e mencione que esta feliz em ve-lo de volta.\n- Referencia sutil ao historico: mencione que houve interesse anterior sem ser insistente.\n- Objetivo: reacender o interesse naturalmente.';
+  reativacaoSection = '\nCONTEXTO DE REATIVACAO:\n- Este cliente ja teve contato anterior. Seja caloroso e mencione que esta feliz em ve-lo de volta.\n- Referencia sutil ao historico: mencione que houve interesse anterior sem ser insistente.\n- Objetivo: reacender o interesse naturalmente.\n- OBRIGATORIO: defina novoStatus: "AQUECIMENTO" imediatamente quando o cliente enviar qualquer mensagem. NAO mantenha o status antigo (FOLLOW_UP, SEM_RESPOSTA, SEM_INTERESSE, PERDIDO).\n- notificarVendedor=false neste momento.';
 }
 
 const isFastTrack = vendas.length > 0 && isReativacao;
