@@ -113,6 +113,7 @@ model Cliente {
   tags           String[]
   criadoEm      DateTime  @default(now())
 
+  telefonePrincipal String?
   memoriaCliente  String?
   optOutCampanhas Boolean   @default(false)
   optOutEm        DateTime?
