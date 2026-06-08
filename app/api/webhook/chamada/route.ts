@@ -121,7 +121,7 @@ export async function POST(req: Request) {
       const tipoCall = isVideo ? "vídeo" : "voz";
 
       const msgVendedor = isLidJid
-        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente.`
+        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`
         : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneLimpo}`;
 
       try {
