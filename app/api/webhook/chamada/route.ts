@@ -34,23 +34,29 @@ export async function POST(req: Request) {
 
     const telefoneLimpo = normalizarTelefone(telefone);
     const jidLimpo = jid || telefone;
+    const isLidJid = jidLimpo.includes("@lid");
 
-    // Busca pelo @lid exato ou pelo telefone normalizado
+    // ETAPA 1: busca pelo @lid exato, telefone normalizado ou telefonePrincipal
     let cliente = await prisma.cliente.findFirst({
       where: {
         empresaId: empresa.id,
-        OR: [{ telefone: jidLimpo }, { telefone: telefoneLimpo }],
+        OR: [
+          { telefone: jidLimpo },
+          { telefone: telefoneLimpo },
+          { telefonePrincipal: telefoneLimpo },
+        ],
       },
     });
 
-    // Fallback: busca pelo telefonePrincipal
-    if (!cliente) {
-      cliente = await prisma.cliente.findFirst({
-        where: { empresaId: empresa.id, telefonePrincipal: telefoneLimpo },
+    // ETAPA 2: se achou e é iPhone, garante que telefonePrincipal está salvo
+    if (cliente && isLidJid && !cliente.telefonePrincipal) {
+      await prisma.cliente.update({
+        where: { id: cliente.id },
+        data: { telefonePrincipal: telefoneLimpo },
       });
     }
 
-    // Cria cliente novo se não encontrou
+    // ETAPA 3: cria cliente novo se não encontrou
     if (!cliente) {
       cliente = await prisma.cliente.create({
         data: {
@@ -74,14 +80,11 @@ export async function POST(req: Request) {
     });
 
     if (!lead) {
-      // Round-robin: pega o vendedor com atribuição mais antiga
-      const vendedores = empresa.vendedores;
-      const vendedor =
-        vendedores.sort((a, b) => {
-          const ta = a.ultimaAtribuicaoEm?.getTime() ?? 0;
-          const tb = b.ultimaAtribuicaoEm?.getTime() ?? 0;
-          return ta - tb;
-        })[0] || null;
+      const vendedor = empresa.vendedores.sort((a, b) => {
+        const ta = a.ultimaAtribuicaoEm?.getTime() ?? 0;
+        const tb = b.ultimaAtribuicaoEm?.getTime() ?? 0;
+        return ta - tb;
+      })[0] || null;
 
       lead = await prisma.lead.create({
         data: {
@@ -102,13 +105,15 @@ export async function POST(req: Request) {
         });
       }
     } else {
-      const horaBr = new Date(Date.now() - 3 * 60 * 60 * 1000);
-      const horaStr = horaBr.toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      const dataStr = horaBr.toLocaleDateString("pt-BR");
+      const dataBr = new Date().toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit", month: "2-digit",
+        hour: "2-digit", minute: "2-digit",
+      });
       await prisma.lead.update({
         where: { id: lead.id },
         data: {
-          observacoes: `${lead.observacoes ?? ""}\n[CHAMADA_${isVideo ? "VIDEO" : "VOZ"}_${dataStr}_${horaStr}]`.trim(),
+          observacoes: `${lead.observacoes ?? ""}\n[CHAMADA_${isVideo ? "VIDEO" : "VOZ"}_${dataBr}]`.trim(),
         },
       });
     }
@@ -120,13 +125,12 @@ export async function POST(req: Request) {
     if (vendedor?.telefone) {
       const evoUrl = process.env.EVOLUTION_API_URL ?? "https://evolution-evolution-api.6jgzku.easypanel.host";
       const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
-      const nomeCliente = cliente.nome || telefone;
+      const nomeCliente = cliente.nome || "Cliente desconhecido";
       const tipoCall = isVideo ? "vídeo" : "voz";
-      const isLidJid = (jid || "").includes("@lid");
-      const linkContato = isLidJid
-        ? `https://wa.me/${jid}`
-        : `https://wa.me/${telefoneLimpo}`;
-      const msgVendedor = `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} no WhatsApp.\n\n⚡ Chama agora!\n👉 ${linkContato}`;
+
+      const msgVendedor = isLidJid
+        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`
+        : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneLimpo}`;
 
       try {
         const resp = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
