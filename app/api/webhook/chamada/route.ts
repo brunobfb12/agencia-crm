@@ -34,38 +34,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "empresa não encontrada" }, { status: 404 });
     }
 
-    const telefoneLimpo = normalizarTelefone(telefone);
     const jidLimpo = jid || telefone;
     const isLidJid = jidLimpo.includes("@lid");
+    const telefoneLimpo = isLidJid ? null : normalizarTelefone(telefone);
 
-    // ETAPA 1: busca pelo @lid exato, telefone normalizado ou telefonePrincipal
+    // Busca cliente
     let cliente = await prisma.cliente.findFirst({
       where: {
         empresaId: empresa.id,
-        OR: [
-          { telefone: jidLimpo },
-          { telefone: telefoneLimpo },
-          { telefonePrincipal: telefoneLimpo },
-        ],
+        OR: isLidJid
+          ? [{ telefone: jidLimpo }]
+          : [{ telefone: jidLimpo }, { telefone: telefoneLimpo! }, { telefonePrincipal: telefoneLimpo! }],
       },
     });
 
-    // ETAPA 2: se achou e é iPhone, garante que telefonePrincipal está salvo
-    if (cliente && isLidJid && !cliente.telefonePrincipal) {
-      await prisma.cliente.update({
-        where: { id: cliente.id },
-        data: { telefonePrincipal: telefoneLimpo },
-      });
-    }
-
-    // ETAPA 3: cria cliente novo se não encontrou
+    // Cria cliente novo se não encontrou
     if (!cliente) {
       cliente = await prisma.cliente.create({
         data: {
           empresaId: empresa.id,
           nome: "Cliente (chamada perdida)",
           telefone: jidLimpo,
-          telefonePrincipal: telefoneLimpo,
+          telefonePrincipal: isLidJid ? null : telefoneLimpo,
         },
       });
     }
@@ -131,7 +121,7 @@ export async function POST(req: Request) {
       const tipoCall = isVideo ? "vídeo" : "voz";
 
       const msgVendedor = isLidJid
-        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`
+        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente.`
         : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneLimpo}`;
 
       try {
