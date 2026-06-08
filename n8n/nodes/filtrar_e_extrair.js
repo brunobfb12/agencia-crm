@@ -1,13 +1,29 @@
 const body = $input.item.json.body || $input.item.json;
 const event = ((body.event || '')).toUpperCase();
+const instancia = body.instance || body.instanceName || '';
 const data = body.data || {};
 const key = data.key || {};
 
 if (key.fromMe === true) return [];
 if ((key.remoteJid || '').includes('@g.us')) return [];
-if (!['MESSAGES_UPSERT', 'MESSAGES.UPSERT'].includes(event)) return [];
+const isCallEvent = event === 'CALL' || event === 'CALLS_UPSERT';
+if (!['MESSAGES_UPSERT', 'MESSAGES.UPSERT'].includes(event) && !isCallEvent) return [];
 
-const instancia = body.instance || body.instanceName || '';
+// Processar evento CALL diretamente — só status "offer" para evitar disparo múltiplo
+if (isCallEvent) {
+  const callData = body.data || {};
+  if (callData.status !== 'offer') return [];
+  const fromRaw = callData.from || callData.chatId || '';
+  const isLidCall = fromRaw.includes('@lid');
+  const tel = fromRaw.replace(/@[^@]+$/, '');
+  if (!tel || !instancia) return [];
+  return [{ json: {
+    instancia, telefone: tel, telefoneSend: isLidCall ? null : tel,
+    jid: fromRaw, isLid: isLidCall,
+    mensagem: '[CHAMADA ' + (callData.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']',
+    nomeContato: '', messageId: callData.id || '', tipo: 'CHAMADA', respostaImediata: null
+  }}];
+}
 const remoteJid = key.remoteJid || '';
 const isLid = remoteJid.includes('@lid');
 
@@ -29,6 +45,11 @@ const callMsg = msg.callMessage || null;
 let tipo = 'TEXTO';
 let mensagem = msg.conversation || extText.text || imgMsg.caption || vidMsg.caption || null;
 let respostaImediata = null;
+
+// Foto com legenda: caption fica como mensagem, mas tipo deve ser IMAGEM
+if (imgMsg.url || imgMsg.directPath) {
+  tipo = 'IMAGEM';
+}
 
 // Detectar chamada de voz/vídeo
 if (callMsg) {
