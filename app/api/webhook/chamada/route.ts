@@ -9,12 +9,39 @@ function normalizarTelefone(tel: string): string {
   return t;
 }
 
+async function resolverNumeroReal(jid: string, instancia: string): Promise<string | null> {
+  try {
+    const evoUrl = process.env.EVOLUTION_API_URL ?? "https://evolution-evolution-api.6jgzku.easypanel.host";
+    const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+
+    const resp = await fetch(`${evoUrl}/chat/whatsappNumbers/${instancia}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: evoKey },
+      body: JSON.stringify({ numbers: [jid] }),
+    });
+
+    if (!resp.ok) return null;
+
+    const data = await resp.json();
+    const item = Array.isArray(data) ? data[0] : data;
+    const numeroReal = item?.jid?.replace(/@[^@]+$/, "") || item?.number || null;
+
+    if (numeroReal && numeroReal !== jid.replace(/@[^@]+$/, "")) {
+      return normalizarTelefone(numeroReal);
+    }
+    return null;
+  } catch (e) {
+    console.error("Erro ao resolver número real:", e);
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { instancia, telefone, jid, isVideo } = body;
 
-    console.log('CHAMADA DEBUG:', JSON.stringify({ instancia, telefone, jid, isVideo, telefoneLimpo: normalizarTelefone(telefone), isLidJid: (jid || '').includes('@lid') }));
+    console.log("CHAMADA DEBUG:", JSON.stringify({ instancia, telefone, jid, isVideo }));
 
     if (!instancia || !telefone) {
       return NextResponse.json({ error: "instancia e telefone obrigatórios" }, { status: 400 });
@@ -36,28 +63,57 @@ export async function POST(req: Request) {
 
     const jidLimpo = jid || telefone;
     const isLidJid = jidLimpo.includes("@lid");
-    const telefoneLimpo = isLidJid ? null : normalizarTelefone(telefone);
 
-    // Busca cliente
-    let cliente = await prisma.cliente.findFirst({
-      where: {
-        empresaId: empresa.id,
-        OR: isLidJid
-          ? [{ telefone: jidLimpo }]
-          : [{ telefone: jidLimpo }, { telefone: telefoneLimpo! }, { telefonePrincipal: telefoneLimpo! }],
-      },
-    });
+    // Para iPhone (@lid): tenta resolver o número real via Evolution API
+    let telefoneReal: string | null = null;
+    if (isLidJid) {
+      telefoneReal = await resolverNumeroReal(jidLimpo, instancia);
+      console.log("CHAMADA numero real resolvido:", telefoneReal);
+    }
 
-    // Cria cliente novo se não encontrou
+    const telefoneLimpo = isLidJid ? (telefoneReal || null) : normalizarTelefone(telefone);
+
+    // Busca cliente em ordem de prioridade
+    let cliente = null;
+
+    // 1. Busca pelo número real (se conseguiu resolver)
+    if (telefoneReal) {
+      cliente = await prisma.cliente.findFirst({
+        where: {
+          empresaId: empresa.id,
+          OR: [{ telefonePrincipal: telefoneReal }, { telefone: telefoneReal }],
+        },
+      });
+      console.log("CHAMADA busca por numero real:", cliente?.id || "não encontrado");
+    }
+
+    // 2. Busca pelo @lid exato
+    if (!cliente) {
+      cliente = await prisma.cliente.findFirst({
+        where: { empresaId: empresa.id, telefone: jidLimpo },
+      });
+      console.log("CHAMADA busca por lid:", cliente?.id || "não encontrado");
+    }
+
+    // 3. Se achou cliente e tem número real, atualiza telefonePrincipal
+    if (cliente && telefoneReal && !cliente.telefonePrincipal) {
+      await prisma.cliente.update({
+        where: { id: cliente.id },
+        data: { telefonePrincipal: telefoneReal },
+      });
+    }
+
+    // 4. Cria cliente novo apenas se não encontrou
     if (!cliente) {
       cliente = await prisma.cliente.create({
         data: {
           empresaId: empresa.id,
           nome: "Cliente (chamada perdida)",
           telefone: jidLimpo,
-          telefonePrincipal: isLidJid ? null : telefoneLimpo,
+          telefonePrincipal: telefoneReal || null,
         },
       });
+      console.log("CHAMADA cliente criado:", cliente.id);
     }
 
     // Busca lead ativo
@@ -120,9 +176,9 @@ export async function POST(req: Request) {
       const nomeCliente = cliente.nome || "Cliente desconhecido";
       const tipoCall = isVideo ? "vídeo" : "voz";
 
-      const msgVendedor = isLidJid
-        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`
-        : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneLimpo}`;
+      const msgVendedor = telefoneReal
+        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneReal}`
+        : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`;
 
       try {
         const resp = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
@@ -131,6 +187,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({ number: vendedor.telefone, text: msgVendedor }),
         });
         notificado = resp.ok;
+        console.log("CHAMADA notificacao vendedor:", vendedor.nome, resp.status);
       } catch (e) {
         console.error("Erro ao notificar vendedor:", e);
       }
@@ -141,6 +198,7 @@ export async function POST(req: Request) {
       lead: lead.id,
       cliente: cliente.nome,
       vendedor: lead.vendedor?.nome || null,
+      telefoneReal,
       notificado,
     });
   } catch (error) {
