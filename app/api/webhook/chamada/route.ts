@@ -14,6 +14,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { instancia, telefone, jid, isVideo } = body;
 
+    console.log('CHAMADA DEBUG:', JSON.stringify({ instancia, telefone, jid, isVideo, telefoneLimpo: normalizarTelefone(telefone), isLidJid: (jid || '').includes('@lid') }));
+
     if (!instancia || !telefone) {
       return NextResponse.json({ error: "instancia e telefone obrigatórios" }, { status: 400 });
     }
