@@ -225,7 +225,7 @@ END $$`,
     `DROP INDEX IF EXISTS "Agendamento_clienteId_dataAgendada_hora_key"`,
 
     // --- dedup agendamentos: deletar duplicatas mantendo o mais antigo ---
-    `DELETE FROM "Agendamento" WHERE id NOT IN (SELECT id FROM (SELECT DISTINCT ON ("clienteId", "dataAgendada", COALESCE("hora", '')) id FROM "Agendamento" ORDER BY "clienteId", "dataAgendada", "hora", "criadoEm" ASC) sub)`,
+    `DELETE FROM "Agendamento" WHERE id NOT IN (SELECT id FROM (SELECT DISTINCT ON ("clienteId", "dataAgendada", COALESCE("hora", '')) id FROM "Agendamento" ORDER BY "clienteId", "dataAgendada", COALESCE("hora", ''), "criadoEm" ASC) sub)`,
 
     // --- dedup agendamentos: criar índice único definitivo ---
     `CREATE UNIQUE INDEX IF NOT EXISTS "Agendamento_clienteId_dataAgendada_hora_key" ON "Agendamento" ("clienteId", "dataAgendada", COALESCE("hora", ''))`,
