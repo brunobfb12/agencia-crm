@@ -122,7 +122,11 @@ export async function POST(req: Request) {
       const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
       const nomeCliente = cliente.nome || telefone;
       const tipoCall = isVideo ? "vídeo" : "voz";
-      const msgVendedor = `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} no WhatsApp.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneLimpo}`;
+      const isLidJid = (jid || telefone).includes("@lid");
+      const linkContato = isLidJid
+        ? `(iPhone - abra pelo CRM)`
+        : `https://wa.me/${telefoneLimpo}`;
+      const msgVendedor = `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} no WhatsApp.\n\n⚡ Chama agora!\n👉 ${linkContato}`;
 
       try {
         const resp = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
