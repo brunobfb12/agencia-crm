@@ -124,7 +124,7 @@ if (!cliente.dataNascimento) dadosFaltando.push('data de nascimento');
 // Declarado aqui para ser usado por modoAtualSection, aguardandoVendedorSection e orcamentoSection
 const aguardandoVendedor = lead.status === 'PRONTO_PARA_COMPRAR' || lead.status === 'NEGOCIACAO';
 
-const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA'];
+const statusReativacao = ['FOLLOW_UP', 'PERDIDO', 'SEM_INTERESSE', 'SEM_RESPOSTA', 'INDEFINIDO'];
 const isReativacao = statusReativacao.includes(lead.status);
 const mensagensEntrada = historico.filter(function(m) { return m.direcao === 'ENTRADA'; }).length;
 const mensagensSaida = historico.filter(function(m) { return m.direcao === 'SAIDA'; }).length;
@@ -132,9 +132,34 @@ const isPrimeiraMensagem = mensagensEntrada <= 1;
 const iaPrimeiraResposta = mensagensSaida === 0;
 const isClienteEmInicio = mensagensEntrada <= 2; // menos de 3 mensagens trocadas
 
+// Detecção de frases — V2
+var mensagemLower = (mensagemAtual || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+var frasesIrLoja = ['vou buscar','vou ai','vou na loja','passo la','passo ai','busco amanha','busco hoje','minha esposa busca','meu marido busca','vou passar','passo amanha','vou retirar','vou pegar','prefiro retirar','busco pessoalmente','vou ate la'];
+var clienteVaiALoja = frasesIrLoja.some(function(f) { return mensagemLower.includes(f); });
+var frasesJaComprou = ['ja comprei','ja resolvi','ja paguei','ja busquei','ja adquiri','ja peguei','comprei em outro lugar','consegui mais barato','nao preciso mais'];
+var clienteJaComprou = frasesJaComprou.some(function(f) { return mensagemLower.includes(f); });
+
 let reativacaoSection = '';
-if (isReativacao && isPrimeiraMensagem) {
-  reativacaoSection = '\nCONTEXTO DE REATIVACAO:\n- Este cliente ja teve contato anterior. Seja caloroso e mencione que esta feliz em ve-lo de volta.\n- Referencia sutil ao historico: mencione que houve interesse anterior sem ser insistente.\n- Objetivo: reacender o interesse naturalmente.\n- OBRIGATORIO: defina novoStatus: "AQUECIMENTO" imediatamente quando o cliente enviar qualquer mensagem. NAO mantenha o status antigo (FOLLOW_UP, SEM_RESPOSTA, SEM_INTERESSE, PERDIDO).\n- notificarVendedor=false neste momento.';
+if (isReativacao) {
+  var produtoAnterior = (lead.observacoes || '').split('\n')[0].replace(/Pedido:\s*/i, '').trim();
+  var refHistorico = produtoAnterior
+    ? '- Referencie o historico: "Da ultima vez voce tinha interesse em ' + produtoAnterior + '. Ainda e isso que voce precisa ou mudou alguma coisa?"\n'
+    : '- Referencie que ja houve contato anterior. Pergunte o que o cliente precisa hoje.\n';
+  reativacaoSection = '\nCONTEXTO DE REATIVACAO:\n- Este cliente teve contato anterior e esta voltando. Status anterior: ' + lead.status + '.\n- Seja caloroso: "Que bom ter voce de volta!"\n'
+    + refHistorico
+    + '- NAO qualifique do zero — aproveite o historico.\n'
+    + '- OBRIGATORIO: defina novoStatus: "AQUECIMENTO" imediatamente. NAO mantenha o status antigo.\n'
+    + '- notificarVendedor: false neste primeiro momento.';
+}
+
+let lojaSection = '';
+if (clienteVaiALoja) {
+  lojaSection = '\nCLIENTE SINALIZOU QUE VAI A LOJA:\n- OBRIGATORIO: defina novoStatus: "VENDA_PROVAVEL"\n- notificarVendedor: true\n- mensagemVendedor: "🏪 Cliente ' + (cliente.nome || '') + ' sinalizou que vai buscar na loja!"\n- Responda: "Otimo! Te esperamos aqui 😊 Qualquer duvida e so chamar!"';
+}
+
+let jaComprouSection = '';
+if (clienteJaComprou) {
+  jaComprouSection = '\nCLIENTE DISSE QUE JA COMPROU/RESOLVEU:\n- Pergunte: "Que otimo! Foi aqui na ' + empresa.nome + '?"\n- SE SIM: defina novoStatus: "VENDA_REALIZADA" · notificarVendedor: true\n- SE NAO: defina novoStatus: "PERDIDO" (unico caso onde PERDIDO e permitido) · observacoes: "[PERDA_CONCORRENCIA]"\n- SE NAO RESPONDER: aguarde — pergunte e espere a resposta antes de definir status.';
 }
 
 const isFastTrack = vendas.length > 0 && isReativacao;
@@ -452,6 +477,8 @@ const sistemaParts = [
   orcamentoSection,
   agendamentoSection,
   reativacaoSection,
+  lojaSection,
+  jaComprouSection,
   fastTrackSection,
   apresentacaoOrcamento,
   coletaSection,
