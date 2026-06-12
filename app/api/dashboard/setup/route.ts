@@ -29,6 +29,10 @@ export async function GET() {
 
   const vendedoresCount = await prisma.vendedor.count({ where: { empresaId: me.empresaId, ativo: true } });
 
+  const vendedoresComInstancia = await prisma.vendedor.count({
+    where: { empresaId: me.empresaId, ativo: true, instanciaConectadaEm: { not: null } },
+  });
+
   let whatsappOk = false;
   try {
     const res = await fetch(`${EVO_URL}/instance/connectionState/${empresa.instanciaWhatsapp}`, {
@@ -43,6 +47,7 @@ export async function GET() {
     informacoesOk:    !!empresa.informacoes?.trim(),
     whatsappOk,
     vendedoresOk:     vendedoresCount > 0,
+    instanciaVendedorOk: vendedoresComInstancia > 0,
     clientesOk:       empresa._count.clientes > 0,
     nomeIAOk:         !!empresa.nomeIA?.trim(),
     posVendaOk:       !!empresa.mensagemPosVenda?.trim(),

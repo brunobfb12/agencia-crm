@@ -796,7 +796,7 @@ export default function CentralPage() {
                         {w.state !== "open" && (
                           (!w.setup?.vendedores || !w.setup?.informacoes)
                             ? <span className="text-[11px] font-semibold px-2 py-1 rounded-lg" style={{ background: "rgba(251,146,60,.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,.2)" }}>🔒 Complete o setup</span>
-                            : w.setup?.vendedores
+                            : !w.setup?.instanciaVendedorOk
                               ? <span title="Complete o setup do vendedor primeiro"
                                   className="text-[12px] px-3 py-1.5 rounded-lg font-semibold opacity-40 cursor-not-allowed select-none"
                                   style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
@@ -869,7 +869,7 @@ export default function CentralPage() {
                         </div>
                       </div>
                     )}
-                    {w.setup?.vendedores && w.setup?.informacoes && w.state !== "open" && (
+                    {w.setup?.vendedores && w.setup?.informacoes && !w.setup?.instanciaVendedorOk && w.state !== "open" && (
                       <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
                         <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.2)" }}>
                           <div className="flex items-center gap-2 mb-1.5">
