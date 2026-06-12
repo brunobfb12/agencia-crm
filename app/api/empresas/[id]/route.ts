@@ -26,6 +26,7 @@ export async function PATCH(
       ...(body.conhecimentoBase !== undefined && { conhecimentoBase: body.conhecimentoBase || null }),
       ...(body.tagsCustomizadas !== undefined && { tagsCustomizadas: body.tagsCustomizadas }),
       ...(body.complementaresGuia !== undefined && { complementaresGuia: body.complementaresGuia || null }),
+      ...(body.perfisCliente !== undefined && { perfisCliente: body.perfisCliente || null }),
       // Campos de monetização — só CENTRAL pode alterar
       ...(body.planStatus !== undefined && { planStatus: body.planStatus }),
       ...(body.plano !== undefined && { plano: body.plano }),

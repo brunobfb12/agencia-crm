@@ -277,6 +277,7 @@ interface Empresa {
   mensagemIndicacao: string | null;
   tagsCustomizadas: string[];
   complementaresGuia: string | null;
+  perfisCliente: string | null;
   _count: { clientes: number; leads: number };
 }
 interface Vendedor {
@@ -288,6 +289,61 @@ interface Midia {
   id: string; empresaId: string; etiqueta: string; url: string | null;
   mimeType: string | null; descricaoUso: string; tipo: string; ativo: boolean; criadoEm: string;
 }
+
+const PERFIS_CLIENTE_PLACEHOLDER = `{
+  "Consumidor": {
+    "tom": "caloroso e simples, sem termos técnicos, emoji moderado",
+    "sinais": ["quero pintar", "minha casa", "meu apartamento", "sala", "quarto", "banheiro"],
+    "d2": "Oi {nome}! Como ficou a pintura? Já deu pra ver o resultado? 😊",
+    "d7": "Oi {nome}! De 0 a 10, quanto você indicaria a Paredão para um amigo?",
+    "d20": "Oi {nome}! Trouxemos uma dica especial sobre o produto que você comprou. Posso te mandar?",
+    "d28": "Oi {nome}! Precisa retocar algum detalhe? Temos a mesma cor guardada aqui pra você!",
+    "d45": "Oi {nome}! Você é um cliente especial pra gente 🎁 Preparei uma condição exclusiva na sua próxima compra.",
+    "d90": "Oi {nome}! Já pensou em renovar a pintura? Tenho uma condição especial esperando por você!",
+    "quebra_objecao_preco": "Entendo! Posso cobrir qualquer oferta da concorrência — me manda o valor que você encontrou que a gente analisa 😊",
+    "pos_orcamento": "Oi {nome}! Recebeu nosso orçamento? Ficou alguma dúvida? 😊",
+    "reativacao": "Oi {nome}! Que bom ter você de volta! Da última vez você tinha interesse em {produto}. Ainda é isso que você precisa ou mudou alguma coisa?"
+  },
+  "Arquiteto": {
+    "tom": "profissional e técnico, foco em especificação e parceria, sem emoji excessivo",
+    "sinais": ["projeto", "especificação", "cliente meu", "obra do cliente", "memorial", "arquitetura", "design"],
+    "d2": "{nome}, o acabamento atendeu a especificação do projeto?",
+    "d7": "{nome}, tem outro projeto em andamento? Posso ajudar com a especificação técnica.",
+    "d20": "{nome}, chegou nova coleção Luztol/Coral — posso enviar as especificações para seus projetos?",
+    "d28": "{nome}, orçamento prioritário para o próximo projeto quando quiser — só falar.",
+    "d45": "{nome}, quero formalizar nossa parceria com condição preferencial para seus projetos.",
+    "d90": "{nome}, novos produtos técnicos disponíveis. Posso enviar o catálogo atualizado?",
+    "quebra_objecao_preco": "{nome}, compreendo. Nossa linha técnica garante resultado conforme especificação e laudo. Posso detalhar o diferencial técnico?",
+    "pos_orcamento": "{nome}, recebeu a proposta? Alguma observação técnica ou ajuste necessário?",
+    "reativacao": "{nome}, que bom retomar o contato! Você tinha interesse em {produto} para um projeto. Ainda está em andamento?"
+  },
+  "Construtor": {
+    "tom": "direto e objetivo, foco em prazo volume e entrega, sem rodeio",
+    "sinais": ["construtora", "empreitada", "obra", "m2", "metros quadrados", "contrato", "licitação", "pavimento"],
+    "d2": "{nome}, a entrega foi conforme o cronograma da obra?",
+    "d7": "{nome}, próxima etapa da obra já tem previsão? Posso garantir o material.",
+    "d20": "{nome}, novidade em tinta de piso e impermeabilizante — ideal para obras.",
+    "d28": "{nome}, próxima fase da obra já tem orçamento? Me manda a lista que priorizo.",
+    "d45": "{nome}, condição especial para pedido de volume na próxima obra.",
+    "d90": "{nome}, nova obra prevista? Tenho condição especial para cliente fiel.",
+    "quebra_objecao_preco": "{nome}, posso cobrir qualquer oferta para volume. Me manda o valor que você encontrou.",
+    "pos_orcamento": "{nome}, recebeu o orçamento? Precisa de algum ajuste no volume ou prazo de entrega?",
+    "reativacao": "{nome}, que bom! Você tinha pedido orçamento para {produto}. A obra ainda está em andamento?"
+  },
+  "Pintor": {
+    "tom": "colega de ofício, linguagem técnica, respeita o tempo dele, direto",
+    "sinais": ["serviço", "cliente me pediu", "pintor", "pintura profissional", "mão de obra", "empreitei", "tinta para serviço"],
+    "d2": "{nome}, rendeu bem? Cliente aprovou o acabamento?",
+    "d7": "{nome}, tem serviço novo? Garanto prioridade no atendimento aqui.",
+    "d20": "{nome}, lançamento técnico Luztol — vale conhecer para seus próximos serviços.",
+    "d28": "{nome}, estoque ficou ok? Próximo serviço quando?",
+    "d45": "{nome}, preço especial por volume mensal para você — quanto você usa por mês?",
+    "d90": "{nome}, novos produtos profissionais chegaram. Posso reservar uma amostra?",
+    "quebra_objecao_preco": "{nome}, para volume mensal tenho condição diferenciada. Quanto você usa por mês? A gente fecha um preço fixo.",
+    "pos_orcamento": "{nome}, recebeu o orçamento? Material disponível para retirada quando precisar.",
+    "reativacao": "{nome}, tudo certo? Você tinha pedido {produto} para um serviço. Ainda precisa?"
+  }
+}`;
 
 const SECOES = ["PRODUTOS", "PRECOS", "PAGAMENTO", "ENTREGA", "DIFERENCIAIS", "HORARIO"] as const;
 const LABELS: Record<string, string> = {
@@ -881,6 +937,7 @@ export default function ConfiguracoesPage() {
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
   const [complementaresGuia, setComplementaresGuia] = useState("");
+  const [perfisCliente, setPerfisCliente] = useState("");
   const [modalLogin, setModalLogin] = useState<Empresa | null>(null);
   const [loginForm, setLoginForm] = useState({ nome: "", email: "", senha: "" });
   const [criandoLogin, setCriandoLogin] = useState(false);
@@ -1013,6 +1070,7 @@ export default function ConfiguracoesPage() {
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
     setComplementaresGuia(emp.complementaresGuia ?? "");
+    setPerfisCliente(emp.perfisCliente ?? "");
   }
 
   const salvarInfoEmpresa = async (empresaId: string) => {
@@ -1036,10 +1094,18 @@ export default function ConfiguracoesPage() {
       }
     }
 
+    if (perfisCliente.trim()) {
+      try { JSON.parse(perfisCliente.trim()); } catch {
+        showMsg("Perfis de cliente: JSON inválido. Corrija antes de salvar.", true);
+        setSalvando(false);
+        return;
+      }
+    }
+
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null, perfisCliente: perfisCliente.trim() || null }),
     });
 
     if (!res.ok) {
@@ -1537,6 +1603,21 @@ export default function ConfiguracoesPage() {
                             value={complementaresGuia}
                             onChange={(e) => setComplementaresGuia(e.target.value)}
                             placeholder={`Ex:\nTINTAS DE PAREDE: Ofereça selador (parede nova) ou fundo preparador (esfarelamento/caiação), rolo (só consumidor), fita crepe, lixa.\nESMALTE SINTÉTICO: Aguarrás (NUNCA Thinner), rolo de espuma (obrigatório), lixa d'água.\nTEXTURA/CIMENTO QUEIMADO: Desempenadeira INOX canto arredondado (obrigatório), selador se parede nova.\nPINTOR PROFISSIONAL (lista 3+ itens): pule complementares básicos — foque em agilidade.`}
+                            className={`${INPUT} resize-none font-mono text-[12px]`}
+                          />
+                        </div>
+
+                        {/* ── Perfis de cliente ── */}
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted)" }}>PERFIS DE CLIENTE E MENSAGENS PERSONALIZADAS</p>
+                          <p className="text-[11px] mb-3" style={{ color: "var(--muted-3)" }}>
+                            JSON com perfis (Consumidor, Arquiteto, Pintor...) e mensagens d2→d90, quebra de objeção e reativação por perfil. Deixe vazio para padrão genérico.
+                          </p>
+                          <textarea
+                            rows={10}
+                            value={perfisCliente}
+                            onChange={(e) => setPerfisCliente(e.target.value)}
+                            placeholder={PERFIS_CLIENTE_PLACEHOLDER}
                             className={`${INPUT} resize-none font-mono text-[12px]`}
                           />
                         </div>
