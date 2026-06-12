@@ -307,6 +307,35 @@ export async function GET(req: Request) {
     }),
   ]);
 
+  // NO-SHOW via dataAgendada: agendamentos PENDENTES com data passada (janela 7 dias)
+  const d7ago = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const agendamentosPassados = await prisma.agendamento.findMany({
+    where: {
+      status: 'PENDENTE',
+      dataAgendada: { lte: now, gte: d7ago },
+    },
+    select: { clienteId: true, dataAgendada: true },
+    orderBy: { dataAgendada: 'desc' },
+  });
+  const agendMapPassado = new Map<string, Date>();
+  for (const a of agendamentosPassados) {
+    if (!agendMapPassado.has(a.clienteId)) {
+      agendMapPassado.set(a.clienteId, a.dataAgendada);
+    }
+  }
+  const noShowLeads = agendMapPassado.size > 0
+    ? await prisma.lead.findMany({
+        where: {
+          status: 'AGENDADO',
+          clienteId: { in: [...agendMapPassado.keys()] },
+          NOT: { observacoes: { contains: '[NO_SHOW]' } },
+          empresa: { ativa: true },
+          cliente: { telefone: { not: '' } },
+        },
+        include: baseInclude,
+      })
+    : [];
+
   // Calendário de relacionamento por compra — D+7, D+20, D+28, D+45 desde última venda
   const [vendasD7, vendasD20, vendasD28, vendasD45] = await Promise.all([
     prisma.venda.findMany({
@@ -485,6 +514,26 @@ export async function GET(req: Request) {
           },
         })
       )
+    );
+  }
+
+  // NO-SHOW via dataAgendada → FOLLOW_UP + flag [NO_SHOW]
+  if (noShowLeads.length > 0) {
+    await Promise.all(
+      noShowLeads.map((l: any) => {
+        const dataAgend = agendMapPassado.get(l.clienteId);
+        const dataStr = dataAgend
+          ? new Date(dataAgend).toLocaleDateString('pt-BR')
+          : 'data nao registrada';
+        return prisma.lead.update({
+          where: { id: l.id },
+          data: {
+            status: 'FOLLOW_UP',
+            dataRecontato: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+            observacoes: ((l.observacoes ?? '') + '\n[NO_SHOW] Cliente nao compareceu em ' + dataStr).trim(),
+          },
+        });
+      })
     );
   }
 
@@ -872,6 +921,22 @@ export async function GET(req: Request) {
     );
   }
 
+  // NO-SHOW: mensagem ao cliente perguntando se quer reagendar
+  for (const l of noShowLeads) {
+    if (!l.empresa.instanciaWhatsapp) continue;
+    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(' ')[0]}` : '';
+    const ia = l.empresa.nomeIA ?? 'Eu';
+    items.push({
+      tipo: 'noshow_reagendar',
+      leadId: l.id,
+      clienteTelefone: l.cliente.telefone,
+      clienteNome: l.cliente.nome ?? l.cliente.telefone,
+      instancia: l.empresa.instanciaWhatsapp,
+      empresaNome: l.empresa.nome,
+      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você tinha um horário agendado conosco — tudo certo? Ainda gostaria de reagendar? 😊`,
+    });
+  }
+
   // PC1: conversa franca para leads PRONTO_PARA_COMPRAR parados 96h+
   for (const l of pc1Novos) {
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
@@ -1093,14 +1158,14 @@ export async function GET(req: Request) {
     "pos_venda", "reativacao_15d", "reativacao_30d", "recontato_agendado",
     "aquecimento_d1", "aquecimento_d2", "aniversario", "lead_d1", "lead_d2",
     "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
-    "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0"
+    "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0", "noshow_reagendar"
   ]);
 
   // Mapa de leadId → clienteId para vincular mensagens
   const leadToClienteMap = new Map<string, string>();
   for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
     [aquecimentoD1], [aquecimentoD2], [aniversarios], [leadD1], [leadD2], [prontoConversa],
-    [semResposta60d], [reativacao90d]]) {
+    [semResposta60d], [reativacao90d], [noShowLeads]]) {
     for (const lead of leads) {
       if (lead?.id && (lead as any)?.clienteId) {
         leadToClienteMap.set(lead.id, (lead as any).clienteId);
