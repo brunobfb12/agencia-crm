@@ -28,6 +28,8 @@ model Empresa {
   conhecimentoBase         String?
   tagsCustomizadas         String[] @default([])
   complementaresGuia       String?
+  perfisCliente            String?
+  quebrasObjecao           String?
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)
@@ -96,6 +98,7 @@ model Vendedor {
   ultimaAtribuicaoEm   DateTime?
   token                String?   @unique
   ultimoLinkPressaoEm  DateTime?
+  instanciaVendedor    String?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]
@@ -134,8 +137,11 @@ model Lead {
   status       LeadStatus @default(LEAD)
   score        Int        @default(0)
   observacoes   String?
-  dataRecontato DateTime?
-  criadoEm      DateTime   @default(now())
+  dataRecontato     DateTime?
+  dataOrcamento     DateTime?
+  dataVendaProvavel DateTime?
+  origemLead        String?   @default("WHATSAPP")
+  criadoEm          DateTime  @default(now())
   atualizadoEm  DateTime   @updatedAt
 
   cliente       Cliente        @relation(fields: [clienteId], references: [id])
@@ -150,6 +156,9 @@ enum LeadStatus {
   AQUECIMENTO
   PRONTO_PARA_COMPRAR
   AGENDADO
+  ORCAMENTO_ENVIADO
+  VENDA_PROVAVEL
+  INDEFINIDO
   NEGOCIACAO
   VENDA_REALIZADA
   POS_VENDA
