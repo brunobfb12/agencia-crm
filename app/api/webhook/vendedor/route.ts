@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     where: {
       vendedorId: vendedor.id,
       empresaId: empresa.id,
-      status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR", "AGENDADO"] },
+      status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR", "AGENDADO", "ORCAMENTO_ENVIADO"] },
     },
     orderBy: { atualizadoEm: "desc" },
     include: { cliente: { select: { id: true, nome: true, telefone: true } } },
