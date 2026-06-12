@@ -899,6 +899,25 @@ export async function GET(req: Request) {
     }
   }
 
+  // PC1: reset modoHumano → IA volta a responder o cliente após conversa franca
+  if (pc1Novos.length > 0) {
+    const clienteIdsPC1 = pc1Novos.map((l: any) => l.clienteId).filter(Boolean);
+    if (clienteIdsPC1.length > 0) {
+      const conversasPC1 = await prisma.conversa.findMany({
+        where: { clienteId: { in: clienteIdsPC1 } },
+        orderBy: { ultimaAtividade: "desc" },
+        distinct: ["clienteId"],
+        select: { id: true },
+      });
+      if (conversasPC1.length > 0) {
+        await prisma.conversa.updateMany({
+          where: { id: { in: conversasPC1.map((c: { id: string }) => c.id) } },
+          data: { modoHumano: false },
+        });
+      }
+    }
+  }
+
   // Calendário de relacionamento: D+7, D+20, D+28, D+45 desde última compra
   // Deduplicação por leadId — prioridade para compra mais recente (janela menor)
   const seenVendaLeadIds = new Set<string>();
