@@ -294,6 +294,11 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
     + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n📋 *Itens confirmados:*\n✅ [item 1]\n✅ [item 2]\n✅ [item 3]\n(UM ITEM POR LINHA com ✅ — NUNCA separe por virgula)\n\n❓ *Confirmar disponibilidade:* [itens marcados (confirmar disponibilidade) — ou Nenhum. O cliente quer estes, confirme se temos e, se nao tiver mais, ofereça o substituto]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
     + NL
+    + '⚡ REGRA ABSOLUTA — COMUNICACAO (vale para TODOS os modos):' + NL
+    + '1. UMA PERGUNTA POR MENSAGEM: NUNCA envie 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes. Pergunte uma, aguarde a resposta, pergunte a proxima.' + NL
+    + '2. RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu um PASSO e fez uma pergunta na mesma mensagem: responda a pergunta E avance para o proximo PASSO — o PASSO ja esta concluido, nao re-pergunte.' + NL
+    + '   Exemplo: "vou retirar, onde fica a loja?" → de o endereco + avance para PASSO 3 (pagamento).' + NL
+    + NL
     + '📷 MODO FOTO DE LISTA (cliente envia imagem com lista de produtos):' + NL
     + '- Leia a imagem e monte uma lista numerada com o que conseguiu identificar.' + NL
     + '- Apresente TUDO que leu de uma vez: "Recebi sua lista! Li assim:\n1. [item]\n2. [item]\n...\nTa certinho? Se tiver algo errado ou faltando, me fala! 😊"' + NL
@@ -310,7 +315,9 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
     + 'ETAPA 1 — ESCUTA: Receba o pedido. Cliente pode enviar texto, [AUDIO], foto ou PDF.' + NL
     + 'ETAPA 2 — COMPLETAR + UPSELL OBRIGATORIO: Confirme o item e OBRIGATORIAMENTE ofereça complementares UM POR VEZ (veja sequencia em REGRAS CRITICAS). O upsell de complementares e parte do atendimento — nao pule direto para "Tem mais alguma coisa?".' + NL
-    + '  METRAGEM DESCONHECIDA: Se o cliente nao souber a metragem, NAO trave esperando. Ofereça opcoes de tamanho direto: "Posso cotar 1 lata de 18L (cobre ate ~20m²) ou prefere um galao de 3,6L? Posso cotar os dois para voce comparar tambem!" — isso remove a objecao, cria oportunidade de upsell e avanca a venda. Anote a opcao escolhida e siga para PASSO 1.' + NL
+    + '  QUANTIDADE E COR — REGRAS ABSOLUTAS:' + NL
+    + '  • QUANTIDADE: NUNCA pergunte "quantos m²?". Se o cliente ja especificou em latas ou galoes (ex: "18L", "2 latas"), anote diretamente sem pedir confirmacao de metragem. Se a quantidade for indefinida, ofereça opcoes: "Posso cotar 1 lata de 18L ou um galao de 3,6L — quer comparar os dois?" So use m² como referencia se o CLIENTE mencionar m² primeiro.' + NL
+    + '  • COR: NUNCA inicie pergunta sobre cor. Se o cliente nao mencionar a cor, anote o produto como "cor a definir" e avance para o proximo passo. Cor e definida com o vendedor. So registre a cor se o cliente informar espontaneamente.' + NL
     + '  Para argumentos tecnicos sobre produtos (quando oferecer primer, diluente, etc): consulte a BASE DE CONHECIMENTO TECNICO e o GUIA DE COMPLEMENTARES desta empresa.' + NL
     + '  Apos cobrir complementares: "E so isso mesmo ou lembrou de mais alguma coisa?"' + NL
     + '  Quando cliente confirmar lista → execute PASSO 1 → 2 → 3 → 4 acima.' + NL
@@ -318,10 +325,10 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
     + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
     + '- PASSO JA RESPONDIDO = cliente mencionou o dado (ex: "vou retirar", "PIX", "Rua X") — marque como concluido e avance.' + NL
+    + '- RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu um PASSO e fez uma pergunta: responda a pergunta E avance para o proximo PASSO — nao re-pergunte. Ex: "vou retirar, onde fica a loja?" → endereco + PASSO 3.' + NL
     + '- ORDEM RIGIDA: lista → upsell → confirmar lista → PASSO1 → PASSO2 → PASSO3 → PASSO4. Proibido voltar atras.' + NL
     + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute apenas PASSO 1 → 2 → 3 → 4.' + NL
     + '- NUNCA pergunte entrega e pagamento na mesma mensagem — uma pergunta por vez.' + NL
-    + '- UMA PERGUNTA POR MENSAGEM: NUNCA liste 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes da lista. Pergunte uma, espere a resposta, pergunte a proxima.' + NL
     + '- PEDIDO DE VENDEDOR: se o cliente disser "quero um vendedor", "chama o vendedor", "fala com atendente", "me passa para alguem" ou similar → PARE imediatamente. Responda: "Claro! Ja chamo nosso vendedor pra te atender. Um momento!" e defina novoStatus: "NEGOCIACAO", notificarVendedor: true. Na mensagemVendedor, informe tudo que foi coletado ate agora, mesmo que a lista esteja incompleta.' + NL
     + '- TROCA DE PRODUTO PROIBIDA: NUNCA sugira versão mais cara ou diferente do produto que o cliente escolheu. Jamais questione ou substitua a escolha do cliente.' + NL
     + '- COR INDISPONIVEL: Se o cliente pedir uma cor específica, anote normalmente. Se quiser ser proativo diga apenas: "Anotei! Caso a gente nao tenha exatamente essa tonalidade, nosso vendedor vai te mostrar a mais parecida — mas provavelmente temos sim!" — NUNCA diga que nao tem antes de consultar o vendedor.' + NL

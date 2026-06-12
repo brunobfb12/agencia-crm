@@ -43,7 +43,7 @@ export async function GET(req: Request) {
   const h72 = new Date(now); h72.setHours(h72.getHours() - 72);
   const h96 = new Date(now); h96.setHours(h96.getHours() - 96);
   const h120 = new Date(now); h120.setHours(h120.getHours() - 120);
-  const h3 = new Date(now); h3.setHours(h3.getHours() - 3);
+  const h2 = new Date(now); h2.setHours(h2.getHours() - 2);
 
   const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
@@ -219,7 +219,7 @@ export async function GET(req: Request) {
   const lembreteLD0Novos = lembreteLD0Candidatos.filter((l: any) => {
     const lastMsg = l.cliente?.conversas?.[0]?.mensagens?.[0];
     if (!lastMsg || lastMsg.direcao !== "SAIDA") return false;
-    return new Date(lastMsg.criadoEm) <= h3;
+    return new Date(lastMsg.criadoEm) <= h2;
   });
 
   // P2.2: AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR (score ≥6 + CONFIRMADO + P72 + 24-48h)
