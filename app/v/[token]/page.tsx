@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
-type Lead = {
+interface Lead {
   id: string;
   clienteNome: string;
   clienteTelefone: string;
@@ -12,272 +12,217 @@ type Lead = {
   horasParado: number;
   observacoes: string;
   status: string;
-};
-
-type Estado = "idle" | "fechei_valor" | "nao_fechei_motivo" | "salvando" | "done";
-
-type CardState = {
-  estado: Estado;
-  valor: string;
-  motivo: string;
-  respondido: boolean;
-};
-
-const MOTIVOS = [
-  { n: "1", label: "Cliente sumiu / não respondeu" },
-  { n: "2", label: "Falou que está caro" },
-  { n: "3", label: "Ainda negociando" },
-  { n: "4", label: "Produto não disponível" },
-];
-
-function urgencyColor(h: number): string {
-  if (h >= 72) return "#ef4444";
-  if (h >= 48) return "#f97316";
-  if (h >= 24) return "#f0f028";
-  return "#6ee7b7";
+  resumoPedido: string;
 }
 
-function urgencyLabel(h: number): string {
-  if (h >= 72) return `🔴 ${h}h`;
-  if (h >= 48) return `🟠 ${h}h`;
-  if (h >= 24) return `⏰ ${h}h`;
-  return `🟢 ${h}h`;
+interface PageData {
+  vendedorNome: string;
+  empresaNome: string;
+  leads: Lead[];
+  total: number;
 }
 
-function resumoPedido(obs: string): string {
-  const match = obs.match(/[Pp]edido[:\s]+([^|]+)/);
-  if (match) return match[1].trim().slice(0, 100);
-  return obs.split("|")[0].trim().slice(0, 100);
-}
-
-export default function PainelVendedor() {
+export default function VendedorPage() {
   const params = useParams();
   const token = params.token as string;
 
-  const [vendedorNome, setVendedorNome] = useState("");
-  const [empresaNome, setEmpresaNome] = useState("");
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [cards, setCards] = useState<Record<string, CardState>>({});
+  const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processando, setProcessando] = useState<string | null>(null);
+  const [concluidos, setConcluidos] = useState<Set<string>>(new Set());
+  const [valores, setValores] = useState<Record<string, string>>({});
   const [erro, setErro] = useState("");
 
   useEffect(() => {
     fetch(`/api/v/${token}`)
       .then(r => r.json())
-      .then(d => {
-        if (d.error) { setErro(d.error); setLoading(false); return; }
-        setVendedorNome(d.vendedorNome);
-        setEmpresaNome(d.empresaNome ?? "");
-        setLeads(d.leads);
-        const init: Record<string, CardState> = {};
-        d.leads.forEach((l: Lead) => { init[l.id] = { estado: "idle", valor: "", motivo: "", respondido: false }; });
-        setCards(init);
-        setLoading(false);
-      })
-      .catch(() => { setErro("Erro ao carregar. Tente novamente."); setLoading(false); });
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [token]);
 
-  const setCard = useCallback((id: string, patch: Partial<CardState>) => {
-    setCards(prev => ({ ...prev, [id]: { ...prev[id], ...patch } }));
-  }, []);
-
-  const confirmar = useCallback(async (lead: Lead, acao: string) => {
-    const card = cards[lead.id];
-    if (!card) return;
-    setCard(lead.id, { estado: "salvando" });
-    const body: Record<string, unknown> = { leadId: lead.id, acao };
-    if (acao === "venda") body.valor = card.valor;
-    if (acao === "derrota") body.motivo = card.motivo;
-    const r = await fetch(`/api/v/${token}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (r.ok) setCard(lead.id, { estado: "done", respondido: true });
-    else setCard(lead.id, { estado: "idle" });
-  }, [cards, token, setCard]);
-
-  const totalRespondidos = Object.values(cards).filter(c => c.respondido).length;
-  const todosRespondidos = leads.length > 0 && totalRespondidos === leads.length;
+  async function agir(leadId: string, acao: "venda" | "derrota" | "balcao") {
+    setProcessando(leadId);
+    setErro("");
+    try {
+      const body: Record<string, string> = { leadId, acao };
+      if (acao === "venda" || acao === "balcao") {
+        body.valor = valores[leadId] || "";
+      }
+      const r = await fetch(`/api/v/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error("Erro ao processar");
+      setConcluidos(prev => new Set([...prev, leadId]));
+    } catch {
+      setErro("Erro ao processar. Tente novamente.");
+    } finally {
+      setProcessando(null);
+    }
+  }
 
   if (loading) return (
-    <div style={{ background: "#050505", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: "#f0f028", fontFamily: "sans-serif", fontSize: "1rem" }}>Carregando...</div>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04040c" }}>
+      <div style={{ color: "#818cf8", fontSize: "1rem" }}>Carregando...</div>
     </div>
   );
 
-  if (erro) return (
-    <div style={{ background: "#050505", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-      <div style={{ color: "#ff8080", fontFamily: "sans-serif", textAlign: "center" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "12px" }}>⚠️</div>
-        <div>{erro}</div>
-      </div>
+  if (!data) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04040c" }}>
+      <div style={{ color: "#f87171", fontSize: "1rem" }}>Link inválido ou expirado.</div>
     </div>
   );
+
+  const leadsPendentes = data.leads.filter(l => !concluidos.has(l.id));
 
   return (
-    <div style={{ background: "#050505", minHeight: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", color: "#f5f5f0" }}>
+    <div style={{ minHeight: "100vh", background: "#04040c", color: "#f0f0ff", fontFamily: "sans-serif", padding: "24px 16px" }}>
+
       {/* Header */}
-      <div style={{ background: "rgba(240,240,40,.06)", borderBottom: "1px solid rgba(240,240,40,.15)", padding: "16px 20px", position: "sticky", top: 0, zIndex: 10, backdropFilter: "blur(12px)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-          <div style={{ display: "flex", gap: "3px" }}>
-            {["#b4dcf0", "#f0a050", "#f0f028"].map((c, i) => (
-              <div key={i} style={{ width: "5px", height: "28px", borderRadius: "2px", background: c }} />
-            ))}
-          </div>
-          <span style={{ fontFamily: "Syne, system-ui, sans-serif", fontWeight: 800, fontSize: "1rem", color: "#f0f028", letterSpacing: ".04em", textTransform: "uppercase" }}>
-            {empresaNome || "FácilCRM"}
-          </span>
+      <div style={{ maxWidth: 480, margin: "0 auto 24px" }}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "#818cf8", marginBottom: 4 }}>
+          FácilCRM
         </div>
-        <div style={{ fontSize: ".85rem", color: "rgba(245,245,240,.7)" }}>
-          Oi <strong style={{ color: "#f5f5f0" }}>{vendedorNome}</strong>! {todosRespondidos ? "Tudo respondido ✅" : `${leads.length - totalRespondidos} orçamento${leads.length - totalRespondidos !== 1 ? "s" : ""} pendente${leads.length - totalRespondidos !== 1 ? "s" : ""}`}
+        <div style={{ fontSize: "0.85rem", color: "rgba(240,240,255,0.4)" }}>
+          Oi {data.vendedorNome?.split(" ")[0]}! Você tem {leadsPendentes.length} orçamento{leadsPendentes.length !== 1 ? "s" : ""} sem retorno.
         </div>
-        {leads.length > 0 && (
-          <div style={{ marginTop: "8px", background: "rgba(255,255,255,.08)", borderRadius: "100px", height: "6px", overflow: "hidden" }}>
-            <div style={{ height: "100%", background: "#f0f028", borderRadius: "100px", width: `${(totalRespondidos / leads.length) * 100}%`, transition: "width .4s ease" }} />
-          </div>
-        )}
+        <div style={{ fontSize: "0.75rem", color: "rgba(240,240,255,0.25)", marginTop: 4 }}>
+          Confirma o que aconteceu com cada um — leva 1 minuto.
+        </div>
       </div>
 
-      <div style={{ padding: "16px", maxWidth: "480px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "12px" }}>
+      {erro && (
+        <div style={{ maxWidth: 480, margin: "0 auto 16px", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: 10, padding: "10px 14px", fontSize: "0.82rem", color: "#f87171" }}>
+          {erro}
+        </div>
+      )}
 
-        {todosRespondidos && (
-          <div style={{ background: "rgba(110,231,183,.08)", border: "1px solid rgba(110,231,183,.25)", borderRadius: "16px", padding: "32px 20px", textAlign: "center", marginTop: "16px" }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "10px" }}>🎉</div>
-            <div style={{ fontFamily: "Syne, system-ui, sans-serif", fontWeight: 800, fontSize: "1.1rem", color: "#6ee7b7", marginBottom: "6px" }}>Tudo pronto!</div>
-            <div style={{ fontSize: ".85rem", color: "rgba(245,245,240,.6)" }}>Os leads foram atualizados no sistema. Obrigado, {vendedorNome}!</div>
+      {/* Lista de leads */}
+      <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+        {leadsPendentes.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px 0", color: "rgba(240,240,255,0.3)", fontSize: "0.9rem" }}>
+            ✅ Tudo em dia! Nenhum orçamento pendente.
           </div>
         )}
 
-        {leads.map(lead => {
-          const card = cards[lead.id] ?? { estado: "idle", valor: "", motivo: "", respondido: false };
-          const cor = urgencyColor(lead.horasParado);
-          const pedido = resumoPedido(lead.observacoes);
-
-          return (
-            <div key={lead.id} style={{
-              background: card.respondido ? "rgba(255,255,255,.03)" : "rgba(240,240,40,.03)",
-              border: `1px solid ${card.respondido ? "rgba(255,255,255,.08)" : "rgba(240,240,40,.15)"}`,
-              borderRadius: "16px",
-              overflow: "hidden",
-              opacity: card.respondido ? .55 : 1,
-              transition: "opacity .3s",
-            }}>
-              {/* Card header */}
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <span style={{ fontFamily: "Syne, system-ui, sans-serif", fontWeight: 700, fontSize: ".95rem", color: "#f5f5f0" }}>{lead.clienteNome}</span>
-                  <span style={{ fontSize: ".75rem", fontWeight: 600, color: cor, background: `${cor}18`, padding: "2px 8px", borderRadius: "100px", border: `1px solid ${cor}40` }}>
-                    {urgencyLabel(lead.horasParado)}
-                  </span>
+        {leadsPendentes.map(lead => (
+          <div key={lead.id} style={{
+            background: "rgba(255,255,255,.04)",
+            border: "1px solid rgba(255,255,255,.08)",
+            borderRadius: 14,
+            padding: 18,
+          }}>
+            {/* Info do lead */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#f0f0ff", marginBottom: 2 }}>
+                {lead.clienteNome}
+              </div>
+              <div style={{ fontSize: "0.75rem", color: "rgba(240,240,255,.35)", marginBottom: 6 }}>
+                Orçamento há {lead.horasParado}h sem retorno
+              </div>
+              {lead.resumoPedido && (
+                <div style={{
+                  fontSize: "0.78rem",
+                  color: "rgba(240,240,255,.6)",
+                  background: "rgba(255,255,255,.04)",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                }}>
+                  📋 {lead.resumoPedido}
                 </div>
-                {pedido && <div style={{ fontSize: ".8rem", color: "rgba(245,245,240,.5)", lineHeight: 1.4 }}>{pedido}</div>}
-              </div>
-
-              {/* Card body */}
-              <div style={{ padding: "14px 16px" }}>
-
-                {card.estado === "idle" && !card.respondido && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <button onClick={() => setCard(lead.id, { estado: "fechei_valor" })} style={{
-                      background: "rgba(110,231,183,.1)", border: "1px solid rgba(110,231,183,.3)", color: "#6ee7b7",
-                      borderRadius: "12px", padding: "14px 8px", fontSize: ".85rem", fontWeight: 700, cursor: "pointer",
-                      fontFamily: "inherit", transition: "all .2s",
-                    }}>✅ Fechei</button>
-                    <button onClick={() => setCard(lead.id, { estado: "nao_fechei_motivo" })} style={{
-                      background: "rgba(255,128,128,.08)", border: "1px solid rgba(255,128,128,.25)", color: "#ff9090",
-                      borderRadius: "12px", padding: "14px 8px", fontSize: ".85rem", fontWeight: 700, cursor: "pointer",
-                      fontFamily: "inherit", transition: "all .2s",
-                    }}>❌ Não fechei</button>
-                  </div>
-                )}
-
-                {card.estado === "fechei_valor" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div style={{ fontSize: ".8rem", color: "rgba(245,245,240,.6)", marginBottom: "2px" }}>Qual o valor da venda?</div>
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                      <span style={{ color: "rgba(245,245,240,.5)", fontSize: ".9rem" }}>R$</span>
-                      <input
-                        type="number" inputMode="decimal" placeholder="0,00"
-                        value={card.valor}
-                        onChange={e => setCard(lead.id, { valor: e.target.value })}
-                        style={{
-                          flex: 1, background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.15)",
-                          borderRadius: "10px", padding: "12px 14px", color: "#f5f5f0", fontSize: "1rem",
-                          fontFamily: "inherit", outline: "none",
-                        }}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                      <button onClick={() => setCard(lead.id, { estado: "idle" })} style={{
-                        background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(245,245,240,.5)",
-                        borderRadius: "10px", padding: "12px", fontSize: ".82rem", cursor: "pointer", fontFamily: "inherit",
-                      }}>Voltar</button>
-                      <button onClick={() => confirmar(lead, "venda")} style={{
-                        background: "rgba(110,231,183,.15)", border: "1px solid rgba(110,231,183,.4)", color: "#6ee7b7",
-                        borderRadius: "10px", padding: "12px", fontSize: ".85rem", fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                      }}>Confirmar →</button>
-                    </div>
-                  </div>
-                )}
-
-                {card.estado === "nao_fechei_motivo" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    <div style={{ fontSize: ".8rem", color: "rgba(245,245,240,.6)", marginBottom: "2px" }}>O que aconteceu?</div>
-                    {MOTIVOS.map(m => (
-                      <button key={m.n} onClick={() => setCard(lead.id, { motivo: m.n })} style={{
-                        display: "flex", alignItems: "center", gap: "12px",
-                        background: card.motivo === m.n ? "rgba(240,240,40,.1)" : "rgba(255,255,255,.04)",
-                        border: `1px solid ${card.motivo === m.n ? "rgba(240,240,40,.4)" : "rgba(255,255,255,.1)"}`,
-                        color: card.motivo === m.n ? "#f0f028" : "rgba(245,245,240,.7)",
-                        borderRadius: "10px", padding: "12px 14px", fontSize: ".83rem", cursor: "pointer",
-                        fontFamily: "inherit", textAlign: "left", transition: "all .15s",
-                      }}>
-                        <span style={{
-                          width: "26px", height: "26px", borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                          background: card.motivo === m.n ? "#f0f028" : "rgba(255,255,255,.08)",
-                          color: card.motivo === m.n ? "#000" : "rgba(245,245,240,.5)",
-                          fontWeight: 700, fontSize: ".8rem",
-                        }}>{m.n}</span>
-                        {m.label}
-                      </button>
-                    ))}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "4px" }}>
-                      <button onClick={() => setCard(lead.id, { estado: "idle", motivo: "" })} style={{
-                        background: "transparent", border: "1px solid rgba(255,255,255,.12)", color: "rgba(245,245,240,.5)",
-                        borderRadius: "10px", padding: "12px", fontSize: ".82rem", cursor: "pointer", fontFamily: "inherit",
-                      }}>Voltar</button>
-                      <button onClick={() => card.motivo && confirmar(lead, "derrota")} style={{
-                        background: card.motivo ? "rgba(255,128,128,.12)" : "rgba(255,255,255,.04)",
-                        border: `1px solid ${card.motivo ? "rgba(255,128,128,.35)" : "rgba(255,255,255,.08)"}`,
-                        color: card.motivo ? "#ff9090" : "rgba(245,245,240,.3)",
-                        borderRadius: "10px", padding: "12px", fontSize: ".85rem", fontWeight: 700,
-                        cursor: card.motivo ? "pointer" : "default", fontFamily: "inherit",
-                      }}>Confirmar →</button>
-                    </div>
-                  </div>
-                )}
-
-                {card.estado === "salvando" && (
-                  <div style={{ textAlign: "center", padding: "8px", color: "rgba(245,245,240,.5)", fontSize: ".85rem" }}>Salvando...</div>
-                )}
-
-                {card.estado === "done" && (
-                  <div style={{ textAlign: "center", padding: "8px", color: "#6ee7b7", fontSize: ".85rem", fontWeight: 600 }}>✅ Respondido</div>
-                )}
-              </div>
+              )}
             </div>
-          );
-        })}
 
-        {leads.length === 0 && !todosRespondidos && (
-          <div style={{ textAlign: "center", padding: "48px 20px", color: "rgba(245,245,240,.35)", fontSize: ".9rem" }}>
-            Nenhum orçamento pendente agora 🎉
+            {/* Campo de valor (opcional) */}
+            <input
+              type="number"
+              placeholder="Valor (opcional) R$"
+              value={valores[lead.id] || ""}
+              onChange={e => setValores(prev => ({ ...prev, [lead.id]: e.target.value }))}
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                background: "rgba(255,255,255,.06)",
+                border: "1px solid rgba(255,255,255,.1)",
+                borderRadius: 10,
+                padding: "10px 14px",
+                color: "#f0f0ff",
+                fontSize: "0.88rem",
+                marginBottom: 12,
+                outline: "none",
+              }}
+            />
+
+            {/* Botões de ação */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => agir(lead.id, "venda")}
+                disabled={processando === lead.id}
+                style={{
+                  flex: 1,
+                  padding: "12px 8px",
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: "0.88rem",
+                  background: "linear-gradient(135deg,#10b981,#059669)",
+                  color: "#fff",
+                  opacity: processando === lead.id ? 0.5 : 1,
+                }}
+              >
+                ✅ Fechei
+              </button>
+
+              <button
+                onClick={() => agir(lead.id, "balcao")}
+                disabled={processando === lead.id}
+                style={{
+                  flex: 1,
+                  padding: "12px 8px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(99,102,241,.4)",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  background: "rgba(99,102,241,.1)",
+                  color: "#818cf8",
+                  opacity: processando === lead.id ? 0.5 : 1,
+                }}
+              >
+                🏪 Balcão
+              </button>
+
+              <button
+                onClick={() => agir(lead.id, "derrota")}
+                disabled={processando === lead.id}
+                style={{
+                  flex: 1,
+                  padding: "12px 8px",
+                  borderRadius: 10,
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: "0.88rem",
+                  background: "rgba(239,68,68,.15)",
+                  color: "#f87171",
+                  opacity: processando === lead.id ? 0.5 : 1,
+                }}
+              >
+                ❌ Não fechei
+              </button>
+            </div>
           </div>
-        )}
-
-        <div style={{ height: "32px" }} />
+        ))}
       </div>
+
+      {/* Concluídos */}
+      {concluidos.size > 0 && (
+        <div style={{ maxWidth: 480, margin: "16px auto 0", textAlign: "center", fontSize: "0.78rem", color: "rgba(240,240,255,.25)" }}>
+          {concluidos.size} confirmado{concluidos.size !== 1 ? "s" : ""} ✓
+        </div>
+      )}
     </div>
   );
 }
