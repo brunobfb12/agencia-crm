@@ -314,7 +314,7 @@ export default function ConectarPage() {
             {qrcode ? (
               <div className="conectar-qr-wrap">
                 <div className="conectar-qr-box">
-                  <img src={`data:image/png;base64,${qrcode}`} alt="QR Code" />
+                  <img src={qrcode} alt="QR Code" />
                 </div>
                 <div className="conectar-instructions">
                   <strong>Como conectar:</strong>
