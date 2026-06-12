@@ -284,6 +284,7 @@ interface Empresa {
 interface Vendedor {
   id: string; nome: string; telefone: string; ordemChamada: number;
   ativo: boolean; empresaId: string; cargo: string;
+  token?: string; instanciaConectadaEm?: string | null;
   empresa: { nome: string }; _count: { vendas: number };
 }
 interface Midia {
@@ -1847,6 +1848,68 @@ export default function ConfiguracoesPage() {
                           {isCentral && <span>{v.empresa.nome}</span>}
                           <span>Ordem #{v.ordemChamada}</span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* ── Conexão do Vendedor ── */}
+                    <div className="p-3 rounded-lg mb-3" style={{ background: "rgba(99,102,241,.05)", border: "1px solid rgba(99,102,241,.12)" }}>
+                      <div className="flex items-start justify-between gap-3 mb-2.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-semibold mb-1.5" style={{ color: "var(--muted)" }}>CONEXÃO DO VENDEDOR</p>
+
+                          {/* Link de conexão */}
+                          <div className="flex items-center gap-2 mb-2 bg-white/5 p-2 rounded-lg">
+                            <input
+                              readOnly
+                              type="text"
+                              value={`https://ocrmfacil.com.br/conectar/${v.token || ""}`}
+                              className="flex-1 text-[11px] font-mono bg-transparent border-0 outline-0"
+                              style={{ padding: 0, color: "rgba(240,240,255,.7)" }}
+                            />
+                          </div>
+
+                          {/* Status de conexão */}
+                          <div className="flex items-center gap-2 mb-2">
+                            {v.instanciaConectadaEm
+                              ? (
+                                <span className="text-[11px] flex items-center gap-1"
+                                  style={{ color: "#34d399" }}>
+                                  ✅ Conectado em {v.instanciaConectadaEm ? new Date(v.instanciaConectadaEm).toLocaleDateString('pt-BR') : '—'}
+                                </span>
+                              )
+                              : (
+                                <span className="text-[11px] flex items-center gap-1"
+                                  style={{ color: "#fbbf24" }}>
+                                  ⏳ Aguardando conexão
+                                </span>
+                              )
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botões de conexão */}
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`https://ocrmfacil.com.br/conectar/${v.token || ""}`);
+                            alert("Link copiado para a área de transferência!");
+                          }}
+                          className="flex-1 text-[11px] px-2 py-1.5 rounded-lg font-semibold transition-all"
+                          style={{ background: "rgba(99,102,241,.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.25)", whiteSpace: "nowrap" }}>
+                          📋 Copiar link
+                        </button>
+                        <button
+                          onClick={() => {
+                            const msg = encodeURIComponent(
+                              `Oi ${v.nome}! Para você começar a atender pelo FácilCRM, escaneie o QR Code neste link com o WhatsApp que você usa para atender clientes:\nhttps://ocrmfacil.com.br/conectar/${v.token || ""}`
+                            );
+                            window.open(`https://wa.me/${v.telefone}?text=${msg}`, "_blank");
+                          }}
+                          className="flex-1 text-[11px] px-2 py-1.5 rounded-lg font-semibold transition-all"
+                          style={{ background: "rgba(34,211,238,.12)", color: "#22d3ee", border: "1px solid rgba(34,211,238,.2)", whiteSpace: "nowrap" }}>
+                          💬 Enviar por WhatsApp
+                        </button>
                       </div>
                     </div>
 
