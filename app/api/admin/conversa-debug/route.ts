@@ -23,20 +23,19 @@ export async function GET(req: Request) {
       select: { id: true, status: true, observacoes: true, criadoEm: true, atualizadoEm: true, empresaId: true },
     });
 
-    const leadsComMensagens = await Promise.all(leads.map(async (l) => {
-      const conversas = await prisma.conversa.findMany({
-        where: { leadId: l.id },
-        select: { id: true },
-      });
-      const mensagens = await prisma.mensagem.findMany({
-        where: { conversaId: { in: conversas.map(cv => cv.id) } },
-        orderBy: { criadoEm: "asc" },
-        select: { direcao: true, conteudo: true, criadoEm: true },
-      });
-      return { ...l, mensagens };
-    }));
+    const conversas = await prisma.conversa.findMany({
+      where: { clienteId: c.id },
+      select: { id: true, criadoEm: true },
+      orderBy: { criadoEm: "desc" },
+    });
 
-    return { cliente: c, leads: leadsComMensagens };
+    const mensagens = await prisma.mensagem.findMany({
+      where: { conversaId: { in: conversas.map(cv => cv.id) } },
+      orderBy: { criadoEm: "asc" },
+      select: { direcao: true, conteudo: true, criadoEm: true },
+    });
+
+    return { cliente: c, leads, mensagens };
   }));
 
   return NextResponse.json(resultado);
