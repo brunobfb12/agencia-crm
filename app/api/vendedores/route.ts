@@ -92,8 +92,11 @@ export async function POST(req: Request) {
             apikey: EVOLUTION_API_KEY,
           },
           body: JSON.stringify({
-            url: "https://n8n-n8n.6jgzku.easypanel.host/webhook/rastreamento-vendedor",
-            events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "MESSAGES_DELETE"],
+            webhook: {
+              url: "https://n8n-n8n.6jgzku.easypanel.host/webhook/rastreamento-vendedor",
+              enabled: true,
+              events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "MESSAGES_DELETE"],
+            },
           }),
         });
 
