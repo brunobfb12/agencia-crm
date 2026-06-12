@@ -796,11 +796,17 @@ export default function CentralPage() {
                         {w.state !== "open" && (
                           (!w.setup?.vendedores || !w.setup?.informacoes)
                             ? <span className="text-[11px] font-semibold px-2 py-1 rounded-lg" style={{ background: "rgba(251,146,60,.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,.2)" }}>🔒 Complete o setup</span>
-                            : <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
-                                className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
-                                style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
-                                {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
-                              </button>
+                            : w.setup?.vendedores
+                              ? <span title="Complete o setup do vendedor primeiro"
+                                  className="text-[12px] px-3 py-1.5 rounded-lg font-semibold opacity-40 cursor-not-allowed select-none"
+                                  style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                                  Ver QR Code
+                                </span>
+                              : <button onClick={() => reconectar(w.instancia)} disabled={loadingQr[w.instancia]}
+                                  className="text-[12px] px-3 py-1.5 rounded-lg font-semibold disabled:opacity-50"
+                                  style={{ background: "rgba(52,211,153,.1)", color: "#34d399", border: "1px solid rgba(52,211,153,.2)" }}>
+                                  {loadingQr[w.instancia] ? "Aguarde..." : qrInstancia[w.instancia] ? "Atualizar QR" : "Ver QR Code"}
+                                </button>
                         )}
                         {w.state === "open" && (
                           <button onClick={() => desconectar(w.instancia)}
@@ -860,6 +866,31 @@ export default function CentralPage() {
                               </a>
                             )}
                           </div>
+                        </div>
+                      </div>
+                    )}
+                    {w.setup?.vendedores && w.setup?.informacoes && w.state !== "open" && (
+                      <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
+                        <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,.06)", border: "1px solid rgba(99,102,241,.2)" }}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-lg">🔌</span>
+                            <p className="text-[13px] font-bold" style={{ color: "#a5b4fc" }}>Configure a instância do vendedor para liberar o QR</p>
+                          </div>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Cada vendedor precisa de uma instância WhatsApp própria antes de conectar a instância da loja.
+                          </p>
+                          <a href="/dashboard/configuracoes"
+                            className="flex items-center gap-2.5 rounded-lg px-3 py-2 transition-all"
+                            style={{ background: "rgba(99,102,241,.08)", border: "1px solid rgba(99,102,241,.2)", textDecoration: "none" }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(99,102,241,.15)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "rgba(99,102,241,.08)")}>
+                            <span className="text-[16px]">📱</span>
+                            <div className="flex-1">
+                              <p className="text-[12px] font-semibold" style={{ color: "#a5b4fc" }}>Configurar instância do vendedor</p>
+                              <p className="text-[11px]" style={{ color: "var(--muted-3)" }}>Acesse Configurações → Vendedores</p>
+                            </div>
+                            <span className="text-[11px] font-semibold" style={{ color: "#a5b4fc" }}>Configurar →</span>
+                          </a>
                         </div>
                       </div>
                     )}

@@ -172,6 +172,7 @@ function SetupChecklist({ onNavigate }: { onNavigate?: (tab: string) => void }) 
     { ok: status.informacoesOk,   label: "Informações da empresa preenchidas",       tab: "empresas",  extHref: null },
     { ok: status.whatsappOk,      label: "WhatsApp conectado",                       tab: "whatsapp",  extHref: null },
     { ok: status.vendedoresOk,    label: "Pelo menos 1 vendedor cadastrado",         tab: "vendedores",extHref: null },
+    ...(status.vendedoresOk ? [{ ok: false, label: "Instância do vendedor conectada", tab: "vendedores", extHref: null }] : []),
     { ok: status.clientesOk,      label: "Primeiros clientes adicionados",           tab: null,        extHref: "/dashboard/clientes" },
     { ok: status.nomeIAOk,        label: "Nome da IA configurado",                   tab: "empresas",  extHref: null },
     { ok: status.qualificacaoOk,  label: "Roteiro de qualificação da IA preenchido", tab: "empresas",  extHref: null },
