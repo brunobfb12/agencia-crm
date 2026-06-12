@@ -99,6 +99,7 @@ model Vendedor {
   token                String?   @unique
   ultimoLinkPressaoEm  DateTime?
   instanciaVendedor    String?
+  instanciaConectadaEm DateTime?
 
   empresa      Empresa       @relation(fields: [empresaId], references: [id])
   leads        Lead[]
