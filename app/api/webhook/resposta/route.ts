@@ -4,7 +4,7 @@ import { LeadStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, notificarGerente, dataRecontato, score, memoriaCliente, clienteId } = body;
+  const { conversaId, leadId, resposta, novoStatus, observacoes, notificarVendedor, mensagemVendedor, notificarGerente, dataRecontato, score, memoriaCliente, clienteId } = body;
 
   if (!conversaId || !resposta) {
     return NextResponse.json({ ok: false, motivo: "campos obrigatorios ausentes" });
@@ -31,16 +31,44 @@ export async function POST(req: Request) {
   ];
   const terminalStatus: LeadStatus[] = ["PERDIDO", "SEM_INTERESSE", "SEM_RESPOSTA", "FOLLOW_UP"];
 
-  if (leadId && (novoStatus || observacoes)) {
+  // Buscar current sempre para verificação de trava + guardrail
+  let current: { status: LeadStatus; briefingEnviadoEm: Date | null } | null = null;
+  if (leadId && (novoStatus || observacoes || notificarVendedor)) {
+    current = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { status: true, briefingEnviadoEm: true },
+    });
+  }
+
+  // CAMADA 2: Trava anti-duplicação de briefing completo (calcula FORA do if novoStatus)
+  const ehBriefingCompleto = (mensagemVendedor as string)?.includes?.('🛒 PEDIDO PRONTO');
+  const briefingSuprimido = notificarVendedor && ehBriefingCompleto && !!current?.briefingEnviadoEm;
+
+  // Marca quando briefing completo PASSA (não foi suprimido) — calcula ANTES do if
+  let briefingEnviadoEmUpdate: Date | null | undefined;
+  if (notificarVendedor && ehBriefingCompleto && !briefingSuprimido) {
+    briefingEnviadoEmUpdate = new Date();
+  }
+
+  if (leadId && (novoStatus || observacoes || briefingEnviadoEmUpdate !== undefined)) {
     let statusToApply: LeadStatus | undefined;
     if (novoStatus) {
-      const current = await prisma.lead.findUnique({ where: { id: leadId }, select: { status: true } });
       const currentIdx = current ? statusOrder.indexOf(current.status as LeadStatus) : -1;
       const newIdx = statusOrder.indexOf(novoStatus as LeadStatus);
       const isTerminal = terminalStatus.includes(novoStatus as LeadStatus);
+
+      // CAMADA 1: Exceção para novo ciclo de compra
+      const ehNovoCiclo = (current?.status === 'POS_VENDA' || current?.status === 'VENDA_REALIZADA')
+        && (novoStatus === 'NEGOCIACAO');
+
       // Only apply if it's a promotion, a terminal status, or current isn't in the ordered list
-      if (isTerminal || newIdx === -1 || currentIdx === -1 || newIdx > currentIdx) {
+      if (ehNovoCiclo || isTerminal || newIdx === -1 || currentIdx === -1 || newIdx > currentIdx) {
         statusToApply = novoStatus as LeadStatus;
+      }
+
+      // Limpeza: quando lead sai de NEGOCIACAO, reseta o flag para permitir novo ciclo
+      if (statusToApply && statusToApply !== 'NEGOCIACAO' && current?.status === 'NEGOCIACAO') {
+        briefingEnviadoEmUpdate = null; // Sinal para limpar no update
       }
     }
     await prisma.lead.update({
@@ -52,6 +80,7 @@ export async function POST(req: Request) {
         ...(dataRecontato !== undefined && {
           dataRecontato: dataRecontato ? new Date(dataRecontato) : null,
         }),
+        ...(briefingEnviadoEmUpdate !== undefined && { briefingEnviadoEm: briefingEnviadoEmUpdate }),
       },
     });
   }
@@ -75,7 +104,8 @@ export async function POST(req: Request) {
     });
     if (lead) {
       aprendizados = lead.empresa.aprendizados ?? null;
-      if (notificarVendedor) {
+      // Notificar vendedor APENAS se briefing não foi suprimido
+      if (notificarVendedor && !briefingSuprimido) {
         if (lead.vendedorId) {
           // Lead já tem vendedor — notifica ele diretamente (ex: acompanhamento, NF, entrega)
           vendedor = await prisma.vendedor.findFirst({
