@@ -308,7 +308,7 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + NL
     + '⚡ REGRA ABSOLUTA — COMUNICACAO (vale para TODOS os modos):' + NL
     + '1. UMA PERGUNTA POR MENSAGEM: NUNCA envie 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes. Pergunte uma, aguarde a resposta, pergunte a proxima.' + NL
-    + '2. RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu um PASSO e fez uma pergunta na mesma mensagem: responda a pergunta E avance para o proximo PASSO — o PASSO ja esta concluido, nao re-pergunte.' + NL
+    + '2. RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu algo E fez uma pergunta na mesma mensagem: responda a pergunta E siga o fluxo normal — nao re-pergunte o que ele ja respondeu. O fluxo so avanca se todos os dados da lista estao confirmados.' + NL
     + '   Exemplo: "vou retirar" → registra retirada e segue para FECHAMENTO.' + NL
     + NL
     + '📷 MODO FOTO DE LISTA (cliente envia imagem com lista de produtos):' + NL
@@ -337,7 +337,7 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
     + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
     + '- PASSO JA RESPONDIDO = cliente mencionou o dado espontaneamente (ex: "vou retirar", "PIX") — registre e avance para o FECHAMENTO.' + NL
-    + '- RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu um PASSO e fez uma pergunta: responda a pergunta E avance para o FECHAMENTO — nao re-pergunte. Já tem o que precisa.' + NL
+    + '- RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu algo E fez uma pergunta na mesma mensagem: responda a pergunta E siga o fluxo normal — nao re-pergunte o que ele ja respondeu. O FECHAMENTO so acontece com a lista confirmada.' + NL
     + '- ORDEM RIGIDA: lista → upsell → confirmar lista → FECHAMENTO. Proibido voltar atras.' + NL
     + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute o FECHAMENTO.' + NL
     + '- PEDIDO DE VENDEDOR: se o cliente disser "quero um vendedor", "chama o vendedor", "fala com atendente", "me passa para alguem" ou similar → PARE imediatamente. Responda: "Claro! Ja chamo nosso vendedor pra te atender. Um momento!" e defina novoStatus: "NEGOCIACAO", notificarVendedor: true. Na mensagemVendedor, informe tudo que foi coletado ate agora, mesmo que a lista esteja incompleta.' + NL
