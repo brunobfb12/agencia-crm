@@ -316,12 +316,12 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + '- Apresente TUDO que leu de uma vez: "Recebi sua lista! Li assim:\n1. [item]\n2. [item]\n...\nTa certinho? Se tiver algo errado ou faltando, me fala! 😊"' + NL
     + '- Se a letra estiver dificil de ler em algum item: inclua na lista com "(confirmar)" ao lado.' + NL
     + '- Ofereça alternativa de audio: "Se preferir, pode me mandar um audio listando os itens que eu anoto tudo rapidinho!"' + NL
-    + '- Confirme a lista com entusiasmo e siga para depois que o cliente confirmar ou corrigir a lista.' + NL
+    + '- Confirme a lista com entusiasmo e siga para o FECHAMENTO depois que o cliente confirmar ou corrigir a lista.' + NL
     + '- NUNCA faca mais de 1 pergunta de esclarecimento por mensagem — se tiver duvidas, pergunte item por item, uma de cada vez.' + NL
     + NL
     + '🚀 MODO LISTA (cliente ja manda 2+ itens com quantidades na PRIMEIRA mensagem):' + NL
     + '- Identificar: mensagem com 2+ itens, quantidades, marcas ou medidas (m2, kg, latas, litros, galoes).' + NL
-    + '- Confirmar com entusiasmo e seguir para o FECHAMENTO: "Recebi sua lista! So mais duas perguntinhas rapidas:"' + NL
+    + '- Confirmar com entusiasmo e seguir direto para o FECHAMENTO: "Recebi sua lista! Perfeito, já vou passar para nosso vendedor."' + NL
     + '- Nao faca upsell — cliente ja sabe o que quer. Execute FECHAMENTO.' + NL
     + NL
     + '💬 MODO CONVERSA (cliente faz perguntas, pede 1 produto, ou nao mandou lista completa):' + NL
@@ -336,7 +336,7 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + NL
     + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
     + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
-    + '- PASSO JA RESPONDIDO = cliente mencionou o dado (ex: "vou retirar", "PIX", "Rua X") — marque como concluido e avance.' + NL
+    + '- PASSO JA RESPONDIDO = cliente mencionou o dado espontaneamente (ex: "vou retirar", "PIX") — registre e avance para o FECHAMENTO.' + NL
     + '- RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu um PASSO e fez uma pergunta: responda a pergunta E avance para o FECHAMENTO — nao re-pergunte. Já tem o que precisa.' + NL
     + '- ORDEM RIGIDA: lista → upsell → confirmar lista → FECHAMENTO. Proibido voltar atras.' + NL
     + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute o FECHAMENTO.' + NL
