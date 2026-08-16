@@ -9,7 +9,12 @@ export async function GET(req: Request) {
 
   const now = new Date();
   const nowBRTHour = (now.getUTCHours() - 3 + 24) % 24;
-  const isHorarioComercial = nowBRTHour >= 8 && nowBRTHour < 18;
+  const nowBRTDay = new Date(now.getTime() - 3 * 60 * 60 * 1000).getUTCDay();
+  const isDomingo = nowBRTDay === 0;
+
+  // TODO: hardcoded até existir campo de dias de funcionamento por empresa (Sessão 5).
+  // Hoje nenhum cliente ativo trabalha domingo.
+  const isHorarioComercial = !isDomingo && nowBRTHour >= 8 && nowBRTHour < 18;
   const isHorarioLD0 = isHorarioComercial;
 
   const windowStart = (days: number) => {
