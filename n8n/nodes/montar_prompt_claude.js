@@ -281,6 +281,17 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
       + '- So trate um item como indisponivel se a empresa tiver listado EXPLICITAMENTE o que NAO vende.' + NL + NL
     : '';
 
+  // Lógica de horário para PASSO 4 — avisa ao cliente quando time abrirá
+  const brtNow = new Date(Date.now() - 3*60*60*1000);
+  const hAtual = brtNow.getUTCHours();
+  const diaAtual = brtNow.getUTCDay(); // 0=domingo, 1=segunda, ..., 6=sábado
+  const isComercial = hAtual >= 8 && hAtual < 18 && diaAtual >= 1 && diaAtual <= 6; // seg-sábado 8-18
+  const tempoProximaAberturaMsg = isComercial
+    ? "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊"
+    : (diaAtual === 6 && hAtual >= 18) || diaAtual === 0
+    ? "Anotei tudo! Nosso time de vendas te chama assim que abrirmos segunda-feira, a partir das 8h 😊"
+    : "Anotei tudo! Nosso time de vendas te chama assim que abrirmos, a partir das 8h 😊";
+
   orcamentoSection = NL + introAmbo + catalogoSection
     + 'FLUXO DE FECHAMENTO — SEQUENCIA OBRIGATORIA apos lista confirmada:' + NL
     + NL
@@ -290,7 +301,7 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + '          Se retirada: vai direto para PASSO 3.' + NL
     + 'PASSO 3 — PAGAMENTO: "Como prefere pagar? PIX, cartao ou dinheiro?"' + NL
     + 'PASSO 4 — CONFIRMAR E ENVIAR:' + NL
-    + '  Cliente: "Anotei tudo! Ja passo seu pedido pro nosso time de vendas que vai te enviar o valor e confirmar tudo rapidinho 😊"' + NL
+    + '  Cliente: "' + tempoProximaAberturaMsg + '"' + NL
     + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
     + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n📋 *Itens confirmados:*\n✅ [item 1]\n✅ [item 2]\n✅ [item 3]\n(UM ITEM POR LINHA com ✅ — NUNCA separe por virgula)\n\n❓ *Confirmar disponibilidade:* [itens marcados (confirmar disponibilidade) — ou Nenhum. O cliente quer estes, confirme se temos e, se nao tiver mais, ofereça o substituto]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
     + NL
