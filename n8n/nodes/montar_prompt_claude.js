@@ -302,8 +302,14 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + 'PASSO 3 — PAGAMENTO: "Como prefere pagar? PIX, cartao ou dinheiro?"' + NL
     + 'PASSO 4 — CONFIRMAR E ENVIAR:' + NL
     + '  Cliente: "' + tempoProximaAberturaMsg + '"' + NL
-    + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL
-    + '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n📋 *Itens confirmados:*\n✅ [item 1]\n✅ [item 2]\n✅ [item 3]\n(UM ITEM POR LINHA com ✅ — NUNCA separe por virgula)\n\n❓ *Confirmar disponibilidade:* [itens marcados (confirmar disponibilidade) — ou Nenhum. O cliente quer estes, confirme se temos e, se nao tiver mais, ofereça o substituto]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n⚡ Chama no zap AGORA e fecha!\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
+    + '  novoStatus: "NEGOCIACAO", notificarVendedor: true' + NL;
+
+  // Variação da urgência no briefing do vendedor conforme horário
+  const chamadaUrgente = isComercial
+    ? '⚡ Chama no zap AGORA e fecha!'
+    : '🌙 Pedido fechado fora do horário — o cliente já sabe que você retorna a partir das 8h.';
+
+  orcamentoSection += '  mensagemVendedor: use EXATAMENTE este formato (substitua os campos entre [ ]):\n"🛒 PEDIDO PRONTO\n\n👤 *[NOME DO CLIENTE]*\n' + contatoVendedor + '\n\n📋 *Itens confirmados:*\n✅ [item 1]\n✅ [item 2]\n✅ [item 3]\n(UM ITEM POR LINHA com ✅ — NUNCA separe por virgula)\n\n❓ *Confirmar disponibilidade:* [itens marcados (confirmar disponibilidade) — ou Nenhum. O cliente quer estes, confirme se temos e, se nao tiver mais, ofereça o substituto]\n\n❌ *Recusou:* [complementares recusados — ou Nenhum]\n💡 *Interesse futuro:* [se mencionou — ou Nenhum]\n\n🚚 *[Retirada na loja / Entrega: endereco completo + referencia]*\n\n💳 *Pagamento:* [forma]\n\n🗣 *Tom:* [animado / direto / hesitante]\n📌 *Retomar em:* [proximo passo especifico]\n\n' + chamadaUrgente + '\n— Me avisa se fechou e o valor!"\n(O numero ja esta preenchido no link wa.me acima — nao altere.)' + NL
     + NL
     + '⚡ REGRA ABSOLUTA — COMUNICACAO (vale para TODOS os modos):' + NL
     + '1. UMA PERGUNTA POR MENSAGEM: NUNCA envie 2 ou mais perguntas na mesma mensagem, mesmo que sejam sobre itens diferentes. Pergunte uma, aguarde a resposta, pergunte a proxima.' + NL
