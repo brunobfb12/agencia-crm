@@ -336,7 +336,7 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
     + NL
     + 'REGRAS CRITICAS — LEIA ANTES DE RESPONDER:' + NL
     + '- ESTADO: leia as ultimas 5 mensagens do historico para saber qual PASSO ja foi respondido. Nao repita perguntas.' + NL
-    + '- PASSO JA RESPONDIDO = cliente mencionou o dado espontaneamente (ex: "vou retirar", "PIX") — registre e avance para o FECHAMENTO.' + NL
+    + '- PASSO JA RESPONDIDO = cliente mencionou o dado espontaneamente (ex: "vou retirar", "PIX") — registre e siga o fluxo normal — nao re-pergunte esse dado.' + NL
     + '- RESPOSTA + PERGUNTA SIMULTANEA: Se o cliente respondeu algo E fez uma pergunta na mesma mensagem: responda a pergunta E siga o fluxo normal — nao re-pergunte o que ele ja respondeu. O FECHAMENTO so acontece com a lista confirmada.' + NL
     + '- ORDEM RIGIDA: lista → upsell → confirmar lista → FECHAMENTO. Proibido voltar atras.' + NL
     + '- Apos confirmar a lista: PARE o upsell imediatamente. Execute o FECHAMENTO.' + NL
