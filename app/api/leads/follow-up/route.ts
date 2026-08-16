@@ -9,7 +9,8 @@ export async function GET(req: Request) {
 
   const now = new Date();
   const nowBRTHour = (now.getUTCHours() - 3 + 24) % 24;
-  const isHorarioLD0 = nowBRTHour >= 8 && nowBRTHour < 20;
+  const isHorarioComercial = nowBRTHour >= 8 && nowBRTHour < 18;
+  const isHorarioLD0 = isHorarioComercial;
 
   const windowStart = (days: number) => {
     const d = new Date(now);
@@ -223,7 +224,7 @@ export async function GET(req: Request) {
   });
 
   // P2.2: AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR (score ≥6 + CONFIRMADO + P72 + 24-48h)
-  const aquecimentoParaProto = await prisma.lead.findMany({
+  const aquecimentoParaProto = isHorarioComercial ? await prisma.lead.findMany({
     where: {
       status: "AQUECIMENTO",
       score: { gte: 6 },
@@ -238,7 +239,7 @@ export async function GET(req: Request) {
       empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
       vendedor: { select: { nome: true, telefone: true } },
     },
-  });
+  }) : [];
 
   // P3.1: AGENDADO 48h+ sem resposta → FOLLOW_UP (no-show)
   const agendadoNoShow = await prisma.lead.findMany({
@@ -252,7 +253,7 @@ export async function GET(req: Request) {
   });
 
   // P3.2: NEGOCIACAO parado 14d+ (P72 + 7d) → FOLLOW_UP
-  const negociacaoTimeout = await prisma.lead.findMany({
+  const negociacaoTimeout = isHorarioComercial ? await prisma.lead.findMany({
     where: {
       status: "NEGOCIACAO",
       observacoes: { contains: "[P72]" },
@@ -266,7 +267,7 @@ export async function GET(req: Request) {
       empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
       vendedor: { select: { nome: true, telefone: true } },
     },
-  });
+  }) : [];
 
   // P3.3: FOLLOW_UP com dataRecontato vencido 7d+ → SEM_RESPOSTA
   const followupVencido = await prisma.lead.findMany({
@@ -309,21 +310,21 @@ export async function GET(req: Request) {
 
   // NO-SHOW via dataAgendada: agendamentos PENDENTES com data passada (janela 7 dias)
   const d7ago = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const agendamentosPassados = await prisma.agendamento.findMany({
+  const agendamentosPassados = isHorarioComercial ? await prisma.agendamento.findMany({
     where: {
       status: 'PENDENTE',
       dataAgendada: { lte: now, gte: d7ago },
     },
     select: { clienteId: true, dataAgendada: true },
     orderBy: { dataAgendada: 'desc' },
-  });
+  }) : [];
   const agendMapPassado = new Map<string, Date>();
   for (const a of agendamentosPassados) {
     if (!agendMapPassado.has(a.clienteId)) {
       agendMapPassado.set(a.clienteId, a.dataAgendada);
     }
   }
-  const noShowLeads = agendMapPassado.size > 0
+  const noShowLeads = isHorarioComercial && agendMapPassado.size > 0
     ? await prisma.lead.findMany({
         where: {
           status: 'AGENDADO',
@@ -407,7 +408,7 @@ export async function GET(req: Request) {
   ]);
 
   // Item G: modoHumano automático para leads parados há 72h+
-  if (pressao72h.length > 0) {
+  if (isHorarioComercial && pressao72h.length > 0) {
     const clienteIds72h = pressao72h.map(l => (l as any).clienteId).filter(Boolean);
     if (clienteIds72h.length > 0) {
       const conversas72h = await prisma.conversa.findMany({
@@ -435,7 +436,7 @@ export async function GET(req: Request) {
   const gerenteMap = new Map(gerentes72h.map(g => [g.empresaId, g]));
 
   // Auto-transição: VENDA_REALIZADA → POS_VENDA ao detectar para envio
-  if (posVenda.length > 0) {
+  if (isHorarioComercial && posVenda.length > 0) {
     await prisma.lead.updateMany({
       where: { id: { in: posVenda.map(l => l.id) } },
       data: { status: "POS_VENDA" },
@@ -443,7 +444,7 @@ export async function GET(req: Request) {
   }
 
   // Auto-transição: FOLLOW_UP sem resposta há 30 dias → SEM_RESPOSTA (limite de tentativas)
-  if (reativacao30d.length > 0) {
+  if (isHorarioComercial && reativacao30d.length > 0) {
     await prisma.lead.updateMany({
       where: { id: { in: reativacao30d.map(l => l.id) } },
       data: { status: "SEM_RESPOSTA" },
@@ -502,7 +503,7 @@ export async function GET(req: Request) {
   }
 
   // P3.1: Auto-transição AGENDADO no-show (48h) → FOLLOW_UP
-  if (agendadoNoShow.length > 0) {
+  if (isHorarioComercial && agendadoNoShow.length > 0) {
     await Promise.all(
       agendadoNoShow.map(l =>
         prisma.lead.update({
@@ -538,7 +539,7 @@ export async function GET(req: Request) {
   }
 
   // P3.2: Auto-transição NEGOCIACAO timeout (14d) → FOLLOW_UP + notifica gerente
-  if (negociacaoTimeout.length > 0) {
+  if (isHorarioComercial && negociacaoTimeout.length > 0) {
     await Promise.all(
       negociacaoTimeout.map(l =>
         prisma.lead.update({
@@ -592,7 +593,7 @@ export async function GET(req: Request) {
   }
 
   // P2.2: Auto-transição AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR + notificar vendedor
-  if (aquecimentoParaProto.length > 0) {
+  if (isHorarioComercial && aquecimentoParaProto.length > 0) {
     await Promise.all(
       aquecimentoParaProto.map(l =>
         prisma.lead.update({
@@ -623,20 +624,22 @@ export async function GET(req: Request) {
   }
 
   // Quentes: notifica vendedor e mantém em AQUECIMENTO
-  for (const l of aqQuentes) {
-    if (!l.empresa.instanciaWhatsapp || !l.vendedorId || !l.vendedor?.telefone) continue;
-    const nc = l.cliente.nome || l.cliente.telefone;
-    const pedido = resumoPedido(l.observacoes);
-    const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
-    items.push({
-      tipo: "pressao_vendedor_aquecimento",
-      leadId: l.id,
-      clienteTelefone: l.vendedor.telefone,
-      clienteNome: l.vendedor.nome,
-      instancia: l.empresa.instanciaWhatsapp,
-      empresaNome: l.empresa.nome,
-      mensagem: `⚠️ Oi ${l.vendedor.nome}! O lead *${nc}* está parado há 72h mas tem pedido confirmado.${pedidoStr}\n\nEntre em contato agora antes de perder essa venda! 👊`,
-    });
+  if (isHorarioComercial) {
+    for (const l of aqQuentes) {
+      if (!l.empresa.instanciaWhatsapp || !l.vendedorId || !l.vendedor?.telefone) continue;
+      const nc = l.cliente.nome || l.cliente.telefone;
+      const pedido = resumoPedido(l.observacoes);
+      const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
+      items.push({
+        tipo: "pressao_vendedor_aquecimento",
+        leadId: l.id,
+        clienteTelefone: l.vendedor.telefone,
+        clienteNome: l.vendedor.nome,
+        instancia: l.empresa.instanciaWhatsapp,
+        empresaNome: l.empresa.nome,
+        mensagem: `⚠️ Oi ${l.vendedor.nome}! O lead *${nc}* está parado há 72h mas tem pedido confirmado.${pedidoStr}\n\nEntre em contato agora antes de perder essa venda! 👊`,
+      });
+    }
   }
 
   // #4: SEM_RESPOSTA 75+ dias sem resposta → SEM_INTERESSE (conversas_franca enviada e ignorada)
@@ -797,28 +800,28 @@ export async function GET(req: Request) {
   }
 
   // Deduplicação de pressão: só envia se o flag ainda não estiver no observacoes
-  const p24Novos = pressao24h.filter(l =>
+  const p24Novos = isHorarioComercial ? pressao24h.filter(l =>
     l.empresa.instanciaWhatsapp && l.vendedor?.telefone &&
     !(((l as any).observacoes ?? "").includes("[P24]"))
-  );
-  const p48Novos = pressao48h.filter(l =>
+  ) : [];
+  const p48Novos = isHorarioComercial ? pressao48h.filter(l =>
     l.empresa.instanciaWhatsapp && l.vendedor?.telefone &&
     !(((l as any).observacoes ?? "").includes("[P48]"))
-  );
-  const p72Novos = pressao72h.filter(l =>
+  ) : [];
+  const p72Novos = isHorarioComercial ? pressao72h.filter(l =>
     l.empresa.instanciaWhatsapp &&
     !(((l as any).observacoes ?? "").includes("[P72]"))
-  );
+  ) : [];
 
   // Marcar todos como enviados antes de retornar (evita duplicatas em crons simultâneos)
-  const aq1Novos = aquecimentoD1.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]")));
-  const aq2Novos = aquecimentoD2.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]")));
-  const ld1Novos = (leadD1 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD1]")));
-  const ld2Novos = (leadD2 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD2]")));
+  const aq1Novos = isHorarioComercial ? aquecimentoD1.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]"))) : [];
+  const aq2Novos = isHorarioComercial ? aquecimentoD2.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]"))) : [];
+  const ld1Novos = isHorarioComercial ? (leadD1 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD1]"))) : [];
+  const ld2Novos = isHorarioComercial ? (leadD2 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD2]"))) : [];
 
-  const pc1Novos = (prontoConversa as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[PC1]")));
+  const pc1Novos = isHorarioComercial ? (prontoConversa as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[PC1]"))) : [];
 
-  if (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0 || pc1Novos.length > 0) {
+  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0 || pc1Novos.length > 0)) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
@@ -829,10 +832,11 @@ export async function GET(req: Request) {
     ]);
   }
 
-  // Consolidar pressão por vendedor: P24 + P48 + P72 → 1 link por vendedor
-  const pressaoPorVendedor = new Map<string, { vendedor: any; qtd: number; instancia: string; empresaNome: string }>();
+  if (isHorarioComercial) {
+    // Consolidar pressão por vendedor: P24 + P48 + P72 → 1 link por vendedor
+    const pressaoPorVendedor = new Map<string, { vendedor: any; qtd: number; instancia: string; empresaNome: string }>();
 
-  for (const l of [...p24Novos, ...p48Novos, ...p72Novos]) {
+    for (const l of [...p24Novos, ...p48Novos, ...p72Novos]) {
     if (!l.vendedor?.telefone || !l.vendedor.token) continue;
     if (!pressaoPorVendedor.has(l.vendedorId!)) {
       pressaoPorVendedor.set(l.vendedorId!, {
@@ -881,11 +885,11 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você entrou em contato — ficou alguma dúvida? Ainda tem interesse?`,
-    });
-  }
+        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você entrou em contato — ficou alguma dúvida? Ainda tem interesse?`,
+      });
+    }
 
-  for (const l of ld2Novos) {
+    for (const l of ld2Novos) {
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
     const ia = l.empresa.nomeIA ?? "Eu";
     items.push({
@@ -894,11 +898,11 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Última tentativa — Podemos encerrar esse contato? Se precisar de algo é só chamar aqui!`,
-    });
-  }
+        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Última tentativa — Podemos encerrar esse contato? Se precisar de algo é só chamar aqui!`,
+      });
+    }
 
-  for (const l of lembreteLD0Novos) {
+    for (const l of lembreteLD0Novos) {
     const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
     const nomeStr = primeiroNome ? ` ${primeiroNome}` : "";
     items.push({
@@ -908,21 +912,21 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp!,
       empresaNome: l.empresa.nome,
-      mensagem: `👋 Oi${nomeStr}! Estou aqui aguardando sua confirmação para finalizar seu orçamento 😊`,
-    });
-  }
+        mensagem: `👋 Oi${nomeStr}! Estou aqui aguardando sua confirmação para finalizar seu orçamento 😊`,
+      });
+    }
 
-  if (lembreteLD0Novos.length > 0) {
-    await Promise.all(
-      lembreteLD0Novos.map((l: any) => prisma.lead.update({
-        where: { id: l.id },
-        data: { observacoes: ((l.observacoes ?? "") + "\n[LD0]").trim() },
-      }))
-    );
-  }
+    if (lembreteLD0Novos.length > 0) {
+      await Promise.all(
+        lembreteLD0Novos.map((l: any) => prisma.lead.update({
+          where: { id: l.id },
+          data: { observacoes: ((l.observacoes ?? "") + "\n[LD0]").trim() },
+        }))
+      );
+    }
 
-  // NO-SHOW: mensagem ao cliente perguntando se quer reagendar
-  for (const l of noShowLeads) {
+    // NO-SHOW: mensagem ao cliente perguntando se quer reagendar
+    for (const l of noShowLeads) {
     if (!l.empresa.instanciaWhatsapp) continue;
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(' ')[0]}` : '';
     const ia = l.empresa.nomeIA ?? 'Eu';
@@ -933,12 +937,12 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você tinha um horário agendado conosco — tudo certo? Ainda gostaria de reagendar? 😊`,
-    });
-  }
+        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você tinha um horário agendado conosco — tudo certo? Ainda gostaria de reagendar? 😊`,
+      });
+    }
 
-  // PC1: conversa franca para leads PRONTO_PARA_COMPRAR parados 96h+
-  for (const l of pc1Novos) {
+    // PC1: conversa franca para leads PRONTO_PARA_COMPRAR parados 96h+
+    for (const l of pc1Novos) {
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
     const ia = l.empresa.nomeIA ?? "Eu";
     items.push({
@@ -947,11 +951,11 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Quero ser transparente com você — tínhamos um pedido em andamento e queria entender o que aconteceu.\n\nO que precisa acontecer para a gente fechar esse pedido? Me conta sem compromisso, pode ser agora ou numa data melhor 😊`,
-    });
+        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Quero ser transparente com você — tínhamos um pedido em andamento e queria entender o que aconteceu.\n\nO que precisa acontecer para a gente fechar esse pedido? Me conta sem compromisso, pode ser agora ou numa data melhor 😊`,
+      });
 
-    // P2.3: Re-notificar vendedor que PC1 será disparado ao cliente (última chance)
-    if (l.vendedor?.telefone) {
+      // P2.3: Re-notificar vendedor que PC1 será disparado ao cliente (última chance)
+      if (l.vendedor?.telefone) {
       const nc = l.cliente.nome || l.cliente.telefone;
       const pedido = resumoPedido((l as any).observacoes);
       const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
@@ -960,12 +964,12 @@ export async function GET(req: Request) {
         clienteTelefone: l.vendedor.telefone, clienteNome: l.vendedor.nome,
         instancia: l.empresa.instanciaWhatsapp!, empresaNome: l.empresa.nome,
         mensagem: `⚠️ Oi ${l.vendedor.nome}! O lead *${nc}* está parado há 96h.${pedidoStr}\n\nVou enviar uma CONVERSA FRANCA ao cliente AGORA. Você tem 24h para fechar antes dele ser movido para FOLLOW_UP!\n\nÉ a última chance! 🔥`,
-      });
+        });
+      }
     }
-  }
 
-  // PC1: reset modoHumano → IA volta a responder o cliente após conversa franca
-  if (pc1Novos.length > 0) {
+    // PC1: reset modoHumano → IA volta a responder o cliente após conversa franca
+    if (pc1Novos.length > 0) {
     const clienteIdsPC1 = pc1Novos.map((l: any) => l.clienteId).filter(Boolean);
     if (clienteIdsPC1.length > 0) {
       const conversasPC1 = await prisma.conversa.findMany({
@@ -999,11 +1003,11 @@ export async function GET(req: Request) {
       clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
       instancia: venda.lead.empresa.instanciaWhatsapp,
       empresaNome: venda.lead.empresa.nome,
-      mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Passando pra saber como está sendo sua experiência! Ficou com alguma dúvida ou tem algo que posso te ajudar?`,
-    });
-  }
+        mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Passando pra saber como está sendo sua experiência! Ficou com alguma dúvida ou tem algo que posso te ajudar?`,
+      });
+    }
 
-  for (const venda of vendasD20) {
+    for (const venda of vendasD20) {
     if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
     seenVendaLeadIds.add(venda.leadId);
     const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
@@ -1015,11 +1019,11 @@ export async function GET(req: Request) {
       clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
       instancia: venda.lead.empresa.instanciaWhatsapp,
       empresaNome: venda.lead.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${venda.lead.empresa.nome}. Temos algumas novidades que chegaram por aqui e lembrei de você! Quer dar uma olhada? 👀`,
-    });
-  }
+        mensagem: `Oi${nome}! ${ia} aqui, da ${venda.lead.empresa.nome}. Temos algumas novidades que chegaram por aqui e lembrei de você! Quer dar uma olhada? 👀`,
+      });
+    }
 
-  for (const venda of vendasD28) {
+    for (const venda of vendasD28) {
     if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
     seenVendaLeadIds.add(venda.leadId);
     const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
@@ -1031,11 +1035,11 @@ export async function GET(req: Request) {
       clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
       instancia: venda.lead.empresa.instanciaWhatsapp,
       empresaNome: venda.lead.empresa.nome,
-      mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Já faz um tempinho desde seu último pedido — está precisando repor? Me fala que te ajudo rapidinho!`,
-    });
-  }
+        mensagem: `Oi${nome}! 😊 ${ia} aqui, da ${venda.lead.empresa.nome}. Já faz um tempinho desde seu último pedido — está precisando repor? Me fala que te ajudo rapidinho!`,
+      });
+    }
 
-  for (const venda of vendasD45) {
+    for (const venda of vendasD45) {
     if (!venda.lead.empresa.instanciaWhatsapp || seenVendaLeadIds.has(venda.leadId)) continue;
     seenVendaLeadIds.add(venda.leadId);
     const primeiroNome = venda.lead.cliente.nome ? venda.lead.cliente.nome.split(" ")[0] : "";
@@ -1047,13 +1051,13 @@ export async function GET(req: Request) {
       clienteNome: venda.lead.cliente.nome ?? venda.lead.cliente.telefone,
       instancia: venda.lead.empresa.instanciaWhatsapp,
       empresaNome: venda.lead.empresa.nome,
-      mensagem: `Oi${nome}! 🎁 ${ia} aqui, da ${venda.lead.empresa.nome}. Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais?`,
-    });
-  }
+        mensagem: `Oi${nome}! 🎁 ${ia} aqui, da ${venda.lead.empresa.nome}. Preparamos uma condição especial exclusiva para clientes fiéis como você! Quer saber mais?`,
+      });
+    }
 
-  // Item F: Conversa Franca — SEM_RESPOSTA 60+ dias (exceto os que já serão SEM_INTERESSE)
-  const semInteresse75dIds = new Set(semInteresse75d.map(l => l.id));
-  for (const l of semResposta60d) {
+    // Item F: Conversa Franca — SEM_RESPOSTA 60+ dias (exceto os que já serão SEM_INTERESSE)
+    const semInteresse75dIds = new Set(semInteresse75d.map(l => l.id));
+    for (const l of semResposta60d) {
     if (!l.empresa.instanciaWhatsapp) continue;
     if (semInteresse75dIds.has(l.id)) continue;
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
@@ -1065,12 +1069,12 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! Quero ser honesto com você: já faz ${dias} dias que não conversamos. Você ainda tem algum interesse em ser nosso cliente? Pode ser agora ou no futuro — me diga sem compromisso. Se preferir que eu entre em contato numa data melhor, é só me falar que agendo aqui! 😊`,
-    });
-  }
+        mensagem: `Oi${nome}! Quero ser honesto com você: já faz ${dias} dias que não conversamos. Você ainda tem algum interesse em ser nosso cliente? Pode ser agora ou no futuro — me diga sem compromisso. Se preferir que eu entre em contato numa data melhor, é só me falar que agendo aqui! 😊`,
+      });
+    }
 
-  // #6: Reativação leve — SEM_INTERESSE 90+ dias sem contato
-  for (const l of reativacao90d) {
+    // #6: Reativação leve — SEM_INTERESSE 90+ dias sem contato
+    for (const l of reativacao90d) {
     if (!l.empresa.instanciaWhatsapp) continue;
     const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
     const ia = l.empresa.nomeIA ?? "Eu";
@@ -1081,76 +1085,82 @@ export async function GET(req: Request) {
       clienteNome: l.cliente.nome ?? l.cliente.telefone,
       instancia: l.empresa.instanciaWhatsapp,
       empresaNome: l.empresa.nome,
-      mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Faz tempo que não conversamos — tudo bem? Se um dia precisar de nós, pode nos chamar, estamos aqui! 😊`,
+        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Faz tempo que não conversamos — tudo bem? Se um dia precisar de nós, pode nos chamar, estamos aqui! 😊`,
+      });
+    }
+
+    // Bump atualizadoEm para não re-enviar por 90 dias
+    if (reativacao90d.length > 0) {
+      await prisma.lead.updateMany({
+        where: { id: { in: reativacao90d.map(l => l.id) } },
+        data: { status: "SEM_INTERESSE" },
+      });
+    }
+
+    // Painel do vendedor — envia link 1x/dia quando há leads em NEGOCIACAO pendentes
+    const h24ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const vendedoresComPendentes: any[] = await (prisma as any).vendedor.findMany({
+      where: {
+        ativo: true,
+        OR: [
+          { ultimoLinkPressaoEm: null },
+          { ultimoLinkPressaoEm: { lt: h24ago } },
+        ],
+        leads: {
+          some: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
+        },
+      },
+      include: {
+        empresa: { select: { instanciaWhatsapp: true, nome: true } },
+        leads: {
+          where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
+          select: { id: true },
+        },
+      },
     });
+
+    // Envio via Evolution API
+    const evoUrlPainel = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
+    const evoKeyPainel = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+
+    for (const v of vendedoresComPendentes) {
+      if (!v.telefone || !v.token || !v.empresa?.instanciaWhatsapp) continue;
+      const qtd = v.leads.length;
+      const msg = `⚡ *${v.nome}*, você tem *${qtd} orçamento${qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${v.token}`;
+
+      // Enviar via Evolution API
+      await fetch(`${evoUrlPainel}/message/sendText/${v.empresa.instanciaWhatsapp}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: evoKeyPainel },
+        body: JSON.stringify({
+          number: v.telefone,
+          text: msg,
+          options: { presence: "composing", delay: 2000 },
+        }),
+      }).catch((err) => {
+        console.error(`Erro ao enviar link para ${v.nome}:`, err.message);
+      });
+
+      items.push({
+        tipo: "painel_vendedor",
+        leadId: v.leads[0]?.id ?? "",
+        clienteTelefone: v.telefone,
+        clienteNome: v.nome,
+        instancia: v.empresa.instanciaWhatsapp,
+        empresaNome: v.empresa.nome,
+        mensagem: msg,
+      });
+
+      await (prisma as any).vendedor.update({
+        where: { id: v.id },
+        data: { ultimoLinkPressaoEm: now },
+      }).catch(() => null);
+    }
   }
 
-  // Bump atualizadoEm para não re-enviar por 90 dias
-  if (reativacao90d.length > 0) {
-    await prisma.lead.updateMany({
-      where: { id: { in: reativacao90d.map(l => l.id) } },
-      data: { status: "SEM_INTERESSE" },
-    });
-  }
-
-  // Painel do vendedor — envia link 1x/dia quando há leads em NEGOCIACAO pendentes
-  const h24ago = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const vendedoresComPendentes: any[] = await (prisma as any).vendedor.findMany({
-    where: {
-      ativo: true,
-      OR: [
-        { ultimoLinkPressaoEm: null },
-        { ultimoLinkPressaoEm: { lt: h24ago } },
-      ],
-      leads: {
-        some: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
-      },
-    },
-    include: {
-      empresa: { select: { instanciaWhatsapp: true, nome: true } },
-      leads: {
-        where: { status: { in: ["NEGOCIACAO", "PRONTO_PARA_COMPRAR"] }, empresa: { ativa: true } },
-        select: { id: true },
-      },
-    },
-  });
-
-  // Envio via Evolution API
-  const evoUrlPainel = process.env.EVOLUTION_API_URL ?? "http://201.76.43.149:8080";
-  const evoKeyPainel = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
-
-  for (const v of vendedoresComPendentes) {
-    if (!v.telefone || !v.token || !v.empresa?.instanciaWhatsapp) continue;
-    const qtd = v.leads.length;
-    const msg = `⚡ *${v.nome}*, você tem *${qtd} orçamento${qtd !== 1 ? "s" : ""}* esperando sua resposta!\n\nClique e responda em 1 minuto:\n👉 https://ocrmfacil.com.br/v/${v.token}`;
-
-    // Enviar via Evolution API
-    await fetch(`${evoUrlPainel}/message/sendText/${v.empresa.instanciaWhatsapp}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: evoKeyPainel },
-      body: JSON.stringify({
-        number: v.telefone,
-        text: msg,
-        options: { presence: "composing", delay: 2000 },
-      }),
-    }).catch((err) => {
-      console.error(`Erro ao enviar link para ${v.nome}:`, err.message);
-    });
-
-    items.push({
-      tipo: "painel_vendedor",
-      leadId: v.leads[0]?.id ?? "",
-      clienteTelefone: v.telefone,
-      clienteNome: v.nome,
-      instancia: v.empresa.instanciaWhatsapp,
-      empresaNome: v.empresa.nome,
-      mensagem: msg,
-    });
-
-    await (prisma as any).vendedor.update({
-      where: { id: v.id },
-      data: { ultimoLinkPressaoEm: now },
-    }).catch(() => null);
+  // Guardrail: retorna items vazio fora do horário comercial (antes de salvar no banco)
+  if (!isHorarioComercial) {
+    items.length = 0;
   }
 
   // BUG 2 FIX: Salvar todas as mensagens disparadas na tabela Mensagem
