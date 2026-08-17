@@ -66,9 +66,14 @@ export async function POST(req: Request) {
 
     // Para iPhone (@lid): tenta resolver o número real via Evolution API
     let telefoneReal: string | null = null;
+    let lidNaoResolvido = false;
     if (isLidJid) {
       telefoneReal = await resolverNumeroReal(jidLimpo, instancia);
       console.log("CHAMADA numero real resolvido:", telefoneReal);
+      if (!telefoneReal) {
+        lidNaoResolvido = true;
+        console.log("CHAMADA LID não foi resolvido a número real");
+      }
     }
 
     const telefoneLimpo = isLidJid ? (telefoneReal || null) : normalizarTelefone(telefone);
@@ -141,7 +146,7 @@ export async function POST(req: Request) {
           vendedorId: vendedor?.id || null,
           status: "LEAD",
           score: 3,
-          observacoes: `[CHAMADA_PERDIDA_${isVideo ? "VIDEO" : "VOZ"}]`,
+          observacoes: `[CHAMADA_PERDIDA_${isVideo ? "VIDEO" : "VOZ"}]${lidNaoResolvido ? " [LID_NAO_RESOLVIDO]" : ""}`,
         },
         include: { vendedor: true },
       });

@@ -60,7 +60,12 @@ facilcrm-review.html
 # Scripts com secrets e arquivos de debug — contêm chaves de API (Groq, Anthropic, etc)
 scripts/exec_*.json
 scripts/tmp_*.json
+scripts/execs*.json
 scripts/add_log_node.mjs
+scripts/check_*.mjs
+scripts/debug_*.mjs
+scripts/fix_*.mjs
+scripts/resolve_*.mjs
 scripts/fix_followup_workflow.mjs
 scripts/guardrail_*.txt
 scripts/hist_*.json
@@ -70,7 +75,30 @@ scripts/patch_*.mjs
 scripts/resto_info.txt
 scripts/setup_teste_*.mjs
 scripts/tmp_*.mjs
+scripts/tmp_*.html
 scripts/update_*.sql
 scripts/update_*.mjs
 scripts/workflow_*.json
+scripts/criar_*.mjs
+scripts/criar_qa_*.mjs
+scripts/criar_radar_*.mjs
+scripts/inspect_*.mjs
+scripts/migrar_*.mjs
+scripts/patch_complementares.mjs
+scripts/patch_debounce_lock.mjs
+scripts/patch_fase*.mjs
+scripts/patch_filtrar_node.mjs
+scripts/patch_guardrail_*.mjs
+scripts/patch_lid_fix.mjs
+scripts/patch_prompt_*.mjs
+scripts/patch_registrar_*.mjs
+scripts/recriar_*.mjs
+
+# JSON/configs na raiz com secrets ou temporários
+workflow_prod.json
+workflow_updated.json
+workflow_current.json
+workflow_followup.json
+wf_main.json
+response.json
 node/
