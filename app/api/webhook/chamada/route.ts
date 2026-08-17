@@ -36,30 +36,6 @@ async function resolverNumeroReal(jid: string, instancia: string): Promise<strin
   }
 }
 
-async function resolverNomeReal(jidLimpo: string, instancia: string): Promise<string | null> {
-  try {
-    const evoUrl = process.env.EVOLUTION_API_URL ?? "https://evolution-evolution-api.6jgzku.easypanel.host";
-    const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
-
-    const resp = await fetch(`${evoUrl}/chat/fetchProfile/${instancia}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: evoKey },
-      body: JSON.stringify({ wid: jidLimpo }),
-    });
-
-    if (!resp.ok) return null;
-
-    const data = await resp.json();
-    console.log("CHAMADA fetchProfile resposta:", JSON.stringify(data));
-
-    const nomeResolvido = data?.name || data?.pushName || data?.displayName || null;
-    return nomeResolvido?.trim() || null;
-  } catch (e) {
-    console.error("Erro ao resolver nome:", e);
-    return null;
-  }
-}
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -95,15 +71,6 @@ export async function POST(req: Request) {
       console.log("CHAMADA numero real resolvido:", telefoneReal);
     }
 
-    // Se não conseguiu resolver número, tenta resolver nome
-    let nomeReal: string | null = null;
-    let lidNaoResolvido = false;
-    if (isLidJid && !telefoneReal) {
-      nomeReal = await resolverNomeReal(jidLimpo, instancia);
-      console.log("CHAMADA nome resolvido:", nomeReal);
-      if (!nomeReal) lidNaoResolvido = true;
-    }
-
     const telefoneLimpo = isLidJid ? (telefoneReal || null) : normalizarTelefone(telefone);
 
     // Busca cliente em ordem de prioridade
@@ -128,21 +95,6 @@ export async function POST(req: Request) {
       console.log("CHAMADA busca por lid:", cliente?.id || "não encontrado");
     }
 
-    // 2b. Se @lid e tem nome resolvido, tenta buscar por nome
-    if (!cliente && nomeReal) {
-      const nomeLimpo = nomeReal.replace(/[^\p{L}\p{N}\s]/gu, "").trim();
-      if (nomeLimpo) {
-        cliente = await prisma.cliente.findFirst({
-          where: {
-            empresaId: empresa.id,
-            nome: { contains: nomeLimpo, mode: "insensitive" },
-          },
-          orderBy: { criadoEm: "desc" },
-        });
-        console.log("CHAMADA busca por nome resolvido:", cliente?.id || "não encontrado");
-      }
-    }
-
     // 3. Se achou cliente e tem número real, atualiza telefonePrincipal
     if (cliente && telefoneReal && !cliente.telefonePrincipal) {
       await prisma.cliente.update({
@@ -156,7 +108,7 @@ export async function POST(req: Request) {
       cliente = await prisma.cliente.create({
         data: {
           empresaId: empresa.id,
-          nome: nomeReal || "Cliente (chamada perdida)",
+          nome: "Cliente (chamada perdida)",
           telefone: jidLimpo,
           telefonePrincipal: telefoneReal || null,
         },
@@ -189,7 +141,7 @@ export async function POST(req: Request) {
           vendedorId: vendedor?.id || null,
           status: "LEAD",
           score: 3,
-          observacoes: `[CHAMADA_PERDIDA_${isVideo ? "VIDEO" : "VOZ"}]${lidNaoResolvido ? " [LID_NAO_RESOLVIDO]" : ""}`,
+          observacoes: `[CHAMADA_PERDIDA_${isVideo ? "VIDEO" : "VOZ"}]`,
         },
         include: { vendedor: true },
       });
