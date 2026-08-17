@@ -166,33 +166,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Notifica vendedor
-    const vendedor = lead.vendedor;
-    let notificado = false;
-
-    if (vendedor?.telefone) {
-      const evoUrl = process.env.EVOLUTION_API_URL ?? "https://evolution-evolution-api.6jgzku.easypanel.host";
-      const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
-      const nomeCliente = cliente.nome || "Cliente desconhecido";
-      const tipoCall = isVideo ? "vídeo" : "voz";
-
-      const msgVendedor = telefoneReal
-        ? `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall}.\n\n⚡ Chama agora!\n👉 https://wa.me/${telefoneReal}`
-        : `📞 *Chamada perdida!*\n\n👤 *${nomeCliente}* tentou te ligar via ${tipoCall} (iPhone).\n\n⚡ Abra o WhatsApp da loja e procure a conversa com esse cliente na lista de chats.`;
-
-      try {
-        const resp = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: evoKey },
-          body: JSON.stringify({ number: vendedor.telefone, text: msgVendedor }),
-        });
-        notificado = resp.ok;
-        console.log("CHAMADA notificacao vendedor:", vendedor.nome, resp.status);
-      } catch (e) {
-        console.error("Erro ao notificar vendedor:", e);
-      }
-    }
-
     // ====== Notifica CLIENTE ======
     const nomeIAUsado = empresa.nomeIA || "nossa equipe";
     let msgCliente = `Oi! Aqui é a ${nomeIAUsado} da ${empresa.nome}. A gente não atende chamada por aqui no WhatsApp, mas te ajudo rapidinho!`;
@@ -222,7 +195,6 @@ export async function POST(req: Request) {
       cliente: cliente.nome,
       vendedor: lead.vendedor?.nome || null,
       telefoneReal,
-      notificado,
     });
   } catch (error) {
     console.error("Erro webhook chamada:", error);

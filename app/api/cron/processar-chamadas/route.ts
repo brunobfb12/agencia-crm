@@ -71,25 +71,9 @@ export async function GET(req: Request) {
       },
     });
 
-    // Notificar vendedor se atribuído
-    if (lead.vendedor?.telefone && lead.empresa.instanciaWhatsapp) {
-      const nomeCliente = cliente.nome || cliente.telefone;
-      const msgVendedor = `📞 *CHAMADA DO CLIENTE!*\n\n👤 *${nomeCliente}*\n📱 *${cliente.telefone}*\n🕐 *${horaStr} - ${dataStr}*\n\n*Tipo:* Chamada ${tipoStr}\n\n⚡ Ligue de volta AGORA!\n👉 https://wa.me/${cliente.telefone.replace(/\D/g, "")}`;
-
-      await fetch(`${evoUrl}/message/sendText/${lead.empresa.instanciaWhatsapp}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: evoKey },
-        body: JSON.stringify({
-          number: lead.vendedor.telefone,
-          text: msgVendedor,
-          options: { presence: "composing", delay: 2000 },
-        }),
-      }).catch(() => null);
-    }
-
     processadas.push({
       conversa: conversa.id,
-      cliente: nomeCliente || cliente.telefone,
+      cliente: cliente.nome || cliente.telefone,
       lead: lead.id,
       vendedor: lead.vendedor?.nome || "não atribuído",
       notificado: lead.vendedor?.telefone ? true : false,
