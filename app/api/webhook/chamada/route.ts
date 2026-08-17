@@ -193,6 +193,29 @@ export async function POST(req: Request) {
       }
     }
 
+    // ====== Notifica CLIENTE ======
+    const nomeIAUsado = empresa.nomeIA || "nossa equipe";
+    let msgCliente = `Oi! Aqui é a ${nomeIAUsado} da ${empresa.nome}. A gente não atende chamada por aqui no WhatsApp, mas te ajudo rapidinho!`;
+
+    if (empresa.telefoneFixo?.trim()) {
+      msgCliente += `\n📞 Pra urgência, liga: ${empresa.telefoneFixo}`;
+    }
+
+    msgCliente += `\nOu só me manda sua mensagem aqui que eu já encaminho pro nosso time 😊`;
+
+    try {
+      const evoUrl = process.env.EVOLUTION_API_URL ?? "https://evolution-evolution-api.6jgzku.easypanel.host";
+      const evoKey = process.env.EVOLUTION_API_KEY ?? "SuaChaveSecreta123";
+      const respCliente = await fetch(`${evoUrl}/message/sendText/${instancia}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: evoKey },
+        body: JSON.stringify({ number: jidLimpo, text: msgCliente }),
+      });
+      console.log("CHAMADA mensagem cliente:", jidLimpo, respCliente.status);
+    } catch (e) {
+      console.error("Erro ao enviar mensagem cliente:", e);
+    }
+
     return NextResponse.json({
       ok: true,
       lead: lead.id,

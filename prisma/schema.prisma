@@ -30,6 +30,7 @@ model Empresa {
   complementaresGuia       String?
   perfisCliente            String?
   quebrasObjecao           String?
+  telefoneFixo             String?
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)

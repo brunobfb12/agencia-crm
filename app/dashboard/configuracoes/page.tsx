@@ -276,6 +276,7 @@ interface Empresa {
   mensagemPosVenda: string | null;
   mensagemAniversario: string | null;
   mensagemIndicacao: string | null;
+  telefoneFixo: string | null;
   tagsCustomizadas: string[];
   complementaresGuia: string | null;
   perfisCliente: string | null;
@@ -355,6 +356,16 @@ const LABELS: Record<string, string> = {
 };
 
 const FIELD_HELP: Record<string, { title: string; desc: string; examples: string[]; dica: string }> = {
+  telefoneFixo: {
+    title: "Telefone Fixo (Urgência)",
+    desc: "Número de telefone para emergências (opcional). Será incluído na mensagem automática quando cliente tenta ligar.",
+    examples: [
+      "(62) 9999-8888",
+      "(21) 3333-2222",
+      "11 98765-4321",
+    ],
+    dica: "Deixe em branco se não tiver telefone fixo — a mensagem se adapta automaticamente.",
+  },
   PRODUTOS: {
     title: "O que sua empresa oferece ou faz",
     desc: "Descreva o segmento e o que sua empresa faz. A IA usa isso para se apresentar e contextualizar o atendimento — não precisa listar preços aqui.",
@@ -936,6 +947,7 @@ export default function ConfiguracoesPage() {
   const [mensagemPosVenda, setMensagemPosVenda] = useState("");
   const [mensagemAniversario, setMensagemAniversario] = useState("");
   const [mensagemIndicacao, setMensagemIndicacao] = useState("");
+  const [telefoneFixo, setTelefoneFixo] = useState("");
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
   const [complementaresGuia, setComplementaresGuia] = useState("");
@@ -1069,6 +1081,7 @@ export default function ConfiguracoesPage() {
     setMensagemPosVenda(emp.mensagemPosVenda ?? "");
     setMensagemAniversario(emp.mensagemAniversario ?? "");
     setMensagemIndicacao(emp.mensagemIndicacao ?? "Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)");
+    setTelefoneFixo(emp.telefoneFixo ?? "");
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
     setComplementaresGuia(emp.complementaresGuia ?? "");
@@ -1107,7 +1120,7 @@ export default function ConfiguracoesPage() {
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null, perfisCliente: perfisCliente.trim() || null }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, telefoneFixo: telefoneFixo.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null, perfisCliente: perfisCliente.trim() || null }),
     });
 
     if (!res.ok) {
@@ -1519,7 +1532,7 @@ export default function ConfiguracoesPage() {
                         </div>
 
                         {/* ── Mensagem de Indicação ── */}
-                        <div>
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
                           <div className="flex items-center gap-2 mb-1">
                             <p className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>Mensagem de indicação</p>
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,.12)", color: "#818cf8" }}>Sugerida pelo FácilCRM</span>
@@ -1531,6 +1544,23 @@ export default function ConfiguracoesPage() {
                             onChange={(e) => setMensagemIndicacao(e.target.value)}
                             placeholder={`Ex: Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)`}
                             className={`${INPUT} resize-none`} />
+                        </div>
+
+                        {/* ── Telefone Fixo (Urgência) ── */}
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>TELEFONE FIXO (URGÊNCIA)</span>
+                            <button type="button" onClick={() => setHelpOpen("telefoneFixo")}
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                              ?
+                            </button>
+                          </div>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Número de contato para emergências (opcional). Será incluído automaticamente nas respostas sobre chamadas não atendidas.
+                          </p>
+                          <input value={telefoneFixo} onChange={e => setTelefoneFixo(e.target.value)}
+                            placeholder="Ex: (62) 9999-8888 ou 11 98765-4321" className={INPUT} />
                         </div>
 
                         {/* ── Tags da Empresa ── */}

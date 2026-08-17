@@ -24,6 +24,7 @@ export async function PATCH(
       ...(body.mensagemAniversario !== undefined && { mensagemAniversario: body.mensagemAniversario || null }),
       ...(body.mensagemIndicacao !== undefined && { mensagemIndicacao: body.mensagemIndicacao || null }),
       ...(body.conhecimentoBase !== undefined && { conhecimentoBase: body.conhecimentoBase || null }),
+      ...(body.telefoneFixo !== undefined && { telefoneFixo: body.telefoneFixo || null }),
       ...(body.tagsCustomizadas !== undefined && { tagsCustomizadas: body.tagsCustomizadas }),
       ...(body.complementaresGuia !== undefined && { complementaresGuia: body.complementaresGuia || null }),
       ...(body.perfisCliente !== undefined && { perfisCliente: body.perfisCliente || null }),
