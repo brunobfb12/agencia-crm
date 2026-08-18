@@ -31,6 +31,7 @@ model Empresa {
   perfisCliente            String?
   quebrasObjecao           String?
   telefoneFixo             String?
+  telefoneFinanceiro       String?
 
   // Monetização
   planStatus   PlanStatus @default(TRIAL)

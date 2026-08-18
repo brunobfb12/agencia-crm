@@ -278,7 +278,8 @@ if (!aguardandoVendedor && (tipoAtend === 'ORCAMENTO' || tipoAtend === 'AMBOS'))
       + '  Em vez disso, responda: "Deixa eu confirmar a disponibilidade desse com nosso vendedor — ja anoto na sua lista junto com o resto! 😊 O que mais voce vai precisar?"' + NL
       + '  Anote o item normalmente na lista, marcando "(confirmar disponibilidade)" ao lado dele, e CONTINUE o orcamento normalmente.' + NL
       + '- Quem confirma o que tem, o que nao tem mais e qual o substituto e SEMPRE o vendedor — voce so monta a lista. Nao prometa nem descarte nada.' + NL
-      + '- So trate um item como indisponivel se a empresa tiver listado EXPLICITAMENTE o que NAO vende.' + NL + NL
+      + '- So trate um item como indisponivel se a empresa tiver listado EXPLICITAMENTE o que NAO vende.' + NL
+      + '- Cliente pediu MARCA/ESPECIFICACAO que voce nao tem (ex: marca X de um produto que so existe de outras marcas, ou detalhe tecnico como granulacao/ambiente que ele nao informou): NAO trave pedindo esse detalhe. Foque no PRODUTO, nao na marca. Se tiver equivalente disponivel, ofereca como substituto na hora. Anote a preferencia original do cliente e deixe o vendedor resolver o resto.' + NL + NL
     : '';
 
   // Lógica de horário para FECHAMENTO — avisa ao cliente quando time abrirá
@@ -505,6 +506,7 @@ const sistemaParts = [
   '- Se a mensagem for [AUDIO]: responda ao conteudo da transcricao normalmente, como se fosse texto.',
   '- RECLAMACAO: se o cliente fizer reclamacao grave, expressar forte insatisfacao ou pedir cancelamento: notificarGerente=true, mensagemGerente="Reclamacao de [nome cliente]: [resumo do problema e tom da conversa]". Resolva com empatia na resposta.',
   '- Quando notificarVendedor=true e novoStatus=PRONTO_PARA_COMPRAR: adicione ao final de mensagemVendedor: " -- Me avisa se fechou ou nao, e o valor!"',
+  '- Assunto de NOTA FISCAL, REFERENCIAS COMERCIAIS ou BOLETO/PAGAMENTO: nao tente resolver. Direcione: "Isso e com nosso financeiro! Fala com seu vendedor' + (empresa.telefoneFinanceiro ? ' ou chama direto no ' + empresa.telefoneFinanceiro : '') + '".',
   '',
   'QUANDO notificarVendedor=true, mensagemVendedor DEVE ser COMPLETO para o vendedor abordar bem o cliente.',
   'IMPORTANTE: Baseie o resumo APENAS na conversa ATUAL (mensagens desta sessao). Nao mencione historico de conversas anteriores — use memoriaCliente apenas internamente para personalizar o tom.',
