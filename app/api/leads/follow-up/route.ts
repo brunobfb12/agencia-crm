@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const CADENCIA_CUTOFF_DATE = '2026-08-19';
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   if (searchParams.get("secret") !== "crm2026migra") {
@@ -51,7 +53,7 @@ export async function GET(req: Request) {
   const h120 = new Date(now); h120.setHours(h120.getHours() - 120);
   const h2 = new Date(now); h2.setHours(h2.getHours() - 2);
 
-  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoD1, aquecimentoD2, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
+  const [posVenda, reativacao15d, reativacao30d, recontatos, allAniversarios, semResposta60d, inativos30d, aquecimentoSemResposta, semInteresse75d, reativacao90d] = await Promise.all([
     prisma.lead.findMany({
       where: {
         status: "VENDA_REALIZADA",
@@ -122,26 +124,6 @@ export async function GET(req: Request) {
       },
       select: { id: true },
     }),
-    // AQUECIMENTO D+1: parado entre 24-48h → primeiro toque
-    prisma.lead.findMany({
-      where: {
-        status: "AQUECIMENTO",
-        atualizadoEm: { gte: h48, lt: h24 },
-        empresa: { ativa: true },
-        cliente: { telefone: { not: "" } },
-      },
-      include: baseInclude,
-    }),
-    // AQUECIMENTO D+2: parado entre 48-72h → segundo toque
-    prisma.lead.findMany({
-      where: {
-        status: "AQUECIMENTO",
-        atualizadoEm: { gte: h72, lt: h48 },
-        empresa: { ativa: true },
-        cliente: { telefone: { not: "" } },
-      },
-      include: baseInclude,
-    }),
     // AQUECIMENTO 72h+ sem atividade → SEM_RESPOSTA (dois toques ignorados)
     // Leads com score ≥ 6 ou pedido confirmado ficam retidos — vão para pressão do vendedor
     prisma.lead.findMany({
@@ -188,17 +170,6 @@ export async function GET(req: Request) {
     include: baseInclude,
   });
 
-  const [leadD1, leadD2] = await Promise.all([
-    prisma.lead.findMany({
-      where: { status: "LEAD", atualizadoEm: { gte: h48, lt: h24 }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
-      include: baseInclude,
-    }),
-    prisma.lead.findMany({
-      where: { status: "LEAD", atualizadoEm: { gte: h72, lt: h48 }, empresa: { ativa: true }, cliente: { telefone: { not: "" } } },
-      include: baseInclude,
-    }),
-  ]);
-
   const lembreteLD0Candidatos: any[] = isHorarioLD0 ? await prisma.lead.findMany({
     where: {
       status: "AQUECIMENTO",
@@ -227,6 +198,174 @@ export async function GET(req: Request) {
     if (!lastMsg || lastMsg.direcao !== "SAIDA") return false;
     return new Date(lastMsg.criadoEm) <= h2;
   });
+
+  // CADENCIA T1-T5: Leads LEAD/AQUECIMENTO parados antes de NEGOCIACAO
+  // Busca com cumulative baseado em atualizadoEm (última mensagem da IA)
+  // Filtra leads sem resposta do cliente após último flag
+
+  const cutoffDate = new Date(CADENCIA_CUTOFF_DATE);
+
+  // Helper: Extrai timestamp da flag ou retorna null
+  function getTimestampFromFlag(obs: string, flagPrefix: string): Date | null {
+    const regex = new RegExp(`\\[${flagPrefix}:([^\\]]+)\\]`);
+    const match = obs.match(regex);
+    if (!match) return null;
+    try {
+      return new Date(match[1]);
+    } catch {
+      return null;
+    }
+  }
+
+  // Helper: Calcula qual toque o lead deveria receber
+  function getTouche(lead: any): { toque: number; flag: string } | null {
+    // Procura últimas msgs para achar última da IA (SAIDA)
+    const conversas = lead.cliente?.conversas ?? [];
+    if (conversas.length === 0) return null;
+
+    const mensagens = conversas[0]?.mensagens ?? [];
+    let ultimaMsgIA: any = null;
+    for (const msg of mensagens) {
+      if (msg.direcao === "SAIDA") {
+        ultimaMsgIA = msg;
+        break;
+      }
+    }
+    if (!ultimaMsgIA) return null;
+
+    const ultimaMsgIATime = new Date(ultimaMsgIA.criadoEm).getTime();
+    const agora = now.getTime();
+    const minusDecorridos = (agora - ultimaMsgIATime) / (1000 * 60);
+
+    // Verifica se cliente respondeu após última msg da IA
+    let clienteRespondeu = false;
+    for (const msg of mensagens) {
+      if (msg.direcao === "ENTRADA" && new Date(msg.criadoEm).getTime() > ultimaMsgIATime) {
+        clienteRespondeu = true;
+        break;
+      }
+    }
+    if (clienteRespondeu) return null; // Cancelar sequência
+
+    // Determina toque com validação de INTERVALO MÍNIMO entre toques
+    const obs = lead.observacoes ?? "";
+
+    const temT5 = obs.includes("[T5:");
+    const temT4 = obs.includes("[T4:");
+    const temT3 = obs.includes("[T3:");
+    const temT2 = obs.includes("[T2:");
+    const temT1 = obs.includes("[T1:");
+
+    // T1: 30min desde última msg da IA (única que olha a msg da IA)
+    if (!temT1 && minusDecorridos >= 30) {
+      return { toque: 1, flag: `[T1:${now.toISOString()}]` };
+    }
+
+    // T2: >= 90min desde T1
+    if (!temT2 && temT1) {
+      const t1Time = getTimestampFromFlag(obs, "T1");
+      const minsSinceT1 = t1Time ? (agora - t1Time.getTime()) / (1000 * 60) : 0;
+      if (minsSinceT1 >= 90) {
+        return { toque: 2, flag: `[T2:${now.toISOString()}]` };
+      }
+    }
+
+    // T3: >= 4h (240min) desde T2
+    if (!temT3 && temT2) {
+      const t2Time = getTimestampFromFlag(obs, "T2");
+      const minsSinceT2 = t2Time ? (agora - t2Time.getTime()) / (1000 * 60) : 0;
+      if (minsSinceT2 >= 240) {
+        return { toque: 3, flag: `[T3:${now.toISOString()}]` };
+      }
+    }
+
+    // T4: >= 18h (1080min) desde T3
+    if (!temT4 && temT3) {
+      const t3Time = getTimestampFromFlag(obs, "T3");
+      const minsSinceT3 = t3Time ? (agora - t3Time.getTime()) / (1000 * 60) : 0;
+      if (minsSinceT3 >= 1080) {
+        return { toque: 4, flag: `[T4:${now.toISOString()}]` };
+      }
+    }
+
+    // T5: >= 48h (2880min) desde T4
+    if (!temT5 && temT4) {
+      const t4Time = getTimestampFromFlag(obs, "T4");
+      const minsSinceT4 = t4Time ? (agora - t4Time.getTime()) / (1000 * 60) : 0;
+      if (minsSinceT4 >= 2880) {
+        return { toque: 5, flag: `[T5:${now.toISOString()}]` };
+      }
+    }
+
+    return null;
+  }
+
+  // Buscar todos os candidatos para T1-T5 em um batch único
+  const cadenciaLeads = await prisma.lead.findMany({
+    where: {
+      status: { in: ["LEAD", "AQUECIMENTO"] },
+      atualizadoEm: { gte: cutoffDate },
+      empresa: { ativa: true },
+      cliente: { telefone: { not: "" } },
+    },
+    include: {
+      cliente: {
+        include: {
+          conversas: {
+            orderBy: { ultimaAtividade: "desc" },
+            take: 1,
+            include: {
+              mensagens: {
+                orderBy: { criadoEm: "desc" },
+                take: 10,
+              },
+            },
+          },
+        },
+      },
+      empresa: { select: { nome: true, instanciaWhatsapp: true, nomeIA: true } },
+      vendedor: { select: { nome: true } },
+    },
+  });
+
+  // Agrupar leads por toque
+  const t1Leads: any[] = [];
+  const t2Leads: any[] = [];
+  const t3Leads: any[] = [];
+  const t4Leads: any[] = [];
+  const t5Leads: any[] = [];
+
+  for (const lead of cadenciaLeads) {
+    if (!isHorarioComercial) break;
+
+    const touche = getTouche(lead);
+    if (!touche) continue;
+
+    if (touche.toque === 1) t1Leads.push({ ...lead, flag: touche.flag });
+    else if (touche.toque === 2) t2Leads.push({ ...lead, flag: touche.flag });
+    else if (touche.toque === 3) t3Leads.push({ ...lead, flag: touche.flag });
+    else if (touche.toque === 4) t4Leads.push({ ...lead, flag: touche.flag });
+    else if (touche.toque === 5) t5Leads.push({ ...lead, flag: touche.flag });
+  }
+
+  // Lógica: leads com T5 marcado há mais de 24h → SEM_RESPOSTA
+  const t5Timeout = isHorarioComercial ? cadenciaLeads.filter((lead: any) => {
+    const obs = lead.observacoes ?? "";
+    if (!obs.includes("[T5:")) return false;
+
+    const t5Time = getTimestampFromFlag(obs, "T5");
+    if (!t5Time) return false;
+
+    const minsSinceT5 = (now.getTime() - t5Time.getTime()) / (1000 * 60);
+    return minsSinceT5 >= 1440; // 24h
+  }) : [];
+
+  if (t5Timeout.length > 0) {
+    await prisma.lead.updateMany({
+      where: { id: { in: t5Timeout.map(l => l.id) } },
+      data: { status: "SEM_RESPOSTA" },
+    });
+  }
 
   // P2.2: AQUECIMENTO "quente" → PRONTO_PARA_COMPRAR (score ≥6 + CONFIRMADO + P72 + 24-48h)
   const aquecimentoParaProto = isHorarioComercial ? await prisma.lead.findMany({
@@ -439,6 +578,18 @@ export async function GET(req: Request) {
       })
     : [];
   const gerenteMap = new Map(gerentes72h.map(g => [g.empresaId, g]));
+
+  // Definir type e inicializar items (será populado durante o processamento)
+  type Item = {
+    tipo: string;
+    leadId: string;
+    clienteTelefone: string;
+    clienteNome: string;
+    instancia: string;
+    empresaNome: string;
+    mensagem: string;
+  };
+  const items: Item[] = [];
 
   // Auto-transição: VENDA_REALIZADA → POS_VENDA ao detectar para envio
   if (isHorarioComercial && posVenda.length > 0) {
@@ -664,16 +815,6 @@ export async function GET(req: Request) {
     return (d.getUTCMonth() + 1) === todayMonth && d.getUTCDate() === todayDay;
   });
 
-  type Item = {
-    tipo: string;
-    leadId: string;
-    clienteTelefone: string;
-    clienteNome: string;
-    instancia: string;
-    empresaNome: string;
-    mensagem: string;
-  };
-
   const buildItem = (lead: typeof posVenda[0], tipo: string, mensagem: string): Item => ({
     tipo,
     leadId: lead.id,
@@ -684,7 +825,7 @@ export async function GET(req: Request) {
     mensagem,
   });
 
-  const items: Item[] = [
+  items.push(
     ...posVenda
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
@@ -698,8 +839,10 @@ export async function GET(req: Request) {
               .replace(/\{empresa\}/g, l.empresa.nome)
           : `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Tudo certo com seu pedido? Se tiver qualquer dúvida ou precisar de algo, estou à disposição!`;
         return buildItem(l, "pos_venda", mensagem);
-      }),
+      })
+  );
 
+  items.push(
     ...reativacao15d
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
@@ -708,8 +851,10 @@ export async function GET(req: Request) {
         return buildItem(l, "reativacao_15d",
           `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Faz um tempo que não conversamos! 😊 Temos novidades que podem te interessar. Quer dar uma olhada?`
         );
-      }),
+      })
+  );
 
+  items.push(
     ...reativacao30d
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
@@ -718,8 +863,10 @@ export async function GET(req: Request) {
         return buildItem(l, "reativacao_30d",
           `Oi${nome}! Sentimos sua falta por aqui! 🙏 Preparamos uma condição especial pensando em você. Posso te contar?`
         );
-      }),
+      })
+  );
 
+  items.push(
     ...recontatos
       .filter(l => l.empresa.instanciaWhatsapp)
       .map(l => {
@@ -728,29 +875,68 @@ export async function GET(req: Request) {
         return buildItem(l, "recontato_agendado",
           `Oi${nome}! 😊 ${ia} aqui, da ${l.empresa.nome}. Passando pra ver se consigo te ajudar a agendar ou se ficou alguma dúvida! Como posso te atender?`
         );
-      }),
+      })
+  );
 
-    ...aquecimentoD1
-      .filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]")))
-      .map((l: typeof posVenda[0]) => {
+  items.push(
+    ...t1Leads
+      .filter((l: any) => l.empresa.instanciaWhatsapp)
+      .map((l: any) => {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
-        return buildItem(l, "aquecimento_d1",
-          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que conversamos ontem — ficou alguma dúvida ou posso te ajudar a finalizar? 😊`
+        return buildItem(l, "cadencia_t1",
+          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Passando pra tirar qualquer dúvida! 😊`
         );
-      }),
+      })
+  );
 
-    ...aquecimentoD2
-      .filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]")))
-      .map((l: typeof posVenda[0]) => {
+  items.push(
+    ...t2Leads
+      .filter((l: any) => l.empresa.instanciaWhatsapp)
+      .map((l: any) => {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
-        return buildItem(l, "aquecimento_d2",
-          `Oi${nome}! Última tentativa por aqui — se ainda precisar de algo da ${l.empresa.nome}, é só me chamar! 🙌`
+        return buildItem(l, "cadencia_t2",
+          `Oi${nome}! Ainda por aqui pra ajudar 😊 Ficou algo em dúvida?`
         );
-      }),
+      })
+  );
 
-  ];
+  items.push(
+    ...t3Leads
+      .filter((l: any) => l.empresa.instanciaWhatsapp)
+      .map((l: any) => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "cadencia_t3",
+          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Você ainda tem interesse? Gostaria de finalizar? 👊`
+        );
+      })
+  );
+
+  items.push(
+    ...t4Leads
+      .filter((l: any) => l.empresa.instanciaWhatsapp)
+      .map((l: any) => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "cadencia_t4",
+          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Consegui te ajudar com o que precisava? Se quiser retomar, é só me chamar 😊`
+        );
+      })
+  );
+
+  items.push(
+    ...t5Leads
+      .filter((l: any) => l.empresa.instanciaWhatsapp)
+      .map((l: any) => {
+        const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+        const ia = l.empresa.nomeIA ?? "Eu";
+        return buildItem(l, "cadencia_t5",
+          `Oi${nome}! Vou parar de te chamar pra não incomodar, mas fico por aqui — se precisar de material a qualquer momento, é só mandar mensagem! 👋`
+        );
+      })
+  );
 
   // BUG 1 FIX: Limpar dataRecontato após envio de recontato_agendado
   if (recontatos.length > 0) {
@@ -819,20 +1005,26 @@ export async function GET(req: Request) {
   ) : [];
 
   // Marcar todos como enviados antes de retornar (evita duplicatas em crons simultâneos)
-  const aq1Novos = isHorarioComercial ? aquecimentoD1.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ1]"))) : [];
-  const aq2Novos = isHorarioComercial ? aquecimentoD2.filter((l: typeof posVenda[0]) => l.empresa.instanciaWhatsapp && !(((l as any).observacoes ?? "").includes("[AQ2]"))) : [];
-  const ld1Novos = isHorarioComercial ? (leadD1 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD1]"))) : [];
-  const ld2Novos = isHorarioComercial ? (leadD2 as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[LD2]"))) : [];
+  // getTouche já garante que leads em t*Leads não têm o flag, então só filtra por instancia
+  const t1Novos = isHorarioComercial ? t1Leads.filter((l: any) => l.empresa?.instanciaWhatsapp) : [];
+  const t2Novos = isHorarioComercial ? t2Leads.filter((l: any) => l.empresa?.instanciaWhatsapp) : [];
+  const t3Novos = isHorarioComercial ? t3Leads.filter((l: any) => l.empresa?.instanciaWhatsapp) : [];
+  const t4Novos = isHorarioComercial ? t4Leads.filter((l: any) => l.empresa?.instanciaWhatsapp) : [];
+  const t5Novos = isHorarioComercial ? t5Leads.filter((l: any) => l.empresa?.instanciaWhatsapp) : [];
+  const ld0Novos = isHorarioComercial ? lembreteLD0Novos : [];
 
   const pc1Novos = isHorarioComercial ? (prontoConversa as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[PC1]"))) : [];
 
-  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || aq1Novos.length > 0 || aq2Novos.length > 0 || ld1Novos.length > 0 || ld2Novos.length > 0 || pc1Novos.length > 0)) {
+  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || t1Novos.length > 0 || t2Novos.length > 0 || t3Novos.length > 0 || t4Novos.length > 0 || t5Novos.length > 0 || ld0Novos.length > 0 || pc1Novos.length > 0)) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
       ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
-      ...aq1Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ1]").trim() } })),
-      ...aq2Novos.map((l: typeof posVenda[0]) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[AQ2]").trim() } })),
+      ...t1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...t2Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...t3Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...t4Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...t5Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
       ...pc1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
     ]);
   }
@@ -881,33 +1073,7 @@ export async function GET(req: Request) {
     }).catch(() => null);
   }
 
-  for (const l of ld1Novos) {
-    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
-    const ia = l.empresa.nomeIA ?? "Eu";
-    items.push({
-      tipo: "lead_d1", leadId: l.id,
-      clienteTelefone: l.cliente.telefone,
-      clienteNome: l.cliente.nome ?? l.cliente.telefone,
-      instancia: l.empresa.instanciaWhatsapp,
-      empresaNome: l.empresa.nome,
-        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Vi que você entrou em contato — ficou alguma dúvida? Ainda tem interesse?`,
-      });
-    }
-
-    for (const l of ld2Novos) {
-    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
-    const ia = l.empresa.nomeIA ?? "Eu";
-    items.push({
-      tipo: "lead_d2", leadId: l.id,
-      clienteTelefone: l.cliente.telefone,
-      clienteNome: l.cliente.nome ?? l.cliente.telefone,
-      instancia: l.empresa.instanciaWhatsapp,
-      empresaNome: l.empresa.nome,
-        mensagem: `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Última tentativa — Podemos encerrar esse contato? Se precisar de algo é só chamar aqui!`,
-      });
-    }
-
-    for (const l of lembreteLD0Novos) {
+  for (const l of lembreteLD0Novos) {
     const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
     const nomeStr = primeiroNome ? ` ${primeiroNome}` : "";
     items.push({
@@ -925,7 +1091,7 @@ export async function GET(req: Request) {
       await Promise.all(
         lembreteLD0Novos.map((l: any) => prisma.lead.update({
           where: { id: l.id },
-          data: { observacoes: ((l.observacoes ?? "") + "\n[LD0]").trim() },
+          data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
         }))
       );
     }
@@ -1171,16 +1337,16 @@ export async function GET(req: Request) {
   // BUG 2 FIX: Salvar todas as mensagens disparadas na tabela Mensagem
   const clienteMessageTypes = new Set([
     "pos_venda", "reativacao_15d", "reativacao_30d", "recontato_agendado",
-    "aquecimento_d1", "aquecimento_d2", "aniversario", "lead_d1", "lead_d2",
-    "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
+    "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5",
+    "aniversario", "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
     "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0", "noshow_reagendar"
   ]);
 
   // Mapa de leadId → clienteId para vincular mensagens
   const leadToClienteMap = new Map<string, string>();
   for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
-    [aquecimentoD1], [aquecimentoD2], [aniversarios], [leadD1], [leadD2], [prontoConversa],
-    [semResposta60d], [reativacao90d], [noShowLeads]]) {
+    [aniversarios], [prontoConversa],
+    [semResposta60d], [reativacao90d], [noShowLeads], [t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
     for (const lead of leads) {
       if (lead?.id && (lead as any)?.clienteId) {
         leadToClienteMap.set(lead.id, (lead as any).clienteId);
