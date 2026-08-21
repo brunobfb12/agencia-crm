@@ -1037,17 +1037,27 @@ export async function GET(req: Request) {
 
   const pc1Novos = isHorarioComercial ? (prontoConversa as any[]).filter(l => l.empresa?.instanciaWhatsapp && !((l.observacoes ?? "").includes("[PC1]"))) : [];
 
-  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || t1Novos.length > 0 || t2Novos.length > 0 || t3Novos.length > 0 || t4Novos.length > 0 || t5Novos.length > 0 || ld0Novos.length > 0 || pc1Novos.length > 0)) {
+  // Declaração inicial das flags finais (serão preenchidas após travas)
+  let finalT1: any[] = [];
+  let finalT2: any[] = [];
+  let finalT3: any[] = [];
+  let finalT4: any[] = [];
+  let finalT5: any[] = [];
+  let finalLD0: any[] = [];
+  let finalPC1: any[] = [];
+  const finalItemsByLeadId = new Map<string, Item>();
+
+  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || finalT1.length > 0 || finalT2.length > 0 || finalT3.length > 0 || finalT4.length > 0 || finalT5.length > 0 || finalLD0.length > 0 || finalPC1.length > 0)) {
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
       ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
-      ...t1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...t2Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...t3Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...t4Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...t5Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...pc1Novos.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
+      ...finalT1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT2.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT3.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT4.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT5.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalPC1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
     ]);
   }
 
@@ -1066,9 +1076,9 @@ export async function GET(req: Request) {
       });
     }
 
-    if (lembreteLD0Novos.length > 0) {
+    if (finalLD0.length > 0) {
       await Promise.all(
-        lembreteLD0Novos.map((l: any) => prisma.lead.update({
+        finalLD0.map((l: any) => prisma.lead.update({
           where: { id: l.id },
           data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
         }))
@@ -1117,25 +1127,6 @@ export async function GET(req: Request) {
         });
       }
     }
-
-    // PC1: reset modoHumano → IA volta a responder o cliente após conversa franca
-    if (pc1Novos.length > 0) {
-    const clienteIdsPC1 = pc1Novos.map((l: any) => l.clienteId).filter(Boolean);
-    if (clienteIdsPC1.length > 0) {
-      const conversasPC1 = await prisma.conversa.findMany({
-        where: { clienteId: { in: clienteIdsPC1 } },
-        orderBy: { ultimaAtividade: "desc" },
-        distinct: ["clienteId"],
-        select: { id: true },
-      });
-      if (conversasPC1.length > 0) {
-        await prisma.conversa.updateMany({
-          where: { id: { in: conversasPC1.map((c: { id: string }) => c.id) } },
-          data: { modoHumano: false },
-        });
-      }
-    }
-  }
 
   // Calendário de relacionamento: D+7, D+20, D+28, D+45 desde última compra
   // Deduplicação por leadId — prioridade para compra mais recente (janela menor)
@@ -1291,6 +1282,19 @@ export async function GET(req: Request) {
     }
   }
 
+  // ===== TRAVA 1: Uma mensagem por lead por execução =====
+  // Mantém só o primeiro item de cada leadId (a ordem já define prioridade)
+  const seenLeadsExecucao = new Set<string>();
+  const itemsFiltrados: Item[] = [];
+  for (const item of items) {
+    if (!seenLeadsExecucao.has(item.leadId)) {
+      seenLeadsExecucao.add(item.leadId);
+      itemsFiltrados.push(item);
+    }
+  }
+  items.length = 0;
+  items.push(...itemsFiltrados);
+
   // Guardrail: retorna items vazio fora do horário comercial (antes de salvar no banco)
   if (!isHorarioComercial) {
     items.length = 0;
@@ -1324,6 +1328,61 @@ export async function GET(req: Request) {
     }
   }
 
+  // ===== TRAVA 2: Uma mensagem por lead por dia (dedup com BD) =====
+  // Busca todas as Mensagens SAIDA criadas hoje para os clientes dos items finais
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+
+  const clienteIdsItems = new Set<string>();
+  for (const item of items.filter(it => clienteMessageTypes.has(it.tipo))) {
+    const clienteId = leadToClienteMap.get(item.leadId);
+    if (clienteId) clienteIdsItems.add(clienteId);
+  }
+
+  const mensagensHoje = clienteIdsItems.size > 0
+    ? await prisma.mensagem.findMany({
+        where: {
+          direcao: "SAIDA",
+          criadoEm: { gte: todayStart },
+          conversa: { clienteId: { in: Array.from(clienteIdsItems) } },
+        },
+        select: { conversa: { select: { clienteId: true } } },
+      })
+    : [];
+
+  const clientesComMsgHoje = new Set(mensagensHoje.map(m => m.conversa.clienteId));
+
+  // Aplicar TRAVA 2: remover items cujo cliente já recebeu msg SAIDA hoje
+  const itemsApposTrava2 = items.filter(it => {
+    if (!clienteMessageTypes.has(it.tipo)) return true; // Mantém items de vendedor/gerente
+    const clienteId = leadToClienteMap.get(it.leadId);
+    return clienteId && !clientesComMsgHoje.has(clienteId);
+  });
+  items.length = 0;
+  items.push(...itemsApposTrava2);
+
+  // Recalcular mapa de items finais com array correto (crítico!)
+  finalItemsByLeadId.clear();
+  for (const item of items) {
+    finalItemsByLeadId.set(item.leadId, item);
+  }
+
+  // Recalcular flags finais após trava 2
+  finalT1.length = 0;
+  finalT1.push(...t1Leads.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "cadencia_t1"));
+  finalT2.length = 0;
+  finalT2.push(...t2Leads.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "cadencia_t2"));
+  finalT3.length = 0;
+  finalT3.push(...t3Leads.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "cadencia_t3"));
+  finalT4.length = 0;
+  finalT4.push(...t4Leads.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "cadencia_t4"));
+  finalT5.length = 0;
+  finalT5.push(...t5Leads.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "cadencia_t5"));
+  finalLD0.length = 0;
+  finalLD0.push(...lembreteLD0Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "lembrete_ld0"));
+  finalPC1.length = 0;
+  finalPC1.push(...pc1Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "pronto_conversa_franca"));
+
   // Agrupar mensagens por clienteId para buscar/criar Conversa
   const mensagensPorCliente = new Map<string, Array<{ item: Item; mensagem: string }>>();
   for (const item of items.filter(it => clienteMessageTypes.has(it.tipo))) {
@@ -1333,6 +1392,25 @@ export async function GET(req: Request) {
         mensagensPorCliente.set(clienteId, []);
       }
       mensagensPorCliente.get(clienteId)!.push({ item, mensagem: item.mensagem });
+    }
+  }
+
+  // PC1: reset modoHumano APÓS travas — IA volta a responder o cliente apenas para os que vão receber a msg
+  if (finalPC1.length > 0) {
+    const clienteIdsPC1Final = finalPC1.map((l: any) => l.clienteId).filter(Boolean);
+    if (clienteIdsPC1Final.length > 0) {
+      const conversasPC1 = await prisma.conversa.findMany({
+        where: { clienteId: { in: clienteIdsPC1Final } },
+        orderBy: { ultimaAtividade: "desc" },
+        distinct: ["clienteId"],
+        select: { id: true },
+      });
+      if (conversasPC1.length > 0) {
+        await prisma.conversa.updateMany({
+          where: { id: { in: conversasPC1.map((c: { id: string }) => c.id) } },
+          data: { modoHumano: false },
+        });
+      }
     }
   }
 
