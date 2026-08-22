@@ -144,6 +144,7 @@ model Lead {
   dataOrcamento     DateTime?
   dataVendaProvavel DateTime?
   briefingEnviadoEm DateTime?
+  vendedorNotificadoEm DateTime?
   origemLead        String?   @default("WHATSAPP")
   criadoEm          DateTime  @default(now())
   atualizadoEm  DateTime   @updatedAt
