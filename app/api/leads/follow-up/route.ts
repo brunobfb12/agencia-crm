@@ -221,7 +221,12 @@ export async function GET(req: Request) {
   function getTouche(lead: any): { toque: number; flag: string } | null {
     // Procura últimas msgs para achar última da IA (SAIDA)
     const conversas = lead.cliente?.conversas ?? [];
-    if (conversas.length === 0) return null;
+    if (conversas.length === 0) {
+      if (lead.id === "cmszylfb1000xtlkxvlk0h4e2" || lead.id === "cmt0y8p8t004jwul4vtxk8q2n") {
+        console.log(`[getTouche] ${lead.id}: sem conversas`);
+      }
+      return null;
+    }
 
     const mensagens = conversas[0]?.mensagens ?? [];
     let ultimaMsgIA: any = null;
@@ -231,7 +236,12 @@ export async function GET(req: Request) {
         break;
       }
     }
-    if (!ultimaMsgIA) return null;
+    if (!ultimaMsgIA) {
+      if (lead.id === "cmszylfb1000xtlkxvlk0h4e2" || lead.id === "cmt0y8p8t004jwul4vtxk8q2n") {
+        console.log(`[getTouche] ${lead.id}: sem SAIDA (${mensagens.length} msgs)`);
+      }
+      return null;
+    }
 
     const ultimaMsgIATime = new Date(ultimaMsgIA.criadoEm).getTime();
     const agora = now.getTime();
@@ -301,6 +311,7 @@ export async function GET(req: Request) {
   }
 
   // Buscar todos os candidatos para T1-T5 em um batch único
+  console.log(`[CADENCIA] Buscando leads com cutoffDate=${CADENCIA_CUTOFF_DATE}, isHorarioComercial=${isHorarioComercial}`);
   const cadenciaLeads = await prisma.lead.findMany({
     where: {
       status: { in: ["LEAD", "AQUECIMENTO"] },
@@ -335,13 +346,21 @@ export async function GET(req: Request) {
   const t4Leads: any[] = [];
   const t5Leads: any[] = [];
 
+  console.log(`[CADENCIA] cadenciaLeads.length=${cadenciaLeads.length}, isHorarioComercial=${isHorarioComercial}`);
   for (const lead of cadenciaLeads) {
-    if (!isHorarioComercial) break;
+    if (!isHorarioComercial) {
+      console.log(`[CADENCIA] Bloqueado por !isHorarioComercial`);
+      break;
+    }
 
     const touche = getTouche(lead);
+    console.log(`[CADENCIA] Lead ${lead.id}: touche=${touche?.toque}`);
     if (!touche) continue;
 
-    if (touche.toque === 1) t1Leads.push({ ...lead, flag: touche.flag });
+    if (touche.toque === 1) {
+      console.log(`[CADENCIA] Adicionando T1 para ${lead.id}`);
+      t1Leads.push({ ...lead, flag: touche.flag });
+    }
     else if (touche.toque === 2) t2Leads.push({ ...lead, flag: touche.flag });
     else if (touche.toque === 3) t3Leads.push({ ...lead, flag: touche.flag });
     else if (touche.toque === 4) t4Leads.push({ ...lead, flag: touche.flag });
