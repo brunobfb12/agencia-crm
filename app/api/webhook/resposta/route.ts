@@ -32,11 +32,11 @@ export async function POST(req: Request) {
   const terminalStatus: LeadStatus[] = ["PERDIDO", "SEM_INTERESSE", "SEM_RESPOSTA", "FOLLOW_UP"];
 
   // Buscar current sempre para verificação de trava + guardrail
-  let current: { status: LeadStatus; briefingEnviadoEm: Date | null; vendedorNotificadoEm: Date | null } | null = null;
+  let current: { status: LeadStatus; briefingEnviadoEm: Date | null } | null = null;
   if (leadId && (novoStatus || observacoes || notificarVendedor)) {
     current = await prisma.lead.findUnique({
       where: { id: leadId },
-      select: { status: true, briefingEnviadoEm: true, vendedorNotificadoEm: true },
+      select: { status: true, briefingEnviadoEm: true },
     });
   }
 
@@ -44,27 +44,13 @@ export async function POST(req: Request) {
   const ehBriefingCompleto = (mensagemVendedor as string)?.includes?.('🛒 PEDIDO PRONTO');
   const briefingSuprimido = notificarVendedor && ehBriefingCompleto && !!current?.briefingEnviadoEm;
 
-  // CAMADA 2B: Trava de tempo para notificações repetidas (EXCETO complementos)
-  const ehComplemento = (mensagemVendedor as string)?.startsWith?.('➕ COMPLEMENTO');
-  const agora = new Date();
-  const minutosSdeUltima = current?.vendedorNotificadoEm
-    ? Math.floor((agora.getTime() - new Date(current.vendedorNotificadoEm).getTime()) / (1000 * 60))
-    : Infinity;
-  const notificacaoSuprimidaPorTempo = notificarVendedor && !ehComplemento && minutosSdeUltima < 30 && !!current?.vendedorNotificadoEm;
-
   // Marca quando briefing completo PASSA (não foi suprimido) — calcula ANTES do if
   let briefingEnviadoEmUpdate: Date | null | undefined;
   if (notificarVendedor && ehBriefingCompleto && !briefingSuprimido) {
     briefingEnviadoEmUpdate = new Date();
   }
 
-  // Marca quando QUALQUER notificação ao vendedor PASSA (não foi suprimida por tempo)
-  let vendedorNotificadoEmUpdate: Date | null | undefined;
-  if (notificarVendedor && !briefingSuprimido && !notificacaoSuprimidaPorTempo) {
-    vendedorNotificadoEmUpdate = new Date();
-  }
-
-  if (leadId && (novoStatus || observacoes || briefingEnviadoEmUpdate !== undefined || vendedorNotificadoEmUpdate !== undefined)) {
+  if (leadId && (novoStatus || observacoes || briefingEnviadoEmUpdate !== undefined)) {
     let statusToApply: LeadStatus | undefined;
     if (novoStatus) {
       const currentIdx = current ? statusOrder.indexOf(current.status as LeadStatus) : -1;
@@ -95,7 +81,6 @@ export async function POST(req: Request) {
           dataRecontato: dataRecontato ? new Date(dataRecontato) : null,
         }),
         ...(briefingEnviadoEmUpdate !== undefined && { briefingEnviadoEm: briefingEnviadoEmUpdate }),
-        ...(vendedorNotificadoEmUpdate !== undefined && { vendedorNotificadoEm: vendedorNotificadoEmUpdate }),
       },
     });
   }
@@ -119,8 +104,8 @@ export async function POST(req: Request) {
     });
     if (lead) {
       aprendizados = lead.empresa.aprendizados ?? null;
-      // Notificar vendedor APENAS se briefing não foi suprimido E notificação não foi suprimida por tempo
-      if (notificarVendedor && !briefingSuprimido && !notificacaoSuprimidaPorTempo) {
+      // Notificar vendedor APENAS se briefing não foi suprimido
+      if (notificarVendedor && !briefingSuprimido) {
         if (lead.vendedorId) {
           // Lead já tem vendedor — notifica ele diretamente (ex: acompanhamento, NF, entrega)
           vendedor = await prisma.vendedor.findFirst({
