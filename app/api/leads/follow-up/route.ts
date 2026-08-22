@@ -1331,10 +1331,18 @@ export async function GET(req: Request) {
   const leadToClienteMap = new Map<string, string>();
   for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
     [aniversarios], [prontoConversa],
-    [semResposta60d], [reativacao90d], [noShowLeads], [t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
+    [semResposta60d], [reativacao90d], [noShowLeads]]) {
     for (const lead of leads) {
       if (lead?.id && (lead as any)?.clienteId) {
         leadToClienteMap.set(lead.id, (lead as any).clienteId);
+      }
+    }
+  }
+  // Adicionar cadência leads depois que foram preenchidos
+  for (const leads of [[t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
+    for (const lead of leads) {
+      if (lead?.id && lead?.cliente?.id) {
+        leadToClienteMap.set(lead.id, lead.cliente.id);
       }
     }
   }
