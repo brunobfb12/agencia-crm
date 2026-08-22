@@ -1328,6 +1328,12 @@ export async function GET(req: Request) {
     }
   }
 
+  // DEBUG: Check if test leads are in leadToClienteMap
+  const debugIds = ["cmszylfb1000xtlkxvlk0h4e2", "cmt0y8p8t004jwul4vtxk8q2n"];
+  for (const id of debugIds) {
+    console.log("[DEBUG-CADENCIA]", id, "clienteId no map:", leadToClienteMap.get(id));
+  }
+
   // ===== TRAVA 2: Uma mensagem por lead por dia (dedup com BD) =====
   // Busca todas as Mensagens SAIDA criadas hoje para os clientes dos items finais
   const todayStart = new Date(now);
@@ -1360,6 +1366,16 @@ export async function GET(req: Request) {
   });
   items.length = 0;
   items.push(...itemsApposTrava2);
+
+  // DEBUG: Check if test leads' items survived TRAVA 2
+  for (const id of debugIds) {
+    const item = items.find(it => it.leadId === id);
+    console.log("[DEBUG-CADENCIA]", id, "item exists before finalItemsByLeadId rebuild:", !!item, "tipo:", item?.tipo);
+  }
+  const idsQueVaoSobreviver = items.map(it => it.leadId);
+  for (const id of debugIds) {
+    console.log("[DEBUG-CADENCIA]", id, "sobrevive trava2:", idsQueVaoSobreviver.includes(id));
+  }
 
   // Recalcular mapa de items finais com array correto (crítico!)
   finalItemsByLeadId.clear();
