@@ -1,0 +1,86 @@
+{
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [50, 150],
+      "parameters": {"httpMethod": "POST", "path": "whatsapp-agencia-ia-v2", "responseMode": "lastNode"}
+    },
+    {
+      "id": "filtrar_extrair",
+      "name": "Filtrar e Extrair",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [350, 150],
+      "parameters": {"jsCode": "const body = $input.item.json.body || $input.item.json; const event = ((body.event || '')).toUpperCase(); const data = body.data || {}; const key = data.key || {}; if (key.fromMe === true) return []; if ((key.remoteJid || '').includes('@g.us')) return []; if (!['MESSAGES_UPSERT', 'MESSAGES.UPSERT'].includes(event)) return []; const instancia = body.instance || body.instanceName || ''; const remoteJid = key.remoteJid || ''; const isLid = remoteJid.includes('@lid'); let telefone = remoteJid.replace(/@[^@]+$/, ''); if (!telefone || !instancia) return []; if (!isLid && telefone.startsWith('55') && telefone.length === 12) { telefone = '55' + telefone.slice(2, 4) + '9' + telefone.slice(4); } const msg = data.message || {}; const extText = msg.extendedTextMessage || {}; const imgMsg = msg.imageMessage || {}; const vidMsg = msg.videoMessage || {}; const audioMsg = msg.audioMessage || msg.pttMessage || null; const docMsg = msg.documentMessage || null; const callMsg = msg.callMessage || null; let tipo = 'TEXTO'; let mensagem = msg.conversation || extText.text || imgMsg.caption || vidMsg.caption || null; if (callMsg) { tipo = 'CHAMADA'; mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']'; } if (!mensagem) { if (callMsg) { tipo = 'CHAMADA'; mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']'; } else if (audioMsg) { tipo = 'AUDIO'; mensagem = '[AUDIO]'; } else if (docMsg) { tipo = 'DOCUMENTO'; mensagem = '[DOCUMENTO]'; } else if (imgMsg.url || imgMsg.directPath) { tipo = 'IMAGEM'; mensagem = '[IMAGEM]'; } else if (vidMsg.url || vidMsg.directPath) { tipo = 'VIDEO'; mensagem = '[VIDEO]'; } else { return []; } } return [{ json: { instancia, telefone, telefoneSend: isLid ? null : telefone, jid: remoteJid, isLid, mensagem, nomeContato: data.pushName || '', messageId: key.id || '', tipo } }];"}
+    },
+    {
+      "id": "buscar_crm",
+      "name": "Buscar Cliente no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 150],
+      "parameters": {"method": "GET", "url": "={{ $env.NEXT_PUBLIC_API_URL }}/api/crm/conversa?telefone={{ $node[\"Filtrar e Extrair\"].json.telefone }}&instancia={{ $node[\"Filtrar e Extrair\"].json.instancia }}"}
+    },
+    {
+      "id": "detectar_optout",
+      "name": "Detectar Opt-Out",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [950, 150],
+      "parameters": {"jsCode": "const mensagem = ($input.first().json.mensagem || '').trim().toUpperCase(); const PALAVRAS_OPTOUT = ['PARAR','SAIR','STOP','CANCELAR','NAO QUERO','NÃO QUERO','DESCADASTRAR','REMOVER']; const ehOptOut = PALAVRAS_OPTOUT.some(p => mensagem === p); if (!ehOptOut) return [{ json: { ...$input.first().json, _optout: false } }]; return [{ json: { ...$input.first().json, _optout: true, _mensagem_resposta: 'Seu pedido foi registrado. Você não receberá mais mensagens automáticas.' } }];"}
+    },
+    {
+      "id": "montar_prompt",
+      "name": "Montar Prompt Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 150],
+      "parameters": {"jsCode": "const crm = $input.item.json; return [{ json: { ...crm, claudePayload: { model: 'claude-haiku-4-5-20251001', max_tokens: 2048, system: 'Você é um assistente de vendas.', messages: [{ role: 'user', content: crm.mensagem || 'Olá' }] } } }];"}
+    },
+    {
+      "id": "chamar_claude",
+      "name": "Chamar Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1550, 150],
+      "parameters": {"method": "POST", "url": "https://api.anthropic.com/v1/messages", "sendBody": true, "bodyParametersJson": true, "headers": {"x-api-key": "={{ $env.ANTHROPIC_API_KEY }}", "anthropic-version": "2023-06-01"}}
+    },
+    {
+      "id": "parsear_ia",
+      "name": "Parsear Resposta IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1850, 150],
+      "parameters": {"jsCode": "const claude = $input.item.json; let ai = { resposta: 'Olá! Como posso ajudar?', novoStatus: null, notificarVendedor: false }; try { const content = claude.content || []; const first = content[0] || {}; let text = first.text || '{}'; const parsed = JSON.parse(text); ai = Object.assign(ai, parsed); } catch(e) { ai.resposta = 'Olá! Como posso te ajudar?'; } return [{ json: { ...claude, aiResposta: ai.resposta, novoStatus: ai.novoStatus } }];"}
+    },
+    {
+      "id": "salvar_crm",
+      "name": "Salvar no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2150, 150],
+      "parameters": {"method": "POST", "url": "={{ $env.NEXT_PUBLIC_API_URL }}/api/crm/conversa", "sendBody": true, "bodyParametersJson": true}
+    },
+    {
+      "id": "enviar_resposta",
+      "name": "Enviar Resposta ao Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2450, 150],
+      "parameters": {"method": "POST", "url": "http://201.76.43.149:8081/message/sendText/{{ $node[\"Filtrar e Extrair\"].json.instancia }}", "sendBody": true, "bodyParametersJson": true, "headers": {"apikey": "={{ $env.EVOLUTION_API_KEY }}"}}
+    }
+  ],
+  "connections": {
+    "webhook": [{"node": "filtrar_extrair", "type": "main", "index": 0}],
+    "filtrar_extrair": [{"node": "buscar_crm", "type": "main", "index": 0}],
+    "buscar_crm": [{"node": "detectar_optout", "type": "main", "index": 0}],
+    "detectar_optout": [{"node": "montar_prompt", "type": "main", "index": 0}],
+    "montar_prompt": [{"node": "chamar_claude", "type": "main", "index": 0}],
+    "chamar_claude": [{"node": "parsear_ia", "type": "main", "index": 0}],
+    "parsear_ia": [{"node": "salvar_crm", "type": "main", "index": 0}],
+    "salvar_crm": [{"node": "enviar_resposta", "type": "main", "index": 0}]
+  }
+}

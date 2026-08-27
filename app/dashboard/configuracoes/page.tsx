@@ -975,6 +975,7 @@ export default function ConfiguracoesPage() {
   const [transferirParaId, setTransferirParaId] = useState("");
   const [transferindo, setTransferindo] = useState(false);
   const [transferirResultado, setTransferirResultado] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [leadsAtivosPendente, setLeadsAtivosPendente] = useState<{ vendedorId: string; quantidade: number } | null>(null);
 
   const [midias, setMidias] = useState<Midia[]>([]);
   const [midiaEmpresaId, setMidiaEmpresaId] = useState("");
@@ -1166,6 +1167,30 @@ export default function ConfiguracoesPage() {
   };
 
   const toggleAtivo = async (v: Vendedor) => {
+    // Se está desativando (v.ativo === true), verifica leads ativos
+    if (v.ativo) {
+      try {
+        const leadsRes = await fetch(`/api/leads?empresaId=${v.empresaId}`);
+        const leads = await leadsRes.json();
+        const leadsAtivos = leads.filter((l: any) =>
+          l.vendedorId === v.id &&
+          !["VENDA_REALIZADA", "PERDIDO", "SEM_INTERESSE"].includes(l.status)
+        );
+
+        // Se há leads ativos, abre modal para transferência
+        if (leadsAtivos.length > 0) {
+          setModalTransferir(v);
+          setTransferirParaId("");
+          setTransferirResultado(null);
+          setLeadsAtivosPendente({ vendedorId: v.id, quantidade: leadsAtivos.length });
+          return;
+        }
+      } catch (e) {
+        console.error("Erro ao buscar leads:", e);
+      }
+    }
+
+    // Desativa direto (sem leads ativos ou está reativando)
     await fetch(`/api/vendedores/${v.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ativo: !v.ativo }) });
     setVendedores((prev) => prev.map((vv) => vv.id === v.id ? { ...vv, ativo: !vv.ativo } : vv));
     showMsg(v.ativo ? "Vendedor desativado" : "Vendedor ativado");
@@ -1190,6 +1215,18 @@ export default function ConfiguracoesPage() {
     const data = await res.json();
     if (data.ok) {
       setTransferirResultado({ ok: true, msg: `${data.leadsTransferidos} lead(s) transferido(s) para ${data.para}` });
+      // Se estava em modo de desativação, desativa agora
+      if (leadsAtivosPendente?.vendedorId === modalTransferir.id) {
+        await fetch(`/api/vendedores/${modalTransferir.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ativo: false }),
+        });
+        setVendedores((prev) => prev.map((vv) => vv.id === modalTransferir.id ? { ...vv, ativo: false } : vv));
+        setLeadsAtivosPendente(null);
+        setModalTransferir(null);
+        showMsg("Carteira transferida e vendedor desativado!");
+      }
     } else {
       setTransferirResultado({ ok: false, msg: data.error ?? "Erro ao transferir" });
     }
@@ -2397,9 +2434,14 @@ export default function ConfiguracoesPage() {
         <div className="w-full max-w-md rounded-2xl overflow-hidden animate-fade-up"
           style={{ background: "var(--bg)", border: "1px solid var(--border-2)", boxShadow: "0 32px 80px rgba(0,0,0,.4)" }}>
           <div className="px-6 py-5" style={{ borderBottom: "1px solid var(--border)" }}>
-            <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Transferir Carteira</h3>
+            <h3 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>
+              {leadsAtivosPendente ? "Desativar Vendedor" : "Transferir Carteira"}
+            </h3>
             <p className="text-[12px] mt-1" style={{ color: "var(--muted-2)" }}>
-              Todos os leads de <strong>{modalTransferir.nome}</strong> serão reatribuídos ao vendedor selecionado.
+              {leadsAtivosPendente
+                ? `Este vendedor tem ${leadsAtivosPendente.quantidade} lead(s) em aberto. Transferir para outro vendedor agora?`
+                : `Todos os leads de ${modalTransferir.nome} serão reatribuídos ao vendedor selecionado.`
+              }
             </p>
           </div>
           <div className="px-6 py-5 space-y-4">
@@ -2431,20 +2473,39 @@ export default function ConfiguracoesPage() {
               </div>
             )}
           </div>
-          <div className="px-6 py-4 flex gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
+          <div className="px-6 py-4 flex flex-col sm:flex-row gap-3 justify-end" style={{ borderTop: "1px solid var(--border)" }}>
             <button
-              onClick={() => { setModalTransferir(null); setTransferirResultado(null); }}
+              onClick={() => { setModalTransferir(null); setTransferirResultado(null); setLeadsAtivosPendente(null); }}
               className="px-4 py-2 rounded-xl text-[13px] font-medium"
               style={{ background: "var(--input)", border: "1px solid var(--border-2)", color: "var(--text-2)" }}>
               {transferirResultado?.ok ? "Fechar" : "Cancelar"}
             </button>
+            {leadsAtivosPendente && !transferirResultado?.ok && (
+              <button
+                onClick={async () => {
+                  await fetch(`/api/vendedores/${modalTransferir.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ativo: false }),
+                  });
+                  setVendedores((prev) => prev.map((vv) => vv.id === modalTransferir.id ? { ...vv, ativo: false } : vv));
+                  setLeadsAtivosPendente(null);
+                  setModalTransferir(null);
+                  setTransferirResultado(null);
+                  showMsg("Vendedor desativado sem transferir carteira.");
+                }}
+                className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                style={{ background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.2)", color: "#fbbf24" }}>
+                Desativar Sem Transferir
+              </button>
+            )}
             {!transferirResultado?.ok && (
               <button
                 onClick={transferirCarteira}
                 disabled={!transferirParaId || transferindo}
                 className="px-5 py-2 rounded-xl text-[13px] font-semibold disabled:opacity-40"
                 style={{ background: "linear-gradient(135deg, rgba(251,146,60,.8), rgba(234,88,12,.8))", color: "white" }}>
-                {transferindo ? "Transferindo..." : "Confirmar Transferência"}
+                {transferindo ? "Transferindo..." : leadsAtivosPendente ? "Transferir e Desativar" : "Confirmar Transferência"}
               </button>
             )}
           </div>

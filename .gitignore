@@ -99,6 +99,12 @@ workflow_prod.json
 workflow_updated.json
 workflow_current.json
 workflow_followup.json
+workflow_atualizado.json
+workflow_compact.json
+workflow_minimal.json
+workflow_put.json
 wf_main.json
 response.json
 node/
+backup_*.json
+temp_payload.json

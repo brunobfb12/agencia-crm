@@ -135,7 +135,7 @@ export async function GET(req: Request) {
       select: { id: true, score: true, observacoes: true, vendedorId: true,
         cliente: { select: { nome: true, telefone: true } },
         empresa: { select: { id: true, nome: true, instanciaWhatsapp: true, nomeIA: true } },
-        vendedor: { select: { nome: true, telefone: true } },
+        vendedor: { select: { nome: true, telefone: true, ativo: true } },
       },
     }),
     // #4: SEM_RESPOSTA 75+ dias → auto SEM_INTERESSE (conversa franca ignorada há 15d+)
@@ -381,7 +381,7 @@ export async function GET(req: Request) {
     include: {
       cliente: { select: { nome: true, telefone: true } },
       empresa: { select: { id: true, nome: true, instanciaWhatsapp: true } },
-      vendedor: { select: { nome: true, telefone: true } },
+      vendedor: { select: { nome: true, telefone: true, ativo: true } },
     },
   }) : [];
 
@@ -631,7 +631,7 @@ export async function GET(req: Request) {
   // AQUECIMENTO 72h+ → SEM_RESPOSTA, mas protege leads com interesse confirmado
   type AqLead = { id: string; score: number; observacoes: string | null; vendedorId: string | null;
     cliente: { nome: string | null; telefone: string }; empresa: { id: string; nome: string; instanciaWhatsapp: string | null; nomeIA: string | null };
-    vendedor: { nome: string; telefone: string } | null };
+    vendedor: { nome: string; telefone: string; ativo: boolean } | null };
   const aqLeads = aquecimentoSemResposta as unknown as AqLead[];
 
   // Quentes: score ≥ 6 OU observacoes tem "CONFIRMADO" → retém, notifica vendedor
@@ -774,7 +774,7 @@ export async function GET(req: Request) {
     );
 
     for (const l of aquecimentoParaProto) {
-      if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone) continue;
+      if (!l.empresa.instanciaWhatsapp || !l.vendedor?.telefone || !l.vendedor?.ativo) continue;
       const nc = l.cliente.nome || l.cliente.telefone;
       const pedido = resumoPedido(l.observacoes);
       const pedidoStr = pedido ? `\n📋 *Pedido:* ${pedido}` : "";
@@ -793,7 +793,7 @@ export async function GET(req: Request) {
   // Quentes: notifica vendedor e mantém em AQUECIMENTO
   if (isHorarioComercial) {
     for (const l of aqQuentes) {
-      if (!l.empresa.instanciaWhatsapp || !l.vendedorId || !l.vendedor?.telefone) continue;
+      if (!l.empresa.instanciaWhatsapp || !l.vendedorId || !l.vendedor?.telefone || !l.vendedor?.ativo) continue;
       const obs = l.observacoes ?? "";
       const lastPVA = getTimestampFromFlag(obs, "PVA");
       const minsSincePVA = lastPVA ? (now.getTime() - lastPVA.getTime()) / (1000 * 60) : Infinity;
@@ -1312,10 +1312,18 @@ export async function GET(req: Request) {
   const leadToClienteMap = new Map<string, string>();
   for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
     [aniversarios], [prontoConversa],
-    [semResposta60d], [reativacao90d], [noShowLeads], [t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
+    [semResposta60d], [reativacao90d], [noShowLeads]]) {
     for (const lead of leads) {
       if (lead?.id && (lead as any)?.clienteId) {
         leadToClienteMap.set(lead.id, (lead as any).clienteId);
+      }
+    }
+  }
+  // Adicionar cadência leads depois que foram preenchidos
+  for (const leads of [[t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
+    for (const lead of leads) {
+      if (lead?.id && lead?.cliente?.id) {
+        leadToClienteMap.set(lead.id, lead.cliente.id);
       }
     }
   }

@@ -1,0 +1,160 @@
+{
+  "name": "WhatsApp Agencia - Atendimento IA v2",
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [50, 150],
+      "parameters": {"httpMethod": "POST", "path": "whatsapp-agencia-ia-v2", "responseMode": "lastNode"}
+    },
+    {
+      "id": "filtrar_extrair",
+      "name": "Filtrar e Extrair",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [350, 150],
+      "parameters": {"jsCode": "const body = $input.item.json.body || $input.item.json; const event = ((body.event || '')).toUpperCase(); const data = body.data || {}; const key = data.key || {}; if (key.fromMe === true) return []; if ((key.remoteJid || '').includes('@g.us')) return []; if (!['MESSAGES_UPSERT', 'MESSAGES.UPSERT'].includes(event)) return []; const instancia = body.instance || body.instanceName || ''; const remoteJid = key.remoteJid || ''; const isLid = remoteJid.includes('@lid'); let telefone = remoteJid.replace(/@[^@]+$/, ''); if (!telefone || !instancia) return []; if (!isLid && telefone.startsWith('55') && telefone.length === 12) { telefone = '55' + telefone.slice(2, 4) + '9' + telefone.slice(4); } const msg = data.message || {}; const extText = msg.extendedTextMessage || {}; const imgMsg = msg.imageMessage || {}; const vidMsg = msg.videoMessage || {}; const audioMsg = msg.audioMessage || msg.pttMessage || null; const docMsg = msg.documentMessage || null; const callMsg = msg.callMessage || null; let tipo = 'TEXTO'; let mensagem = msg.conversation || extText.text || imgMsg.caption || vidMsg.caption || null; if (callMsg) { tipo = 'CHAMADA'; mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']'; } if (!mensagem) { if (callMsg) { tipo = 'CHAMADA'; mensagem = '[CHAMADA ' + (callMsg.isVideo ? 'DE VIDEO' : 'DE VOZ') + ']'; } else if (audioMsg) { tipo = 'AUDIO'; mensagem = '[AUDIO]'; } else if (docMsg) { tipo = 'DOCUMENTO'; mensagem = '[DOCUMENTO]'; } else if (imgMsg.url || imgMsg.directPath) { tipo = 'IMAGEM'; mensagem = '[IMAGEM]'; } else if (vidMsg.url || vidMsg.directPath) { tipo = 'VIDEO'; mensagem = '[VIDEO]'; } else { return []; } } return [{ json: { instancia, telefone, telefoneSend: isLid ? null : telefone, jid: remoteJid, isLid, mensagem, nomeContato: data.pushName || '', messageId: key.id || '', tipo } }];"}
+    },
+    {
+      "id": "if_tipo_audio",
+      "name": "IF - Tipo Audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 400],
+      "parameters": {"conditions": {"string": [{"value1": "={{ $node[\"Filtrar e Extrair\"].json.tipo }}", "operation": "equals", "value2": "AUDIO"}]}}
+    },
+    {
+      "id": "if_tipo_imagem",
+      "name": "IF - Tipo Imagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 650],
+      "parameters": {"conditions": {"string": [{"value1": "={{ $node[\"Filtrar e Extrair\"].json.tipo }}", "operation": "equals", "value2": "IMAGEM"}]}}
+    },
+    {
+      "id": "if_tipo_documento",
+      "name": "IF - Tipo Documento?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 900],
+      "parameters": {"conditions": {"string": [{"value1": "={{ $node[\"Filtrar e Extrair\"].json.tipo }}", "operation": "equals", "value2": "DOCUMENTO"}]}}
+    },
+    {
+      "id": "preparar_audio",
+      "name": "Preparar Áudio Binário",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 400],
+      "parameters": {"jsCode": "const resp = $input.item.json; const ctx = $('Filtrar e Extrair').item.json; const base64 = resp.base64 || resp.data || ''; if (!base64) { return [{ json: { ...ctx, mensagem: '[Audio recebido - nao foi possivel processar]', tipo: 'TEXTO' } }]; } return [{ json: { ...ctx, mensagem: '[AUDIO]', tipo: 'TEXTO', audioBase64: base64 }, binary: { audioFile: { data: base64, mimeType: 'audio/ogg', fileName: 'audio.ogg', fileType: 'audio' } } }];"}
+    },
+    {
+      "id": "preparar_imagem",
+      "name": "Preparar Imagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 650],
+      "parameters": {"jsCode": "const resp = $input.item.json; const ctx = $('Filtrar e Extrair').item.json; const base64 = resp.base64 || resp.data || ''; const mimeType = resp.mimetype || resp.mediaType || 'image/jpeg'; if (!base64) { return [{ json: { ...ctx, instancia: ctx.instancia, telefone: ctx.telefone, mensagem: '[Imagem recebida - nao foi possivel processar]', tipo: 'TEXTO' } }]; } return [{ json: { ...ctx, instancia: ctx.instancia, telefone: ctx.telefone, mensagem: '[IMAGEM]', tipo: 'TEXTO', imagemBase64: base64, imagemMimeType: mimeType.startsWith('image/') ? mimeType : 'image/jpeg' } }];"}
+    },
+    {
+      "id": "preparar_documento",
+      "name": "Preparar Documento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 900],
+      "parameters": {"jsCode": "const resp = $input.item.json; const ctx = $('Filtrar e Extrair').item.json; const base64 = resp.base64 || resp.data || ''; const mimeType = resp.mimetype || resp.mediaType || 'application/pdf'; if (!base64) { return [{ json: { ...ctx, mensagem: '[Documento recebido - nao foi possivel processar]', tipo: 'TEXTO' } }]; } return [{ json: { ...ctx, mensagem: '[DOCUMENTO]', tipo: 'TEXTO', documentoBase64: base64, documentoMimeType: mimeType } }];"}
+    },
+    {
+      "id": "transcrever_audio",
+      "name": "Transcrever Audio (Groq)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1200, 400],
+      "parameters": {"method": "POST", "url": "https://api.groq.com/openai/v1/audio/transcriptions", "sendBody": true, "bodyParametersJson": false, "headers": {"Authorization": "Bearer {{ $env.GROQ_API_KEY }}"}}
+    },
+    {
+      "id": "mesclar_transcricao",
+      "name": "Mesclar Transcrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1500, 400],
+      "parameters": {"jsCode": "const groqResp = $input.item.json; const prep = $('Preparar Áudio Binário').item.json; const ctx = $('Filtrar e Extrair').item.json; const transcricao = (groqResp.text || '').trim(); const fallbackMsg = prep._audioFallback ? prep.mensagem : ''; return [{ json: { ...ctx, instancia: ctx.instancia, telefone: ctx.telefone, mensagem: transcricao || fallbackMsg || '[Audio nao transcrito]', tipo: 'TEXTO' } }];"}
+    },
+    {
+      "id": "buscar_crm",
+      "name": "Buscar Cliente no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1800, 150],
+      "parameters": {"method": "GET", "url": "={{ $env.NEXT_PUBLIC_API_URL }}/api/crm/conversa?telefone={{ $node[\"Filtrar e Extrair\"].json.telefone }}&instancia={{ $node[\"Filtrar e Extrair\"].json.instancia }}"}
+    },
+    {
+      "id": "detectar_optout",
+      "name": "Detectar Opt-Out",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2100, 150],
+      "parameters": {"jsCode": "const mensagem = ($input.first().json.mensagem || '').trim().toUpperCase(); const PALAVRAS_OPTOUT = ['PARAR','SAIR','STOP','CANCELAR','NAO QUERO','NÃO QUERO','DESCADASTRAR','REMOVER']; const ehOptOut = PALAVRAS_OPTOUT.some(p => mensagem === p || mensagem.startsWith(p + ' ')); if (!ehOptOut) return [{ json: { ...$input.first().json, _optout: false } }]; return [{ json: { ...$input.first().json, _optout: true, _mensagem_resposta: 'Seu pedido foi registrado. Você não receberá mais mensagens automáticas de nossa parte.' } }];"}
+    },
+    {
+      "id": "montar_prompt",
+      "name": "Montar Prompt Claude",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2400, 150],
+      "parameters": {"jsCode": "const crm = $input.item.json; return [{ json: { ...crm, claudePayload: { model: 'claude-haiku-4-5-20251001', max_tokens: 2048, system: 'Você é um assistente de vendas inteligente. Responda apenas em JSON com os campos: resposta, novoStatus, notificarVendedor.', messages: [{ role: 'user', content: crm.mensagem || 'Olá' }] } } }];"}
+    },
+    {
+      "id": "chamar_claude",
+      "name": "Chamar Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2700, 150],
+      "parameters": {"method": "POST", "url": "https://api.anthropic.com/v1/messages", "sendBody": true, "bodyParametersJson": true, "headers": {"x-api-key": "={{ $env.ANTHROPIC_API_KEY }}", "anthropic-version": "2023-06-01"}, "body": "={{ { model: $node[\"Montar Prompt Claude\"].json.claudePayload.model, max_tokens: $node[\"Montar Prompt Claude\"].json.claudePayload.max_tokens, system: $node[\"Montar Prompt Claude\"].json.claudePayload.system, messages: $node[\"Montar Prompt Claude\"].json.claudePayload.messages } }}"}
+    },
+    {
+      "id": "parsear_ia",
+      "name": "Parsear Resposta IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [3000, 150],
+      "parameters": {"jsCode": "const claude = $input.item.json; let ai = { resposta: 'Olá! Como posso ajudar?', novoStatus: null, notificarVendedor: false }; try { const content = claude.content || []; const first = content[0] || {}; let text = first.text || '{}'; text = text.replace(/^```[a-z]*\\s*/m, '').replace(/\\s*```\\s*$/m, '').trim(); const parsed = JSON.parse(text); ai = Object.assign(ai, parsed); } catch(e) { ai.resposta = 'Olá! Como posso te ajudar?'; } return [{ json: { ...claude, aiResposta: ai.resposta, novoStatus: ai.novoStatus, notificarVendedor: ai.notificarVendedor } }];"}
+    },
+    {
+      "id": "salvar_crm",
+      "name": "Salvar no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3300, 150],
+      "parameters": {"method": "POST", "url": "={{ $env.NEXT_PUBLIC_API_URL }}/api/crm/conversa", "sendBody": true, "bodyParametersJson": true}
+    },
+    {
+      "id": "enviar_resposta",
+      "name": "Enviar Resposta ao Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3600, 150],
+      "parameters": {"method": "POST", "url": "http://201.76.43.149:8080/message/sendText/{{ $node[\"Filtrar e Extrair\"].json.instancia }}", "sendBody": true, "bodyParametersJson": true, "headers": {"apikey": "={{ $env.EVOLUTION_API_KEY }}"}, "body": "={{ { number: $node[\"Filtrar e Extrair\"].json.telefoneSend, textMessage: { text: $node[\"Parsear Resposta IA\"].json.aiResposta } } }}"}
+    }
+  ],
+  "settings": {},
+  "connections": {
+    "webhook": {"main": [[{"node": "filtrar_extrair", "type": "main", "index": 0}]]},
+    "filtrar_extrair": {"main": [[{"node": "buscar_crm", "type": "main", "index": 0}, {"node": "if_tipo_audio", "type": "main", "index": 0}, {"node": "if_tipo_imagem", "type": "main", "index": 0}, {"node": "if_tipo_documento", "type": "main", "index": 0}]]},
+    "if_tipo_audio": {"main": [[{"node": "preparar_audio", "type": "main", "index": 0}]], "true": [[{"node": "preparar_audio", "type": "main", "index": 0}]]},
+    "preparar_audio": {"main": [[{"node": "transcrever_audio", "type": "main", "index": 0}]]},
+    "transcrever_audio": {"main": [[{"node": "mesclar_transcricao", "type": "main", "index": 0}]]},
+    "mesclar_transcricao": {"main": [[{"node": "buscar_crm", "type": "main", "index": 0}]]},
+    "if_tipo_imagem": {"main": [[{"node": "preparar_imagem", "type": "main", "index": 0}]], "true": [[{"node": "preparar_imagem", "type": "main", "index": 0}]]},
+    "preparar_imagem": {"main": [[{"node": "buscar_crm", "type": "main", "index": 0}]]},
+    "if_tipo_documento": {"main": [[{"node": "preparar_documento", "type": "main", "index": 0}]], "true": [[{"node": "preparar_documento", "type": "main", "index": 0}]]},
+    "preparar_documento": {"main": [[{"node": "buscar_crm", "type": "main", "index": 0}]]},
+    "buscar_crm": {"main": [[{"node": "detectar_optout", "type": "main", "index": 0}]]},
+    "detectar_optout": {"main": [[{"node": "montar_prompt", "type": "main", "index": 0}]]},
+    "montar_prompt": {"main": [[{"node": "chamar_claude", "type": "main", "index": 0}]]},
+    "chamar_claude": {"main": [[{"node": "parsear_ia", "type": "main", "index": 0}]]},
+    "parsear_ia": {"main": [[{"node": "salvar_crm", "type": "main", "index": 0}]]},
+    "salvar_crm": {"main": [[{"node": "enviar_resposta", "type": "main", "index": 0}]]}
+  }
+}

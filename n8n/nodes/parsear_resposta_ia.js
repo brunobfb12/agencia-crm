@@ -15,9 +15,10 @@ try {
   const parsed = JSON.parse(text);
   ai = Object.assign(ai, parsed);
 } catch(e) {
-  ai.resposta = 'Ola! Estou aqui para ajudar. Como posso te atender?';
+  const rawText = (claude.content?.[0]?.text || '').trim();
+  ai.resposta = rawText.length > 20 ? rawText : 'Ola! Estou aqui para ajudar. Como posso te atender?';
   ai.notificarGerente = true;
-  ai.mensagemGerente = 'ERRO: IA retornou JSON invalido. Detalhe: ' + e.message.slice(0, 120) + '. Verifique o N8N e reinicie o atendimento manualmente se necessario.';
+  ai.mensagemGerente = 'AVISO: IA retornou JSON invalido — resposta raw enviada ao cliente. Verificar se e recorrente. Detalhe: ' + e.message.slice(0, 120);
 }
 
 if (!ai.resposta) ai.resposta = 'Ola! Como posso te ajudar hoje?';
