@@ -170,10 +170,47 @@ Isso significa que uma vez que o cliente interage com a IA e ela responde, nenhu
 
 ---
 
-## Próximos Passos Recomendados
+## Correção Implementada: T1-T5 Passam pela TRAVA 2
 
-1. ✅ **Deploy da correção** via Easypanel (colchetes duplos)
-2. ⚠️ **Validar TRAVA 2** — Decidir se deve ser global ou por tipo de cadência
-3. 🔑 **Revogar chaves vazadas** e configurar secrets via variáveis de ambiente
-4. 📝 **Implementar P24/P48/P72** — Iterar sobre pressao*h arrays e gerar items
-5. 📊 **Monitorar logs** — Após deploy, verificar se cadências começam a fluir normalmente amanhã (quando TRAVA 2 reset)
+**Commit:** `acffecc` (2026-09-14)
+
+**Mudança:**
+- T1-T5 agora passam pela TRAVA 2 sem serem filtrados
+- Foram adicionados à `cadeciaTiposExclusosTrava2`
+- Excluídos do cálculo de `clienteIdsItems` (não contam para bloqueio)
+- Sempre retornam `true` no filtro final
+
+**Validação:** 
+- Items ANTES TRAVA2 = 6 ✓
+- Items DEPOIS TRAVA2 = 6 (antes era 0) ✓
+- Items DEPOIS slice = 5 ✓
+
+---
+
+## Pendências para Próxima Sessão
+
+### ⚠️ TRAVA 2: Offset de Timezone (BRT vs UTC)
+**Localização:** Linha ~1349, `todayStart.setHours(0,0,0,0)`
+
+**Problema:** 
+- Container não tem TZ definida → calcula meia-noite em UTC
+- CADENCIA_HOJE_CUTOFF usa lógica de BRT (3 horas atrás)
+- TRAVA 2 usa UTC direto (sem offset)
+- Resultado: janela de "hoje" está deslocada em ~3 horas para aniversário/reativação/pós-venda
+
+**Impacto:** Esses tipos podem ser bloqueados fora da janela esperada. T1-T5 não são afetados (nunca são bloqueados).
+
+**Solução:** Alinhar `todayStart` com `CADENCIA_HOJE_CUTOFF` (ambos em BRT) ou definir TZ=America/Sao_Paulo no container.
+
+### 🔑 Segurança: Chaves Vazadas
+- Groq API key em commits
+- Anthropic API key em commits
+- Evolution API hardcoded
+
+### 📝 Implementar P24/P48/P72
+- Linhas ~547-587 constroem arrays mas nunca os iteran
+- msgPressao() existe mas não é chamada
+- Pressão de vendedor (24h/48h/72h) não dispara
+
+### 📊 Monitorar
+- Após deploy, verificar logs amanhã quando TRAVA 2 reset (00:00 BRT)
