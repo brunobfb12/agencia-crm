@@ -1318,9 +1318,9 @@ export async function GET(req: Request) {
 
   // Mapa de leadId → clienteId para vincular mensagens
   const leadToClienteMap = new Map<string, string>();
-  for (const leads of [[posVenda], [reativacao15d], [reativacao30d], [recontatos],
-    [aniversarios], [prontoConversa],
-    [semResposta60d], [reativacao90d], [noShowLeads]]) {
+  for (const leads of [posVenda, reativacao15d, reativacao30d, recontatos,
+    aniversarios, prontoConversa,
+    semResposta60d, reativacao90d, noShowLeads]) {
     for (const lead of leads) {
       if (lead?.id && (lead as any)?.clienteId) {
         leadToClienteMap.set(lead.id, (lead as any).clienteId);
@@ -1328,7 +1328,7 @@ export async function GET(req: Request) {
     }
   }
   // Adicionar cadência leads depois que foram preenchidos
-  for (const leads of [[t1Leads], [t2Leads], [t3Leads], [t4Leads], [t5Leads]]) {
+  for (const leads of [t1Leads, t2Leads, t3Leads, t4Leads, t5Leads]) {
     for (const lead of leads) {
       if (lead?.id && lead?.cliente?.id) {
         leadToClienteMap.set(lead.id, lead.cliente.id);
@@ -1336,7 +1336,7 @@ export async function GET(req: Request) {
     }
   }
   // Vendas também possuem leads
-  for (const vendas of [[vendasD7], [vendasD20], [vendasD28], [vendasD45]]) {
+  for (const vendas of [vendasD7, vendasD20, vendasD28, vendasD45]) {
     for (const venda of vendas) {
       if (venda?.lead?.id && (venda as any)?.lead?.clienteId) {
         leadToClienteMap.set(venda.lead.id, (venda as any).lead.clienteId);
