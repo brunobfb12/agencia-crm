@@ -1346,11 +1346,16 @@ export async function GET(req: Request) {
 
   // ===== TRAVA 2: Uma mensagem por lead por dia (dedup com BD) =====
   // Busca todas as Mensagens SAIDA criadas hoje para os clientes dos items finais
+  // EXCETO: T1-T5 passam pela TRAVA 2 sem serem filtrados
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
+  const cadeciaTiposExclusosTrava2 = new Set([
+    "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5"
+  ]);
+
   const clienteIdsItems = new Set<string>();
-  for (const item of items.filter(it => clienteMessageTypes.has(it.tipo))) {
+  for (const item of items.filter(it => clienteMessageTypes.has(it.tipo) && !cadeciaTiposExclusosTrava2.has(it.tipo))) {
     const clienteId = leadToClienteMap.get(item.leadId);
     if (clienteId) clienteIdsItems.add(clienteId);
   }
@@ -1369,8 +1374,10 @@ export async function GET(req: Request) {
   const clientesComMsgHoje = new Set(mensagensHoje.map(m => m.conversa.clienteId));
 
   // Aplicar TRAVA 2: remover items cujo cliente já recebeu msg SAIDA hoje
+  // EXCETO: T1-T5 sempre passam (não são filtrados)
   const itemsApposTrava2 = items.filter(it => {
     if (!clienteMessageTypes.has(it.tipo)) return true; // Mantém items de vendedor/gerente
+    if (cadeciaTiposExclusosTrava2.has(it.tipo)) return true; // T1-T5 sempre passam
     const clienteId = leadToClienteMap.get(it.leadId);
     return clienteId && !clientesComMsgHoje.has(clienteId);
   });
