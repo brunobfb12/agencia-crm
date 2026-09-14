@@ -1,0 +1,37 @@
+[33mcommit 9c45575b6ba294015af46714cdb2b5f68e66ec96[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: brunobfb12 <boletomodaweb@gmail.com>
+Date:   Wed Aug 26 21:07:40 2026 -0300
+
+    merge: consolidate vendedor ativo checks + transfer modal, remove workflow JSONs with API secrets
+
+ .gitignore                                         |   6 [32m+[m
+ FIX_WORKFLOW_DOMINGO.md                            | 118 [32m+++++[m
+ app/api/leads/follow-up/route.ts                   |  20 [32m+[m[31m-[m
+ app/api/webhook/resposta/route.ts                  |  27 [32m+[m[31m-[m
+ app/dashboard/configuracoes/page.tsx               |  71 [32m++[m[31m-[m
+ dimensionar_chamadas_perdidas.mjs                  |  76 [32m+++[m
+ n8n-rastreamento-vendedor.js                       |  92 [32m++++[m
+ n8n/nodes/parsear_resposta_ia.js                   |   5 [32m+[m[31m-[m
+ n8n_patch_filtrar_extrair.js                       |  99 [32m++++[m
+ node                                               |   0
+ node_patch.json                                    |   1 [32m+[m
+ pagina-indefinidos.tsx                             | 228 [32m++++++++[m
+ perfis-cliente-default.json                        |  54 [32m++[m
+ prisma.zip                                         | Bin [31m0[m -> [32m316684[m bytes
+ .../migration.sql                                  |   2 [32m+[m
+ prisma/schema.prisma                               |   1 [32m+[m
+ scripts/_debug_lead.mjs                            |  43 [32m++[m
+ scripts/add_nodes_to_workflow.sh                   | 256 [32m+++++++++[m
+ scripts/complete_workflow_corrected.json           | 160 [32m++++++[m
+ scripts/create_n8n_workflow.ps1                    | 340 [32m++++++++++++[m
+ scripts/empresas.json                              |   1 [32m+[m
+ scripts/final_workflow.json                        |  86 [32m+++[m
+ scripts/migrate_telefone_principal.mjs             |  10 [32m+[m
+ scripts/restore_04jun.mjs                          | 121 [32m+++++[m
+ scripts/test_chamada_lid.mjs                       |  67 [32m+++[m
+ scripts/update_n8n_filtrar.ps1                     |  57 [32m++[m
+ temp_Filtrar_e_Extrair_aoVivo.js                   |  94 [32m++++[m
+ temp_Montar_Prompt_Claude_aoVivo.js                | 576 [32m+++++++++++++++++++++[m
+ temp_Preparar_Imagem_aoVivo.js                     |  40 [32m++[m
+ temp_prep_img.js                                   |  40 [32m++[m
+ 30 files changed, 2673 insertions(+), 18 deletions(-)

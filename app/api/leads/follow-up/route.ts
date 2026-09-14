@@ -10,6 +10,14 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
+  // Meia-noite de hoje em BRT = 03:00 UTC do mesmo dia
+  const hojeBRT = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const CADENCIA_HOJE_CUTOFF = new Date(Date.UTC(
+    hojeBRT.getUTCFullYear(),
+    hojeBRT.getUTCMonth(),
+    hojeBRT.getUTCDate(),
+    3, 0, 0, 0
+  ));
   const nowBRTHour = (now.getUTCHours() - 3 + 24) % 24;
   const nowBRTDay = new Date(now.getTime() - 3 * 60 * 60 * 1000).getUTCDay();
   const isDomingo = nowBRTDay === 0;
@@ -304,7 +312,7 @@ export async function GET(req: Request) {
   const cadenciaLeads = await prisma.lead.findMany({
     where: {
       status: { in: ["LEAD", "AQUECIMENTO"] },
-      atualizadoEm: { gte: cutoffDate },
+      atualizadoEm: { gte: CADENCIA_HOJE_CUTOFF },
       empresa: { ativa: true },
       cliente: { telefone: { not: "" } },
     },
@@ -328,6 +336,8 @@ export async function GET(req: Request) {
     },
   });
 
+  console.log(`[PERGUNTA A] cadenciaLeads selected: ${cadenciaLeads.length} leads`);
+
   // Agrupar leads por toque
   const t1Leads: any[] = [];
   const t2Leads: any[] = [];
@@ -347,6 +357,8 @@ export async function GET(req: Request) {
     else if (touche.toque === 4) t4Leads.push({ ...lead, flag: touche.flag });
     else if (touche.toque === 5) t5Leads.push({ ...lead, flag: touche.flag });
   }
+
+  console.log(`[PERGUNTA A] getTouche() passed: T1=${t1Leads.length}, T2=${t2Leads.length}, T3=${t3Leads.length}, T4=${t4Leads.length}, T5=${t5Leads.length}`);
 
   // Lógica: leads com T5 marcado há mais de 24h → SEM_RESPOSTA
   const t5Timeout = isHorarioComercial ? cadenciaLeads.filter((lead: any) => {
@@ -1452,5 +1464,11 @@ export async function GET(req: Request) {
     }).catch(() => null);
   }
 
-  return NextResponse.json({ total: items.length, items });
+  // Limitar a 5 items máximo (trava de segurança permanente)
+  const itemsFinais = items.slice(0, 5);
+
+  console.log(`[PERGUNTA A] Total items before slice: ${items.length}, Final items: ${itemsFinais.length}`);
+  console.log(`[PERGUNTA A] itemsFinais types: ${itemsFinais.map(i => i.tipo).join(', ')}`);
+
+  return NextResponse.json({ total: itemsFinais.length, items: itemsFinais });
 }
