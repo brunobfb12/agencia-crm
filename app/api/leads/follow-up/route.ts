@@ -1467,8 +1467,22 @@ export async function GET(req: Request) {
   // Limitar a 5 items máximo (trava de segurança permanente)
   const itemsFinais = items.slice(0, 5);
 
-  console.log(`[PERGUNTA A] Total items before slice: ${items.length}, Final items: ${itemsFinais.length}`);
-  console.log(`[PERGUNTA A] itemsFinais types: ${itemsFinais.map(i => i.tipo).join(', ')}`);
+  // DEBUG: incluir dados de diagnóstico na resposta
+  const debugData = {
+    cadenciaLeadsCount: cadenciaLeads.length,
+    t1Count: t1Leads.length,
+    t2Count: t2Leads.length,
+    t3Count: t3Leads.length,
+    t4Count: t4Leads.length,
+    t5Count: t5Leads.length,
+    totalItemsBeforeSlice: items.length,
+    isHorarioComercial,
+    CADENCIA_HOJE_CUTOFF: CADENCIA_HOJE_CUTOFF.toISOString(),
+  };
 
-  return NextResponse.json({ total: itemsFinais.length, items: itemsFinais });
+  return NextResponse.json({
+    total: itemsFinais.length,
+    items: itemsFinais,
+    _debug: debugData
+  });
 }
