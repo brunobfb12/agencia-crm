@@ -915,7 +915,7 @@ export async function GET(req: Request) {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "cadencia_t1",
-          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Passando pra tirar qualquer dúvida! 😊`
+          `Oi${nome}! ${ia} aqui da ${l.empresa.nome} 😊 Só pra você saber: a gente facilita o pagamento — à vista ou parcelado no cartão. Quer que eu veja a melhor condição pro seu caso?`
         );
       })
   );
@@ -927,7 +927,7 @@ export async function GET(req: Request) {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "cadencia_t2",
-          `Oi${nome}! Ainda por aqui pra ajudar 😊 Ficou algo em dúvida?`
+          `Oi${nome}! Se ficou alguma dúvida sobre qual opção atende melhor o que você precisa, me conta com mais detalhes que eu te ajudo a escolher 😊`
         );
       })
   );
@@ -939,7 +939,7 @@ export async function GET(req: Request) {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "cadencia_t3",
-          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Você ainda tem interesse? Gostaria de finalizar? 👊`
+          `Oi${nome}! Quer que eu confirme a disponibilidade e o prazo de entrega do que você perguntou? Assim você já sabe certinho antes de decidir 😊`
         );
       })
   );
@@ -951,7 +951,7 @@ export async function GET(req: Request) {
         const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
         const ia = l.empresa.nomeIA ?? "Eu";
         return buildItem(l, "cadencia_t4",
-          `Oi${nome}! ${ia} aqui, da ${l.empresa.nome}. Consegui te ajudar com o que precisava? Se quiser retomar, é só me chamar 😊`
+          `Oi${nome}! Se preferir falar direto com um dos nossos vendedores pra fechar ou tirar dúvida de valor, me avisa que eu te passo pro atendimento agora 😊`
         );
       })
   );
