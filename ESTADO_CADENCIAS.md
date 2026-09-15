@@ -244,5 +244,16 @@ Isso significa que uma vez que o cliente interage com a IA e ela responde, nenhu
 - msgPressao() existe mas não é chamada
 - Pressão de vendedor (24h/48h/72h) não dispara
 
+### 📄 Documentos Não Lidos (Excel, Word, PDF)
+**Problema:** Cliente envia .xlsx, .docx ou .pdf pelo WhatsApp e a IA não lê o conteúdo.
+
+**Investigação necessária:**
+1. No workflow principal de N8N (inbound message): existem nós que tratam `documentMessage`? Existem tratadores de imagem/áudio?
+2. O que acontece hoje com documentMessage — é ignorado, vira texto vazio, ou quebra o fluxo?
+3. A IA responde algo nesses casos ou fica muda?
+4. Frequência: quantas mensagens com documento nos últimos 30 dias? (buscar em logs Evolution ou tabela Mensagem)
+
+**Ação:** Quando atacar, comece mapeando o workflow de inbound para entender como documentMessage é tratado.
+
 ### 📊 Monitorar
 - Após deploy, verificar logs amanhã quando TRAVA 2 reset (00:00 BRT)

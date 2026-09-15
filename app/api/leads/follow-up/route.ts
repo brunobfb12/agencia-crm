@@ -1406,9 +1406,12 @@ export async function GET(req: Request) {
   finalPC1.length = 0;
   finalPC1.push(...pc1Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "pronto_conversa_franca"));
 
+  // Limitar a 5 items máximo ANTES de salvar no banco (evita registros fantasma)
+  const itemsFinais = items.slice(0, 5);
+
   // Agrupar mensagens por clienteId para buscar/criar Conversa
   const mensagensPorCliente = new Map<string, Array<{ item: Item; mensagem: string }>>();
-  for (const item of items.filter(it => clienteMessageTypes.has(it.tipo))) {
+  for (const item of itemsFinais.filter(it => clienteMessageTypes.has(it.tipo))) {
     const clienteId = leadToClienteMap.get(item.leadId);
     if (clienteId) {
       if (!mensagensPorCliente.has(clienteId)) {
@@ -1466,9 +1469,6 @@ export async function GET(req: Request) {
       },
     }).catch(() => null);
   }
-
-  // Limitar a 5 items máximo (trava de segurança permanente)
-  const itemsFinais = items.slice(0, 5);
 
   return NextResponse.json({ total: itemsFinais.length, items: itemsFinais });
 }
