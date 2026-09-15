@@ -1353,12 +1353,15 @@ export async function GET(req: Request) {
 
   // Aplicar TRAVA 2: remover items cujo cliente já recebeu msg SAIDA hoje
   // EXCETO: T1-T5 sempre passam (não são filtrados)
+  const pc1Antes = items.filter(it => it.tipo === "pronto_conversa_franca").length;
   const itemsApposTrava2 = items.filter(it => {
     if (!clienteMessageTypes.has(it.tipo)) return true; // Mantém items de vendedor/gerente
-    if (cadeciaTiposExclusosTrava2.has(it.tipo)) return true; // T1-T5 sempre passam
+    if (cadeciaTiposExclusosTrava2.has(it.tipo)) return true; // T1-T5 e PC1 sempre passam
     const clienteId = leadToClienteMap.get(it.leadId);
     return clienteId && !clientesComMsgHoje.has(clienteId);
   });
+  const pc1Depois = itemsApposTrava2.filter(it => it.tipo === "pronto_conversa_franca").length;
+  console.log(`[DEBUG] PC1 antes TRAVA2=${pc1Antes}, depois=${pc1Depois}`);
   items.length = 0;
   items.push(...itemsApposTrava2);
 
