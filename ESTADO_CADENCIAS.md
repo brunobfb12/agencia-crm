@@ -187,7 +187,39 @@ Isso significa que uma vez que o cliente interage com a IA e ela responde, nenhu
 
 ---
 
+## Execução: Marcação SEM_INTERESSE (2026-09-15 02:35 UTC)
+
+**Commit/Ação:** Marcados 756 leads antigos (atualizadoEm < 2026-09-01) como SEM_INTERESSE
+
+**Resultado:**
+- Leads marcados: 756 ✅
+- Backup: /tmp/backup_sem_interesse_1789439737980.json (104 KB)
+- Leads preservados (ORCAMENTO_ENVIADO + POS_VENDA): 38
+- Impacto: Cadências retroativas reduzidas a zero (exceto 144 em PRONTO_CONVERSA_FRANCA recente)
+
+---
+
 ## Pendências para Próxima Sessão
+
+### 🔴 CRÍTICO: Zero Vendas Registradas em 794 Leads Antigos
+**Localização:** Tabela `Venda`
+
+**Achado:** Entre 794 leads antigos (anteriores a 2026-09-01), zero registros de Venda. Isso é improvável para uma loja com meses de operação.
+
+**Impacto:**
+- Dashboard de faturamento pode estar incorreto
+- Ranking de vendedores não reflete vendas reais
+- Ticket médio não calculado
+- Follow-up de recompra (D7, D20, D28, D45) não dispara corretamente
+
+**Ação:** Investigar se:
+1. O webhook de venda está registrando corretamente
+2. Há vendas em outro lugar (tabela diferente ou integração externa)
+3. Qual é a fonte da verdade para faturamento
+
+**Para o próximo ciclo:** Rodar auditoria de vendas vs. faturamento real em N8N/Nuvemshop.
+
+---
 
 ### ⚠️ TRAVA 2: Offset de Timezone (BRT vs UTC)
 **Localização:** Linha ~1349, `todayStart.setHours(0,0,0,0)`
