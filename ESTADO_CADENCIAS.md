@@ -257,3 +257,197 @@ Isso significa que uma vez que o cliente interage com a IA e ela responde, nenhu
 
 ### 📊 Monitorar
 - Após deploy, verificar logs amanhã quando TRAVA 2 reset (00:00 BRT)
+
+---
+
+## 🔴 Bug Corrigido: Documentos Não-PDF Quebravam Workflow (2026-09-15)
+
+### Problema Identificado
+
+Quando cliente enviava documento em formato não-PDF (.xlsx, .docx, .csv, etc), o workflow de inbound quebrava com erro 400 na API Anthropic.
+
+**Root cause:** API Anthropic só aceita `application/pdf` no bloco `type: 'document'`. Outros formatos são rejeitados categoricamente.
+
+**Sequência do bug:**
+1. Cliente envia .xlsx via WhatsApp
+2. Nó 34 "Preparar Documento" extrai base64 com `mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'`
+3. Nó 13 "Montar Prompt Claude" monta bloco `type: 'document'` com mimeType incorreto
+4. Nó 14 envia para API Anthropic
+5. API rejeita com HTTP 400: "Document type must be PDF (application/pdf), got [formato]"
+6. Workflow falha
+7. Cliente nunca recebe resposta
+
+**Impacto:** Mensagem era salva no CRM como `[Documento]` mas a Luz nunca respondia (silêncio total).
+
+### Correção Aplicada
+
+**Workflow:** `zsjXvvSqTBnAqK3g` (WhatsApp Agencia - Atendimento IA v2 Audio+Midia)  
+**Nó modificado:** Nó 13 — "Montar Prompt Claude"  
+**Data:** 2026-09-15 10:55 BRT  
+**Status:** ✅ APLICADA, AGUARDANDO TESTE REAL
+
+#### Mudança de Código
+
+**Antes:**
+```javascript
+const userMsgContent = imagemBase64
+  ? [{ type: 'image', ... }, { type: 'text', text: userContent }]
+  : documentoBase64
+  ? [{ type: 'document', source: { type: 'base64', media_type: documentoMimeType, data: documentoBase64 } }, { type: 'text', text: userContent }]
+  : userContent;
+```
+
+**Depois:**
+```javascript
+const avisoDocumento = (documentoBase64 && documentoMimeType !== 'application/pdf')
+  ? '\n\n⚠️ CONTEXTO: Cliente enviou um arquivo em formato ' + documentoMimeType + '. Você só consegue processar PDFs. Peça para o cliente enviar a informação por mensagem de texto ou enviar em PDF.'
+  : '';
+
+const userMsgContent = imagemBase64
+  ? [{ type: 'image', source: { type: 'base64', media_type: imagemMimeType, data: imagemBase64 } }, { type: 'text', text: userContent + avisoDocumento }]
+  : (documentoBase64 && documentoMimeType === 'application/pdf')
+  ? [{ type: 'document', source: { type: 'base64', media_type: documentoMimeType, data: documentoBase64 } }, { type: 'text', text: userContent }]
+  : userContent + avisoDocumento;
+```
+
+#### Lógica da Proteção
+
+- **Se tem imagem:** envia imagem + texto (com aviso se também tiver documento não-PDF)
+- **Se tem documento PDF:** envia documento + texto (como antes)
+- **Se tem documento não-PDF:** envia apenas texto + aviso contextual para a Luz
+- **Se sem documento:** texto puro (como antes)
+
+#### Resultado Esperado
+
+| Cenário | Antes | Depois |
+|---------|-------|--------|
+| PDF (.pdf) | ✅ Funciona | ✅ Idem (sem mudança) |
+| .xlsx, .docx, .csv | ❌ Erro 400 | ✅ Texto + contexto |
+| Imagem | ✅ Funciona | ✅ Idem (sem mudança) |
+| Sem documento | ✅ Texto puro | ✅ Idem (sem mudança) |
+
+**Novo comportamento:** Cliente envia .xlsx → Luz recebe contexto clara → Luz pede em texto ou PDF → Cliente envia em PDF ou digita → Fluxo continua normal. **Zero erro 400.**
+
+### Validação
+
+- ✅ Workflow permanece ATIVO
+- ✅ 44 nós intactos
+- ✅ Código novo contém `avisoDocumento` e check `documentoMimeType !== 'application/pdf'`
+- ⏳ **Aguardando teste real:** nenhum .xlsx foi enviado ao WhatsApp para validar comportamento
+
+### Pendência: Extração de Texto de Xlsx/Docx
+
+Para suportar **leitura real** de .xlsx, .docx sem conversão manual do cliente, seria necessário:
+
+**Opção A: Via API interna**
+- Criar endpoint `/api/midias/extrair-texto` que:
+  - Receba arquivo base64 + mimeType
+  - Use **SheetJS** (xlsx) ou **Mammoth** (docx) para converter para texto
+  - Retorne texto puro para o prompt
+- N8N chama este endpoint antes de "Montar Prompt Claude"
+
+**Opção B: Node.js direto no N8N**
+- Instalar `xlsx` e `mammoth` no container N8N
+- Nó customizado que processa arquivo antes de "Montar Prompt Claude"
+
+**Status:** Ambas as bibliotecas já estão disponíveis no ambiente do CRM.
+
+**Decisão pendente:** Priorizar leitura de xlsx/docx ou deixar como "enviar em PDF"?
+
+---
+
+## 📝 Textos de Cadências T1-T4 Atualizados (2026-09-15)
+
+**Commit:** `3792752061df061d6595b764d5e9a3ee03409f25`  
+**Arquivo:** `app/api/leads/follow-up/route.ts` (linhas 918-955)
+
+### Mudanças Aplicadas
+
+**T1** (linha 918) — Foco em formas de pagamento
+```javascript
+`Oi${nome}! ${ia} aqui da ${l.empresa.nome} 😊 Só pra você saber: a gente facilita o pagamento — à vista ou parcelado no cartão. Quer que eu veja a melhor condição pro seu caso?`
+```
+
+**T2** (linha 930) — Dúvidas sobre opções e escolha
+```javascript
+`Oi${nome}! Se ficou alguma dúvida sobre qual opção atende melhor o que você precisa, me conta com mais detalhes que eu te ajudo a escolher 😊`
+```
+
+**T3** (linha 942) — Confirmação de disponibilidade e prazo
+```javascript
+`Oi${nome}! Quer que eu confirme a disponibilidade e o prazo de entrega do que você perguntou? Assim você já sabe certinho antes de decidir 😊`
+```
+
+**T4** (linha 954) — Oferecimento de atendimento com vendedor
+```javascript
+`Oi${nome}! Se preferir falar direto com um dos nossos vendedores pra fechar ou tirar dúvida de valor, me avisa que eu te passo pro atendimento agora 😊`
+```
+
+**T5** (linha 966) — Sem mudança (mantém original)
+
+### Estrutura Preservada
+- ✅ Template literals mantidos
+- ✅ Variáveis `${nome}`, `${ia}`, `${l.empresa.nome}` preservadas
+- ✅ Pontuação e emojis alinhados com tom de marca
+
+### Validação TypeScript
+```
+npx tsc --noEmit → Exit code 2
+Erros pré-existentes (não causados por esta mudança):
+  • app/dashboard/central/page.tsx(799): Property 'instanciaVendedorOk' does not exist
+  • app/dashboard/central/page.tsx(842, 855): 'w.setup' is possibly 'null'
+  • app/dashboard/configuracoes/page.tsx(175): Property 'instanciaVendedorOk' does not exist
+  • next.config.ts(6): 'eslint' does not exist in NextConfig
+```
+
+**Status:** ✅ Mudanças aplicadas e pushadas. Erros TypeScript são pré-existentes.
+
+---
+
+### 🔴 PENDÊNCIA: Textos de Cadência Devem Ser Configuráveis
+
+**Problema:** Os textos de T1-T5 estão hardcoded em `route.ts`, mas o produto é **multi-tenant** (múltiplas empresas).
+
+**Situação atual:**
+- Textos estão em código-fonte
+- Mesmo para diferentes empresas
+- Requer deploy para alterar
+- Não escalável
+
+**Solução recomendada:**
+Adicionar campos configuráveis na tabela `Empresa` (como já existem `mensagemIndicacao` e `mensagemPosVenda`):
+
+```prisma
+model Empresa {
+  // ... campos existentes ...
+  
+  // Textos de cadências (nullable, fallback para defaults)
+  cadenciaT1  String?  @default("Oi${nome}! ${ia} aqui da ${l.empresa.nome} 😊 Só pra você saber...")
+  cadenciaT2  String?  @default("Oi${nome}! Se ficou alguma dúvida...")
+  cadenciaT3  String?  @default("Oi${nome}! Quer que eu confirme...")
+  cadenciaT4  String?  @default("Oi${nome}! Se preferir falar direto...")
+  cadenciaT5  String?  @default("Oi${nome}! Vou parar de te chamar...")
+}
+```
+
+**Alteração no código:**
+```javascript
+// Em vez de hardcodado:
+`Oi${nome}! ${ia} aqui da ${l.empresa.nome}...`
+
+// Usar:
+const texto = l.empresa.cadenciaT1 || defaultCadenciaT1;
+```
+
+**Benefícios:**
+- ✅ Multi-tenant: cada empresa tem seus textos
+- ✅ Sem deploy: alterável via API/UI
+- ✅ Fallback: padrão se não configurado
+- ✅ Consistente com arquitetura existente (mensagemIndicacao, mensagemPosVenda)
+
+**Impacto:**
+- Migration Prisma (adicionar 5 campos)
+- Atualizar lógica de buildItem() em route.ts (~5 linhas)
+- Adicionar UI de configuração (dashboard)
+
+**Prioridade:** Baixa (funciona, mas não escalável)
