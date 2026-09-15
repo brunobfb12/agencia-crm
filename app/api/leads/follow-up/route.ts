@@ -1055,20 +1055,6 @@ export async function GET(req: Request) {
   let finalPC1: any[] = [];
   const finalItemsByLeadId = new Map<string, Item>();
 
-  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || finalT1.length > 0 || finalT2.length > 0 || finalT3.length > 0 || finalT4.length > 0 || finalT5.length > 0 || finalLD0.length > 0 || finalPC1.length > 0)) {
-    await Promise.all([
-      ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
-      ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
-      ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
-      ...finalT1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT2.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT3.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT4.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT5.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalPC1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
-    ]);
-  }
-
   if (isHorarioComercial) {
     for (const l of lembreteLD0Novos) {
     const primeiroNome = l.cliente.nome ? l.cliente.nome.split(" ")[0] : "";
@@ -1082,15 +1068,6 @@ export async function GET(req: Request) {
       empresaNome: l.empresa.nome,
         mensagem: `👋 Oi${nomeStr}! Estou aqui aguardando sua confirmação para finalizar seu orçamento 😊`,
       });
-    }
-
-    if (finalLD0.length > 0) {
-      await Promise.all(
-        finalLD0.map((l: any) => prisma.lead.update({
-          where: { id: l.id },
-          data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
-        }))
-      );
     }
 
     // NO-SHOW: mensagem ao cliente perguntando se quer reagendar
@@ -1405,6 +1382,25 @@ export async function GET(req: Request) {
   finalLD0.push(...lembreteLD0Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "lembrete_ld0"));
   finalPC1.length = 0;
   finalPC1.push(...pc1Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "pronto_conversa_franca"));
+
+  // Gravar flags nas observações APÓS finalT*/finalLD0/finalPC1 estarem preenchidos com dados reais
+  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || finalT1.length > 0 || finalT2.length > 0 || finalT3.length > 0 || finalT4.length > 0 || finalT5.length > 0 || finalLD0.length > 0 || finalPC1.length > 0)) {
+    await Promise.all([
+      ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
+      ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
+      ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
+      ...finalT1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT2.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT3.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT4.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalT5.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+      ...finalLD0.map((l: any) => prisma.lead.update({
+        where: { id: l.id },
+        data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
+      })),
+      ...finalPC1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
+    ]);
+  }
 
   // Limitar a 5 items máximo ANTES de salvar no banco (evita registros fantasma)
   const itemsFinais = items.slice(0, 5);
