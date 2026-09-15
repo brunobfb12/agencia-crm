@@ -1385,7 +1385,9 @@ export async function GET(req: Request) {
   finalPC1.push(...pc1Novos.filter(l => finalItemsByLeadId.get(l.id)?.tipo === "pronto_conversa_franca"));
 
   // Gravar flags nas observações APÓS finalT*/finalLD0/finalPC1 estarem preenchidos com dados reais
+  console.log(`[DEBUG] isHorarioComercial=${isHorarioComercial} | finalPC1.length=${finalPC1.length}`);
   if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || finalT1.length > 0 || finalT2.length > 0 || finalT3.length > 0 || finalT4.length > 0 || finalT5.length > 0 || finalLD0.length > 0 || finalPC1.length > 0)) {
+    console.log(`[DEBUG] Entrando no Promise.all com finalPC1=${finalPC1.length}`);
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
