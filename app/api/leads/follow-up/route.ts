@@ -1328,7 +1328,8 @@ export async function GET(req: Request) {
   todayStart.setHours(0, 0, 0, 0);
 
   const cadeciaTiposExclusosTrava2 = new Set([
-    "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5"
+    "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5",
+    "pronto_conversa_franca"
   ]);
 
   const clienteIdsItems = new Set<string>();
