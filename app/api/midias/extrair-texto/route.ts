@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     // Word
     if (mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       try {
-        const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+        const result = await mammoth.extractRawText({ buffer });
         const texto = result.value.substring(0, MAX_CHARS);
         return NextResponse.json({ ok: true, texto });
       } catch (error) {
