@@ -7,12 +7,25 @@ const SUPPORTED_TYPES = ["application/vnd.openxmlformats-officedocument.spreadsh
 
 export async function POST(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    if (searchParams.get("secret") !== "crm2026migra") {
+      return NextResponse.json({ ok: false, motivo: "não autorizado" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { base64, mimeType } = body;
 
     if (!base64 || !mimeType) {
       return NextResponse.json(
         { ok: false, motivo: "base64 e mimeType são obrigatórios" },
+        { status: 400 }
+      );
+    }
+
+    const MAX_BASE64_CHARS = 8_000_000;
+    if (base64.length > MAX_BASE64_CHARS) {
+      return NextResponse.json(
+        { ok: false, motivo: "arquivo muito grande" },
         { status: 400 }
       );
     }
