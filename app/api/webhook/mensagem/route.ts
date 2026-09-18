@@ -132,23 +132,24 @@ export async function POST(req: Request) {
 
   // Lock atômico: só uma execução processa por vez.
   // Travamentos com mais de 30s são considerados mortos e liberados automaticamente.
-  // DEDUPLICAÇÃO: Rejeita retry da Evolution API (mesmo messageId nos últimos 60s)
-  if (body.messageId) {
-    const jaExiste = await prisma.mensagem.findFirst({
-      where: {
-        conversa: {
-          clienteId: cliente.id
-        },
-        criadoEm: { gte: new Date(Date.now() - 60000) }
+  // DEDUPLICAÇÃO: Rejeita retry da Evolution API (mesmo telefone + conteúdo nos últimos 60s)
+  // Usa hash de (telefone + mensagem) como fallback se messageId não estiver disponível
+  const jaExiste = await prisma.mensagem.findFirst({
+    where: {
+      conversa: {
+        clienteId: cliente.id
       },
-      orderBy: { criadoEm: 'desc' },
-      take: 1
-    });
+      conteudo: mensagem,  // IMPORTANTE: mesmo conteúdo
+      direcao: 'ENTRADA',
+      criadoEm: { gte: new Date(Date.now() - 60000) }  // últimos 60s
+    },
+    orderBy: { criadoEm: 'desc' },
+    take: 1
+  });
 
-    if (jaExiste && jaExiste.conteudo === mensagem) {
-      console.log('[webhook] Webhook duplicado ignorado:', body.messageId);
-      return NextResponse.json({ ok: true, status: 'duplicate_skipped', jaProcessando: false });
-    }
+  if (jaExiste) {
+    console.log('[webhook] Webhook duplicado ignorado (Evolution retry) para cliente:', cliente.id);
+    return NextResponse.json({ ok: true, status: 'duplicate_skipped', jaProcessando: false });
   }
 
   const lockTimeout = new Date(Date.now() - 60000);  // 60s: cobre retry exponencial da Evolution
