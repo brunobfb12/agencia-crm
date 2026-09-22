@@ -559,25 +559,6 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  // Item G: modoHumano automático para leads parados há 72h+
-  if (isHorarioComercial && pressao72h.length > 0) {
-    const clienteIds72h = pressao72h.map(l => (l as any).clienteId).filter(Boolean);
-    if (clienteIds72h.length > 0) {
-      const conversas72h = await prisma.conversa.findMany({
-        where: { clienteId: { in: clienteIds72h } },
-        orderBy: { ultimaAtividade: "desc" },
-        distinct: ["clienteId"],
-        select: { id: true },
-      });
-      if (conversas72h.length > 0) {
-        await prisma.conversa.updateMany({
-          where: { id: { in: conversas72h.map((c: { id: string }) => c.id) } },
-          data: { modoHumano: true },
-        });
-      }
-    }
-  }
-
   const empresaIds72h = [...new Set(pressao72h.map(l => l.empresa.id))];
   const gerentes72h = empresaIds72h.length > 0
     ? await prisma.vendedor.findMany({
