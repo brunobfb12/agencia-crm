@@ -145,12 +145,13 @@ export async function POST(req: Request) {
   });
   const jaProcessando = lock.count === 0;
 
-  const historico = await prisma.mensagem.findMany({
+  const ultimas = await prisma.mensagem.findMany({
     where: { conversaId: conversa.id },
-    orderBy: { criadoEm: "asc" },
+    orderBy: { criadoEm: "desc" },
     take: 30,
     select: { direcao: true, conteudo: true },
   });
+  const historico = ultimas.reverse();
 
   // Atribuição de vendedor: fidelização ou round-robin
   let vendedor = null;
