@@ -120,6 +120,7 @@ export async function GET(req: Request) {
         atualizadoEm: { lt: d60 },
         empresa: { ativa: true },
         cliente: { telefone: { not: "" } },
+        OR: [{ observacoes: null }, { NOT: { observacoes: { contains: "[CF:" } } }],
       },
       include: baseInclude,
     }),
@@ -1167,7 +1168,8 @@ export async function GET(req: Request) {
     for (const l of semResposta60d) {
     if (!l.empresa.instanciaWhatsapp) continue;
     if (semInteresse75dIds.has(l.id)) continue;
-    const nome = l.cliente.nome ? ` ${l.cliente.nome.split(" ")[0]}` : "";
+    const primeiroNomeCF = l.cliente.nome ? l.cliente.nome.trim().split(" ")[0] : "";
+    const nome = primeiroNomeCF && primeiroNomeCF.toLowerCase() !== "cliente" ? ` ${primeiroNomeCF}` : "";
     const dias = Math.floor((now.getTime() - new Date((l as any).atualizadoEm).getTime()) / (1000 * 60 * 60 * 24));
     items.push({
       tipo: "conversa_franca",
@@ -1391,6 +1393,17 @@ export async function GET(req: Request) {
 
   // Limitar a 5 items máximo ANTES de salvar no banco (evita registros fantasma)
   const itemsFinais = items.slice(0, 5);
+
+  // Conversa franca: marca [CF:YYYY-MM-DD] só nos leads que entraram no envio final (anti-repetição)
+  const cfIdsFinais = new Set(itemsFinais.filter(it => it.tipo === "conversa_franca").map(it => it.leadId));
+  const cfHoje = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const cfLeadsFinais = semResposta60d.filter(l => cfIdsFinais.has(l.id));
+  if (cfLeadsFinais.length > 0) {
+    await Promise.all(cfLeadsFinais.map(l => prisma.lead.update({
+      where: { id: l.id },
+      data: { observacoes: (((l as any).observacoes ?? "") + `\n[CF:${cfHoje}]`).trim() },
+    })));
+  }
 
   // Agrupar mensagens por clienteId para buscar/criar Conversa
   const mensagensPorCliente = new Map<string, Array<{ item: Item; mensagem: string }>>();
