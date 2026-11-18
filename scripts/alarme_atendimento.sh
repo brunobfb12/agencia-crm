@@ -1,5 +1,5 @@
 #!/bin/bash
-# Alarme de atendimento do CRM (FácilCRM). NÃO agendado: rodar manualmente ou via cron depois de validado.
+# Alarme de atendimento do CRM (FácilCRM). Agendado no cron do root a cada 15 min.
 #   /root/alarme_atendimento.sh                 envia alertas de verdade
 #   DRY=1 /root/alarme_atendimento.sh           ensaio: só imprime o que enviaria (sem envio, estado e log)
 #   EXCECOES="" /root/alarme_atendimento.sh     sobrescreve EXCECOES só nesta execução
@@ -82,8 +82,8 @@ estado() {  # $1=instância -> state da conexão na Evolution
   printf 'header = "apikey: %s"\n' "$KEY" | curl -s -m 15 -K - "http://localhost:8080/instance/connectionState/$1" | grep -o '"state":"[a-z]*"' | cut -d'"' -f4
 }
 
-# Instâncias: Empresa ativa com instanciaWhatsapp, menos EXCECOES
-MON=$(q "SELECT \"instanciaWhatsapp\" FROM \"Empresa\" WHERE ativa = true AND \"instanciaWhatsapp\" IS NOT NULL ORDER BY 1;")
+# Instâncias: Empresa ativa com instanciaWhatsapp (nome + instância), menos EXCECOES
+MON_RAW=$(q "SELECT \"instanciaWhatsapp\", nome FROM \"Empresa\" WHERE ativa = true AND \"instanciaWhatsapp\" IS NOT NULL ORDER BY 1;")
 RC_DB=$?
 if [ "$RC_DB" -ne 0 ] || [ -z "$PG" ]; then
   add "banco:ERRO"
@@ -92,15 +92,25 @@ if [ "$RC_DB" -ne 0 ] || [ -z "$PG" ]; then
   exit 1
 fi
 
+declare -A NOMEMAP
 EXC=$(echo "$EXCECOES" | tr ',' ' ')
 MONIT=""
-for i in $MON; do
+while IFS='|' read -r i nome; do
   case "$i" in ""|*[!A-Za-z0-9_-]*) continue ;; esac
+  NOMEMAP[$i]=$nome
   skip=0
   for e in $EXC; do [ "$i" = "$e" ] && skip=1; done
   if [ "$skip" -eq 0 ]; then MONIT="$MONIT $i"; fi
-done
+done <<< "$MON_RAW"
 add "monitoradas=$(echo $MONIT | wc -w)"
+
+# Rótulo: "Nome da empresa (instância)"
+rot() { echo "${NOMEMAP[$1]:-$1} ($1)"; }
+
+IN=""
+if [ -n "$MONIT" ]; then
+  IN=$(for i in $MONIT; do printf "'%s'," "$i"; done | sed 's/,$//')
+fi
 
 declare -A ST
 
@@ -111,17 +121,17 @@ for i in $MONIT; do
   if [ "${ST[$i]}" = open ]; then
     avalia "conexao_$i" 0 ""
   else
-    avalia "conexao_$i" 1 "Instância $i desconectada (state: ${ST[$i]}). Reconectar via QR code."
+    avalia "conexao_$i" 1 "$(rot "$i"): desconectada (state: ${ST[$i]}). Reconectar via QR code."
   fi
 done
 
-# 2) DECIFRAGEM (24h): Bad MAC nos últimos 15 min (log do serviço, não por instância)
+# 2) DECIFRAGEM (24h): Bad MAC nos últimos 15 min (log do serviço, global, não por instância)
 BM=$(docker service logs --since 15m "$EVO_SVC" 2>&1 | grep -c 'Bad MAC')
 case "$BM" in
   ''|*[!0-9]*) add "badmac:ERRO_LEITURA"; BM=0 ;;
   *)
     if [ "$BM" -gt "$LIMITE_BADMAC" ]; then
-      avalia badmac 1 "Bad MAC: $BM erros de decifragem nos últimos 15 min (limite $LIMITE_BADMAC)."
+      avalia badmac 1 "Evolution (todas as instâncias): Bad MAC: $BM erros de decifragem nos últimos 15 min (limite $LIMITE_BADMAC)."
     else
       avalia badmac 0 ""
     fi ;;
@@ -130,16 +140,39 @@ add "badmac15m=$BM"
 
 # 3) e 4) só em horário comercial (seg–sáb, 08h–18h BRT)
 if [ "$COMERCIAL" = 1 ]; then
-  # 3) SILÊNCIO: ref = maior entre a última ENTRADA da instância e 08:00 de hoje
+  # 3a) VOLUME: média de ENTRADA por hora comercial (seg–sáb 08–18) nos últimos 14 dias; mínimo 3/h
+  declare -A VOL_ENT VOL_HOR
+  if [ -n "$MONIT" ]; then
+    VOL=$(q "WITH h AS (SELECT count(*) AS horas FROM generate_series(date_trunc('hour', now() AT TIME ZONE 'America/Sao_Paulo') - interval '14 days', now() AT TIME ZONE 'America/Sao_Paulo', interval '1 hour') g WHERE extract(dow FROM g) BETWEEN 1 AND 6 AND extract(hour FROM g) BETWEEN 8 AND 17), e AS (SELECT ea.\"instanciaWhatsapp\" AS inst, count(*) AS ent FROM \"Mensagem\" m JOIN \"Conversa\" c ON c.id = m.\"conversaId\" JOIN \"Cliente\" cl ON cl.id = c.\"clienteId\" JOIN \"Empresa\" ea ON ea.id = cl.\"empresaId\" WHERE m.direcao = 'ENTRADA' AND ea.\"instanciaWhatsapp\" IN ($IN) AND (m.\"criadoEm\" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo') >= (now() AT TIME ZONE 'America/Sao_Paulo') - interval '14 days' AND extract(dow FROM (m.\"criadoEm\" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')) BETWEEN 1 AND 6 AND extract(hour FROM (m.\"criadoEm\" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')) BETWEEN 8 AND 17 GROUP BY 1) SELECT x.inst, COALESCE(e.ent, 0), (SELECT horas FROM h) FROM (SELECT unnest(ARRAY[$IN]) AS inst) x LEFT JOIN e ON e.inst = x.inst;")
+    RC_V=$?
+    if [ "$RC_V" -eq 0 ]; then
+      while IFS='|' read -r vi ve vh; do
+        [ -n "$vi" ] || continue
+        VOL_ENT[$vi]=$ve
+        VOL_HOR[$vi]=$vh
+      done <<< "$VOL"
+    fi
+  fi
+
+  # 3b) SILÊNCIO: ref = maior entre a última ENTRADA da instância e 08:00 de hoje
   for i in $MONIT; do
     if [ "${ST[$i]}" != open ]; then add "silencio_$i:pulado_desconectada"; continue; fi
+    ent=${VOL_ENT[$i]:-0}
+    hor=${VOL_HOR[$i]:-0}
+    if [ "$RC_V" -ne 0 ]; then add "silencio_$i:ERRO_DB_VOLUME"; continue; fi
+    if [ "$hor" -le 0 ] || [ "$ent" -lt $((3 * hor)) ]; then
+      m10=0
+      if [ "$hor" -gt 0 ]; then m10=$(( ent * 10 / hor )); fi
+      add "silencio: volume baixo ($i, média $((m10 / 10)).$((m10 % 10))/h)"
+      continue
+    fi
     last=$(q "SELECT COALESCE(extract(epoch FROM max(m.\"criadoEm\")), 0)::bigint FROM \"Mensagem\" m JOIN \"Conversa\" c ON c.id = m.\"conversaId\" JOIN \"Cliente\" cl ON cl.id = c.\"clienteId\" JOIN \"Empresa\" ea ON ea.id = cl.\"empresaId\" WHERE m.direcao = 'ENTRADA' AND ea.\"instanciaWhatsapp\" = '$i';")
     case "$last" in ''|*[!0-9]*) add "silencio_$i:ERRO_DB"; continue ;; esac
     ref=$last
     if [ "$ref" -lt "$INI08" ]; then ref=$INI08; fi
     min=$(( (NOW - ref) / 60 ))
     if [ "$min" -gt "$LIMITE_SILENCIO_MIN" ]; then
-      avalia "silencio_$i" 1 "Sem mensagem de cliente em $i há ${min} min (horário comercial; limite ${LIMITE_SILENCIO_MIN} min)."
+      avalia "silencio_$i" 1 "$(rot "$i"): sem mensagem de cliente há ${min} min (horário comercial; limite ${LIMITE_SILENCIO_MIN} min)."
     else
       avalia "silencio_$i" 0 ""
     fi
@@ -147,7 +180,6 @@ if [ "$COMERCIAL" = 1 ]; then
 
   # 4) CLIENTE ESPERANDO: última mensagem ENTRADA entre 3h e LIMITE_ESPERA_MIN atrás, modoHumano=false
   if [ -n "$MONIT" ]; then
-    IN=$(for i in $MONIT; do printf "'%s'," "$i"; done | sed 's/,$//')
     ESP=$(q "WITH u AS (SELECT DISTINCT ON (\"conversaId\") \"conversaId\", direcao, \"criadoEm\" FROM \"Mensagem\" ORDER BY \"conversaId\", \"criadoEm\" DESC), x AS (SELECT ea.\"instanciaWhatsapp\" AS inst, RIGHT(cl.telefone, 4) AS t4, u.\"criadoEm\" AS ts FROM u JOIN \"Conversa\" c ON c.id = u.\"conversaId\" JOIN \"Cliente\" cl ON cl.id = c.\"clienteId\" JOIN \"Empresa\" ea ON ea.id = cl.\"empresaId\" WHERE u.direcao = 'ENTRADA' AND c.\"modoHumano\" = false AND ea.\"instanciaWhatsapp\" IN ($IN) AND u.\"criadoEm\" >= (now() AT TIME ZONE 'UTC') - interval '3 hours' AND u.\"criadoEm\" <= (now() AT TIME ZONE 'UTC') - interval '${LIMITE_ESPERA_MIN} minutes'), r AS (SELECT inst, t4, row_number() OVER (PARTITION BY inst ORDER BY ts) AS rn FROM x) SELECT inst, count(*), string_agg(t4, ',' ORDER BY rn) FILTER (WHERE rn <= 5) FROM r GROUP BY inst;")
     RC_E=$?
     for i in $MONIT; do
@@ -157,7 +189,7 @@ if [ "$COMERCIAL" = 1 ]; then
       lst=$(echo "$linha" | cut -d'|' -f3)
       n=${n:-0}
       if [ "$n" -gt 0 ]; then
-        avalia "espera_$i" 1 "$n cliente(s) aguardando resposta em $i há mais de ${LIMITE_ESPERA_MIN} min, sem atendimento humano. Últimos 4 dígitos (até 5): $lst"
+        avalia "espera_$i" 1 "$(rot "$i"): $n cliente(s) aguardando resposta há mais de ${LIMITE_ESPERA_MIN} min, sem atendimento humano. Últimos 4 dígitos (até 5): $lst"
       else
         avalia "espera_$i" 0 ""
       fi
