@@ -309,6 +309,83 @@ export async function GET(req: Request) {
     return null;
   }
 
+  // ===== PEDIDO PARCIAL: cliente com PEDIDO na memória que parou de responder =====
+  // Elegível: LEAD/AQUECIMENTO, modoHumano=false, observacoes sem [PP:, última msg da conversa entre 2h e 3 dias.
+  // Gera 2 itens do mesmo lead (vendedor + cliente), sempre juntos e na frente da fila.
+  // Máx. 2 leads por execução: 2 leads x 2 itens = 4, cabem no corte de 5 sem separar o par.
+  const pedidoItensBuf: any[] = [];
+  const pedidoLeadIds = new Set<string>();
+  const pedidoClienteMap = new Map<string, string>();
+  const pedidoObs = new Map<string, string>();
+  if (isHorarioComercial) {
+    const pedidoIni = now.getTime() - 3 * 24 * 60 * 60 * 1000;
+    const pedidoFim = now.getTime() - 2 * 60 * 60 * 1000;
+    const candidatosPedido: any[] = await prisma.lead.findMany({
+      where: {
+        status: { in: ["LEAD", "AQUECIMENTO"] },
+        empresa: { ativa: true, instanciaWhatsapp: { not: "" } },
+        cliente: { memoriaCliente: { contains: "PEDIDO:" }, telefone: { not: "" } },
+      },
+      include: {
+        cliente: {
+          include: {
+            conversas: {
+              orderBy: { ultimaAtividade: "desc" },
+              take: 1,
+              include: { mensagens: { orderBy: { criadoEm: "desc" }, take: 1 } },
+            },
+          },
+        },
+        empresa: { select: { nome: true, instanciaWhatsapp: true } },
+        vendedor: { select: { nome: true, telefone: true, ativo: true } },
+      },
+    });
+    for (const l of candidatosPedido) {
+      if (pedidoLeadIds.size >= 2) break;
+      const conversa = l.cliente?.conversas?.[0];
+      const ultima = conversa?.mensagens?.[0];
+      if (!conversa || conversa.modoHumano || !ultima) continue;
+      if ((l.observacoes ?? "").includes("[PP:")) continue;
+      const tUltima = new Date(ultima.criadoEm).getTime();
+      if (tUltima < pedidoIni || tUltima > pedidoFim) continue;
+      const mem: string = l.cliente.memoriaCliente ?? "";
+      const idxPedido = mem.indexOf("PEDIDO:");
+      if (idxPedido < 0) continue;
+      const trechoPedido = mem.slice(idxPedido + "PEDIDO:".length).trim().slice(0, 300);
+
+      // Vendedor: fidelização (vendedor ativo do lead) ou rodízio do webhook/mensagem
+      let vend: { nome: string; telefone: string } | null =
+        l.vendedor?.ativo && l.vendedor?.telefone ? l.vendedor : null;
+      if (!vend) {
+        const proximo = await prisma.vendedor.findFirst({
+          where: { empresaId: l.empresaId, ativo: true, telefone: { not: "" } },
+          orderBy: [{ ultimaAtribuicaoEm: { sort: "asc", nulls: "first" } }, { ordemChamada: "asc" }],
+          select: { id: true, nome: true, telefone: true },
+        });
+        if (!proximo) continue;
+        vend = proximo;
+        await prisma.vendedor.update({ where: { id: proximo.id }, data: { ultimaAtribuicaoEm: now } });
+        await prisma.lead.update({ where: { id: l.id }, data: { vendedorId: proximo.id } });
+      }
+
+      const telDigits = (l.cliente.telefone ?? "").replace(/\D/g, "");
+      const telWa = telDigits.startsWith("55") ? telDigits : "55" + telDigits;
+      const nomeCli = l.cliente.nome && l.cliente.nome !== "Cliente" ? String(l.cliente.nome).trim() : "";
+      const primCli = nomeCli.split(" ")[0];
+      const primVend = String(vend.nome ?? "").trim().split(" ")[0];
+      const msgVend = `🛒 PEDIDO PARCIAL — cliente parou de responder\n\n👤 *${nomeCli || "Cliente sem nome"}*\n📞 https://wa.me/${telWa}\n\n📋 *O que pediu:* ${trechoPedido}\n\n⚡ Chama e fecha — o cliente já sabe que você vai chamar.`;
+      const msgCli = `${primCli ? `Oi ${primCli}!` : "Oi!"} Já passei o que você me pediu para o nosso vendedor ${primVend}, ele vai te chamar pra fechar 😊`;
+      const instancia = l.empresa.instanciaWhatsapp!;
+      pedidoItensBuf.push(
+        { tipo: "pedido_parcial_vendedor", leadId: l.id, clienteTelefone: vend.telefone, clienteNome: vend.nome, instancia, empresaNome: l.empresa.nome, mensagem: msgVend },
+        { tipo: "pedido_parcial", leadId: l.id, clienteTelefone: l.cliente.telefone, clienteNome: nomeCli || l.cliente.telefone, instancia, empresaNome: l.empresa.nome, mensagem: msgCli },
+      );
+      pedidoLeadIds.add(l.id);
+      pedidoClienteMap.set(l.id, l.clienteId);
+      pedidoObs.set(l.id, l.observacoes ?? "");
+    }
+  }
+
   // Buscar todos os candidatos para T1-T5 em um batch único
   const cadenciaLeads = await prisma.lead.findMany({
     where: {
@@ -346,6 +423,7 @@ export async function GET(req: Request) {
 
   for (const lead of cadenciaLeads) {
     if (!isHorarioComercial) break;
+    if (pedidoLeadIds.has(lead.id)) continue; // lead elegível a pedido_parcial não gera T1-T5 nesta execução
 
     const touche = getTouche(lead);
     if (!touche) continue;
@@ -580,6 +658,8 @@ export async function GET(req: Request) {
     mensagem: string;
   };
   const items: Item[] = [];
+  // Pedido parcial vai PRIMEIRO na fila (os 2 itens do par ficam juntos)
+  items.push(...pedidoItensBuf);
 
   // Auto-transição: VENDA_REALIZADA → POS_VENDA ao detectar para envio
   if (isHorarioComercial && posVenda.length > 0) {
@@ -1255,6 +1335,8 @@ export async function GET(req: Request) {
   const seenLeadsExecucao = new Set<string>();
   const itemsFiltrados: Item[] = [];
   for (const item of items) {
+    if (item.tipo.startsWith("pedido_parcial")) { itemsFiltrados.push(item); continue; } // par do pedido parcial passa sempre
+    if (pedidoLeadIds.has(item.leadId)) continue; // lead com pedido parcial não recebe outros itens nesta execução
     if (!seenLeadsExecucao.has(item.leadId)) {
       seenLeadsExecucao.add(item.leadId);
       itemsFiltrados.push(item);
@@ -1273,7 +1355,8 @@ export async function GET(req: Request) {
     "pos_venda", "reativacao_15d", "reativacao_30d", "recontato_agendado",
     "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5",
     "aniversario", "pronto_conversa_franca", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
-    "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0", "noshow_reagendar"
+    "conversa_franca", "reativacao_sem_interesse", "lembrete_ld0", "noshow_reagendar",
+    "pedido_parcial"
   ]);
 
   // Mapa de leadId → clienteId para vincular mensagens
@@ -1287,6 +1370,8 @@ export async function GET(req: Request) {
       }
     }
   }
+  // Pedido parcial: mapa leadId → clienteId (para TRAVA 2 e salvar a mensagem do cliente)
+  for (const [pLeadId, pClienteId] of pedidoClienteMap) leadToClienteMap.set(pLeadId, pClienteId);
   // Adicionar cadência leads depois que foram preenchidos
   for (const leads of [t1Leads, t2Leads, t3Leads, t4Leads, t5Leads]) {
     for (const lead of leads) {
@@ -1312,7 +1397,8 @@ export async function GET(req: Request) {
 
   const cadeciaTiposExclusosTrava2 = new Set([
     "cadencia_t1", "cadencia_t2", "cadencia_t3", "cadencia_t4", "cadencia_t5",
-    "pronto_conversa_franca"
+    "pronto_conversa_franca",
+    "pedido_parcial", "pedido_parcial_vendedor" // protegidos pela marca [PP:], passam sempre
   ]);
 
   const clienteIdsItems = new Set<string>();
@@ -1408,6 +1494,20 @@ export async function GET(req: Request) {
     })),
     ...marcarFinais(finalPC1, "pronto_conversa_franca").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
   ];
+  // Pedido parcial: só para leads com o par inteiro no corte final. Marca [PP:data], status NEGOCIACAO, vendedor notificado.
+  const ppHoje = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const ppVendFinais = new Set(itemsFinais.filter(it => it.tipo === "pedido_parcial_vendedor").map(it => it.leadId));
+  const ppLeadsFinais = itemsFinais.filter(it => it.tipo === "pedido_parcial" && ppVendFinais.has(it.leadId)).map(it => it.leadId);
+  for (const ppLeadId of ppLeadsFinais) {
+    flagsFinais.push(prisma.lead.update({
+      where: { id: ppLeadId },
+      data: {
+        observacoes: ((pedidoObs.get(ppLeadId) ?? "") + `\n[PP:${ppHoje}]`).trim(),
+        status: "NEGOCIACAO",
+        vendedorNotificadoEm: now,
+      },
+    }));
+  }
   if (flagsFinais.length > 0) {
     await Promise.all(flagsFinais);
   }
