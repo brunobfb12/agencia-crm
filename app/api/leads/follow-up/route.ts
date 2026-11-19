@@ -1372,27 +1372,45 @@ export async function GET(req: Request) {
 
   // Gravar flags nas observações APÓS finalT*/finalLD0/finalPC1 estarem preenchidos com dados reais
   console.log(`[DEBUG] isHorarioComercial=${isHorarioComercial} | finalPC1.length=${finalPC1.length}`);
-  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0 || finalT1.length > 0 || finalT2.length > 0 || finalT3.length > 0 || finalT4.length > 0 || finalT5.length > 0 || finalLD0.length > 0 || finalPC1.length > 0)) {
+  if (isHorarioComercial && (p24Novos.length > 0 || p48Novos.length > 0 || p72Novos.length > 0)) {
     console.log(`[DEBUG] Entrando no Promise.all com finalPC1=${finalPC1.length}`);
     await Promise.all([
       ...p24Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P24]").trim() } })),
       ...p48Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P48]").trim() } })),
       ...p72Novos.map(l => prisma.lead.update({ where: { id: l.id }, data: { observacoes: (((l as any).observacoes ?? "") + "\n[P72]").trim() } })),
-      ...finalT1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT2.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT3.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT4.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalT5.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
-      ...finalLD0.map((l: any) => prisma.lead.update({
-        where: { id: l.id },
-        data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
-      })),
-      ...finalPC1.map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
     ]);
   }
 
+  // Prioridade: conversa_franca vai para o fim (ordem estável); no máximo 1 conversa_franca por execução
+  const itemsOrdenados = [
+    ...items.filter(it => it.tipo !== "conversa_franca"),
+    ...items.filter(it => it.tipo === "conversa_franca").slice(0, 1),
+  ];
+  items.length = 0;
+  items.push(...itemsOrdenados);
+  console.log(`[RITMO] conversa_franca no envio desta execução: ${items.filter(it => it.tipo === "conversa_franca").length}`);
+
   // Limitar a 5 items máximo ANTES de salvar no banco (evita registros fantasma)
   const itemsFinais = items.slice(0, 5);
+
+  // Marcas de cadência/LD0/PC1: gravadas DEPOIS do corte, só para leads cujo item está em itemsFinais
+  const idsEnvio = new Map(itemsFinais.map(it => [it.leadId, it.tipo] as [string, string]));
+  const marcarFinais = (lista: any[], tipo: string) => lista.filter((l: any) => idsEnvio.get(l.id) === tipo);
+  const flagsFinais = [
+    ...marcarFinais(finalT1, "cadencia_t1").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+    ...marcarFinais(finalT2, "cadencia_t2").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+    ...marcarFinais(finalT3, "cadencia_t3").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+    ...marcarFinais(finalT4, "cadencia_t4").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+    ...marcarFinais(finalT5, "cadencia_t5").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + `\n${l.flag}`).trim() } })),
+    ...marcarFinais(finalLD0, "lembrete_ld0").map((l: any) => prisma.lead.update({
+      where: { id: l.id },
+      data: { observacoes: ((l.observacoes ?? "") + `\n[LD0:${now.toISOString()}]`).trim() },
+    })),
+    ...marcarFinais(finalPC1, "pronto_conversa_franca").map((l: any) => prisma.lead.update({ where: { id: l.id }, data: { observacoes: ((l.observacoes ?? "") + "\n[PC1]").trim() } })),
+  ];
+  if (flagsFinais.length > 0) {
+    await Promise.all(flagsFinais);
+  }
 
   // Conversa franca: marca [CF:YYYY-MM-DD] só nos leads que entraram no envio final (anti-repetição)
   const cfIdsFinais = new Set(itemsFinais.filter(it => it.tipo === "conversa_franca").map(it => it.leadId));
