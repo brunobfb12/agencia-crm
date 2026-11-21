@@ -1422,6 +1422,27 @@ export async function GET(req: Request) {
 
   const clientesComMsgHoje = new Set(mensagensHoje.map(m => m.conversa.clienteId));
 
+  // Tipos de janela de 24h (sem marca de "já enviado"): bloqueio é SAIDA nas últimas 48h, não só "hoje"
+  const tiposJanela48h = new Set([
+    "reativacao_15d", "valor_d7", "toque_d20", "recompra_d28", "oferta_d45",
+  ]);
+  const clienteIdsJanela48h = new Set<string>();
+  for (const item of items.filter(it => tiposJanela48h.has(it.tipo))) {
+    const clienteId = leadToClienteMap.get(item.leadId);
+    if (clienteId) clienteIdsJanela48h.add(clienteId);
+  }
+  const mensagens48h = clienteIdsJanela48h.size > 0
+    ? await prisma.mensagem.findMany({
+        where: {
+          direcao: "SAIDA",
+          criadoEm: { gte: new Date(now.getTime() - 48 * 60 * 60 * 1000) },
+          conversa: { clienteId: { in: Array.from(clienteIdsJanela48h) } },
+        },
+        select: { conversa: { select: { clienteId: true } } },
+      })
+    : [];
+  const clientesComMsg48h = new Set(mensagens48h.map(m => m.conversa.clienteId));
+
   // Aplicar TRAVA 2: remover items cujo cliente já recebeu msg SAIDA hoje
   // EXCETO: T1-T5 sempre passam (não são filtrados)
   const pc1Antes = items.filter(it => it.tipo === "pronto_conversa_franca").length;
@@ -1429,6 +1450,7 @@ export async function GET(req: Request) {
     if (!clienteMessageTypes.has(it.tipo)) return true; // Mantém items de vendedor/gerente
     if (cadeciaTiposExclusosTrava2.has(it.tipo)) return true; // T1-T5 e PC1 sempre passam
     const clienteId = leadToClienteMap.get(it.leadId);
+    if (tiposJanela48h.has(it.tipo)) return clienteId && !clientesComMsg48h.has(clienteId);
     return clienteId && !clientesComMsgHoje.has(clienteId);
   });
   const pc1Depois = itemsApposTrava2.filter(it => it.tipo === "pronto_conversa_franca").length;
