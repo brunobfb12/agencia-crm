@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       informacoes: true, calendlyUrl: true, perguntasQualificacao: true,
       tipoAtendimento: true, nomeIA: true, aprendizados: true,
       conhecimentoBase: true, mensagemIndicacao: true,
-      tagsCustomizadas: true, complementaresGuia: true, feriadosRegras: true,
+      tagsCustomizadas: true, complementaresGuia: true, feriadosRegras: true, telefoneFinanceiro: true,
     },
   });
   if (!empresa) {
@@ -224,6 +224,7 @@ export async function POST(req: Request) {
       conhecimentoBase: empresa.conhecimentoBase ?? null,
       mensagemIndicacao: empresa.mensagemIndicacao ?? null,
       complementaresGuia: empresa.complementaresGuia ?? null,
+      telefoneFinanceiro: empresa.telefoneFinanceiro ?? null,
     },
     cliente: {
       id: cliente.id,
