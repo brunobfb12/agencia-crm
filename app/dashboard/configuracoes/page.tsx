@@ -278,6 +278,7 @@ interface Empresa {
   mensagemIndicacao: string | null;
   telefoneFixo: string | null;
   telefoneFinanceiro: string | null;
+  feriadosRegras: string | null;
   tagsCustomizadas: string[];
   complementaresGuia: string | null;
   perfisCliente: string | null;
@@ -366,6 +367,15 @@ const FIELD_HELP: Record<string, { title: string; desc: string; examples: string
       "11 98765-4321",
     ],
     dica: "Deixe em branco se não tiver telefone fixo — a mensagem se adapta automaticamente.",
+  },
+  feriadosRegras: {
+    title: "Feriados e exceções",
+    desc: "Regras da loja para datas específicas. Feriados nacionais já fecham a loja sozinhos; use isto para exceções e feriados locais.",
+    examples: [
+      "24/12 ABERTO 08:00-12:00",
+      "24/10 FECHADO Aniversário da cidade",
+    ],
+    dica: "Uma regra por linha. DD/MM vale todo ano; DD/MM/AAAA vale só naquele ano.",
   },
   telefoneFinanceiro: {
     title: "Telefone Financeiro (NF, Boleto, Referências)",
@@ -959,6 +969,7 @@ export default function ConfiguracoesPage() {
   const [mensagemIndicacao, setMensagemIndicacao] = useState("");
   const [telefoneFixo, setTelefoneFixo] = useState("");
   const [telefoneFinanceiro, setTelefoneFinanceiro] = useState("");
+  const [feriadosRegras, setFeriadosRegras] = useState("");
   const [tagsCustomizadas, setTagsCustomizadas] = useState<string[]>([]);
   const [novaTag, setNovaTag] = useState("");
   const [complementaresGuia, setComplementaresGuia] = useState("");
@@ -1095,6 +1106,7 @@ export default function ConfiguracoesPage() {
     setMensagemIndicacao(emp.mensagemIndicacao ?? "Oi {nome}! Sou {ia}, da {empresa}. {indicador} me passou seu contato e disse que você pode se interessar nos nossos produtos! Gostaria de saber como posso te ajudar? 😊\n\n1️⃣ Sim, me conta mais!\n2️⃣ Agora não, me chama em 7 dias\n3️⃣ Não, obrigado(a)");
     setTelefoneFixo(emp.telefoneFixo ?? "");
     setTelefoneFinanceiro(emp.telefoneFinanceiro ?? "");
+    setFeriadosRegras(emp.feriadosRegras ?? "");
     setTagsCustomizadas(emp.tagsCustomizadas ?? []);
     setNovaTag("");
     setComplementaresGuia(emp.complementaresGuia ?? "");
@@ -1133,7 +1145,7 @@ export default function ConfiguracoesPage() {
     const res = await fetch(`/api/empresas/${empresaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, telefoneFixo: telefoneFixo.trim() || null, telefoneFinanceiro: telefoneFinanceiro.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null, perfisCliente: perfisCliente.trim() || null }),
+      body: JSON.stringify({ informacoes, ...calendarFields, perguntasQualificacao: pq, tipoAtendimento, nomeIA: nomeIA.trim() || null, mensagemPosVenda: mpv, mensagemAniversario: maniv, mensagemIndicacao: mensagemIndicacao.trim() || null, telefoneFixo: telefoneFixo.trim() || null, telefoneFinanceiro: telefoneFinanceiro.trim() || null, feriadosRegras: feriadosRegras.trim() || null, tagsCustomizadas, complementaresGuia: complementaresGuia.trim() || null, perfisCliente: perfisCliente.trim() || null }),
     });
 
     if (!res.ok) {
@@ -1627,6 +1639,23 @@ export default function ConfiguracoesPage() {
                           </p>
                           <input value={telefoneFinanceiro} onChange={e => setTelefoneFinanceiro(e.target.value)}
                             placeholder="Ex: (62) 9999-8888 ou 11 98765-4321" className={INPUT} />
+                        </div>
+
+                        {/* ── Feriados e exceções ── */}
+                        <div className="pt-4 mb-4" style={{ borderTop: "1px solid var(--border)" }}>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--muted)" }}>FERIADOS E EXCEÇÕES</span>
+                            <button type="button" onClick={() => setHelpOpen("feriadosRegras")}
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all hover:opacity-80"
+                              style={{ background: "rgba(99,102,241,.18)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,.3)" }}>
+                              ?
+                            </button>
+                          </div>
+                          <p className="text-[11px] mb-2" style={{ color: "var(--muted-3)" }}>
+                            Feriados nacionais já fecham a loja sozinhos. Use para exceções e feriados locais, uma por linha: 24/12 ABERTO 08:00-12:00 ou 24/10 FECHADO Aniversário da cidade.
+                          </p>
+                          <textarea value={feriadosRegras} onChange={e => setFeriadosRegras(e.target.value)} rows={4}
+                            placeholder="24/12 ABERTO 08:00-12:00 (uma regra por linha)" className={INPUT} />
                         </div>
 
                         {/* ── Tags da Empresa ── */}

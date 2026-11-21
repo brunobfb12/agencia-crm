@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ehFeriadoNacional } from "@/lib/feriados";
 
 const CADENCIA_CUTOFF_DATE = '2026-08-19';
 
@@ -24,7 +25,8 @@ export async function GET(req: Request) {
 
   // TODO: hardcoded até existir campo de dias de funcionamento por empresa (Sessão 5).
   // Hoje nenhum cliente ativo trabalha domingo.
-  const isHorarioComercial = !isDomingo && nowBRTHour >= 8 && nowBRTHour < 18;
+  // Feriado nacional de hoje fecha a loja (v1 global, sem regra por empresa)
+  const isHorarioComercial = !isDomingo && !ehFeriadoNacional(now) && nowBRTHour >= 8 && nowBRTHour < 18;
   const isHorarioLD0 = isHorarioComercial;
 
   const windowStart = (days: number) => {

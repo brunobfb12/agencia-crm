@@ -26,6 +26,7 @@ export async function PATCH(
       ...(body.conhecimentoBase !== undefined && { conhecimentoBase: body.conhecimentoBase || null }),
       ...(body.telefoneFixo !== undefined && { telefoneFixo: body.telefoneFixo || null }),
       ...(body.telefoneFinanceiro !== undefined && { telefoneFinanceiro: body.telefoneFinanceiro || null }),
+      ...(body.feriadosRegras !== undefined && { feriadosRegras: body.feriadosRegras || null }),
       ...(body.tagsCustomizadas !== undefined && { tagsCustomizadas: body.tagsCustomizadas }),
       ...(body.complementaresGuia !== undefined && { complementaresGuia: body.complementaresGuia || null }),
       ...(body.perfisCliente !== undefined && { perfisCliente: body.perfisCliente || null }),

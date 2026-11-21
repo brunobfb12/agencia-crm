@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verificarLimiteLeads } from "@/lib/plano";
+import { textoCalendario } from "@/lib/feriados";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
       informacoes: true, calendlyUrl: true, perguntasQualificacao: true,
       tipoAtendimento: true, nomeIA: true, aprendizados: true,
       conhecimentoBase: true, mensagemIndicacao: true,
-      tagsCustomizadas: true, complementaresGuia: true,
+      tagsCustomizadas: true, complementaresGuia: true, feriadosRegras: true,
     },
   });
   if (!empresa) {
@@ -208,6 +209,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     jaProcessando,
+    infoFeriado: textoCalendario(new Date(), empresa),
     modoHumano: conversa.modoHumano,
     empresa: {
       id: empresa.id,

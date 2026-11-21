@@ -86,6 +86,7 @@ END $$`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCalendarId" TEXT`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "googleCredentialId" TEXT`,
     `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "calendlyUrl" TEXT`,
+    `ALTER TABLE "Empresa" ADD COLUMN IF NOT EXISTS "feriadosRegras" TEXT`,
     `CREATE TABLE IF NOT EXISTS "Usuario" (
       "id" TEXT NOT NULL PRIMARY KEY,
       "nome" TEXT NOT NULL,
